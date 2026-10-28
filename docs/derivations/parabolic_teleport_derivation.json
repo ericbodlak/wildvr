@@ -1,0 +1,68 @@
+{
+  "name": "Parabolic Teleportation Apex & Trajectory Derivation DAG",
+  "description": "First-principles kinematic derivation of parabolic teleportation vertical trajectory, stationary apex time, and maximum clearance height.",
+  "nodes": [
+    {
+      "node_id": "M0_GRAVITY_AXIOM",
+      "expression": "g",
+      "description": "Positive gravitational acceleration constant g > 0",
+      "assumptions": {
+        "g": "positive, real",
+        "v_y": "real",
+        "y_0": "real"
+      },
+      "is_axiom": true
+    },
+    {
+      "node_id": "M1_VERTICAL_TRAJECTORY",
+      "expression": "y_0 + v_y * t - 0.5 * g * t^2",
+      "description": "Vertical parabolic projectile elevation y(t) under constant gravity",
+      "assumptions": {
+        "g": "positive, real",
+        "v_y": "real",
+        "y_0": "real"
+      },
+      "docstring_link": "QuestLocomotionEngine.solve_parabolic_floor_hit"
+    },
+    {
+      "node_id": "M2_VERTICAL_VELOCITY",
+      "expression": "v_y - g * t",
+      "description": "First-order time derivative dy/dt = v_y - g*t",
+      "assumptions": {
+        "g": "positive, real",
+        "v_y": "real",
+        "y_0": "real"
+      },
+      "docstring_link": "QuestLocomotionEngine.solve_parabolic_floor_hit"
+    },
+    {
+      "node_id": "M3_APEX_TIME",
+      "expression": "v_y / g",
+      "description": "Closed-form stationary apex time t* where vertical velocity equals zero",
+      "assumptions": {
+        "g": "positive, real",
+        "v_y": "real",
+        "y_0": "real"
+      },
+      "docstring_link": "QuestLocomotionEngine.solve_parabolic_floor_hit"
+    }
+  ],
+  "edges": [
+    {
+      "source": "M1_VERTICAL_TRAJECTORY",
+      "target": "M2_VERTICAL_VELOCITY",
+      "operation": "DIFFERENTIATE",
+      "parameters": {
+        "variable": "t"
+      }
+    },
+    {
+      "source": "M2_VERTICAL_VELOCITY",
+      "target": "M3_APEX_TIME",
+      "operation": "SOLVE",
+      "parameters": {
+        "variable": "t"
+      }
+    }
+  ]
+}

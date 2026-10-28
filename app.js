@@ -1,0 +1,866 @@
+import * as THREE from 'three';
+
+const BLUEPRINT = {"project_name": "Quest 3 Walkabout Studio", "preset": "house-and-island", "default_palette": "walkabout_daybreak", "locomotion": {"teleport_speed": 8.5, "gravity": 9.81, "fly_pitch_threshold_deg": 55.0, "fly_speed": 4.8, "dollhouse_scale": 14.0}, "house": {"origin": [0.0, 0.15, -4.0], "width": 8.0, "depth": 6.5, "wall_height": 3.0, "wall_thickness": 0.22, "has_skylight": true, "patio_extension": 2.5, "rooms": [{"id": "living_room", "label": "Great Room & Lounge", "bounds": [-4.0, -3.25, 1.0, 3.25]}, {"id": "sun_studio", "label": "Garden Studio Wing", "bounds": [1.0, -3.25, 4.0, 3.25]}], "furniture": [{"id": "sofa", "type": "sofa", "pos": [-1.8, 0.15, -4.8], "size": [2.2, 0.85, 0.9]}, {"id": "coffee_table", "type": "table", "pos": [-1.8, 0.15, -3.4], "size": [1.3, 0.45, 0.7]}, {"id": "kitchen_island", "type": "counter", "pos": [2.2, 0.15, -4.5], "size": [1.8, 0.92, 0.85]}, {"id": "architect_desk", "type": "desk", "pos": [2.3, 0.15, -2.2], "size": [1.4, 0.78, 0.7]}]}, "minigolf_course": {"hole_number": 1, "par": 2, "tee_pos": [-4.5, 0.18, 3.2], "cup_pos": [4.2, 0.18, 3.2], "lane_width": 1.6, "obstacles": [{"id": "bridge_ramp", "type": "bumper_stone", "pos": [-0.2, 0.25, 2.9], "radius": 0.28}, {"id": "windmill_post", "type": "bumper_stone", "pos": [1.6, 0.25, 3.55], "radius": 0.24}]}, "environment": {"island_radius": 18.0, "pine_trees": [[-9.5, 0.0, -7.5, 1.2], [-11.0, 0.0, -2.0, 1.0], [-8.5, 0.0, 6.5, 1.35], [8.5, 0.0, -8.0, 1.15], [10.5, 0.0, -3.5, 1.4], [9.2, 0.0, 6.8, 1.1], [0.0, 0.0, -11.5, 1.3]], "low_poly_rocks": [[-6.5, 0.0, -8.5, 0.9], [7.2, 0.0, -9.0, 1.1], [-10.2, 0.0, 3.2, 0.8], [11.0, 0.0, 2.4, 1.25]]}};
+const PALETTES = {"walkabout_daybreak": {"label": "Walkabout Daybreak", "sky_top": "#4895ef", "sky_horizon": "#caf0f8", "sun_color": "#fff3b0", "hemi_sky": "#90e0ef", "hemi_ground": "#52796f", "water": "#0096c7", "island_sand": "#f4d58d", "island_grass": "#52b788", "putting_turf": "#2d6a4f", "putting_border": "#d8f3dc", "house_wall": "#f8edeb", "house_trim": "#ddb892", "house_roof": "#e07a5f", "house_floor": "#b08968", "foliage_dark": "#1b4332", "foliage_light": "#40916c", "stone": "#8d99ae", "accent_gold": "#ffb703"}, "sunset_cove": {"label": "Sunset Cove", "sky_top": "#3d405b", "sky_horizon": "#f2cc8f", "sun_color": "#ff9f1c", "hemi_sky": "#f4a261", "hemi_ground": "#4a4e69", "water": "#2a9d8f", "island_sand": "#e9c46a", "island_grass": "#606c38", "putting_turf": "#283618", "putting_border": "#fefae0", "house_wall": "#fae1dd", "house_trim": "#bc6c25", "house_roof": "#9b2226", "house_floor": "#dda15e", "foliage_dark": "#283618", "foliage_light": "#606c38", "stone": "#6d6875", "accent_gold": "#ffbe0b"}, "nordic_architect": {"label": "Nordic Architect", "sky_top": "#2b2d42", "sky_horizon": "#edf2f4", "sun_color": "#ffffff", "hemi_sky": "#a8dadc", "hemi_ground": "#457b9d", "water": "#1d3557", "island_sand": "#e5e5e5", "island_grass": "#74c69d", "putting_turf": "#40916c", "putting_border": "#ffffff", "house_wall": "#edf2f4", "house_trim": "#2b2d42", "house_roof": "#1d3557", "house_floor": "#ced4da", "foliage_dark": "#1b4332", "foliage_light": "#52b788", "stone": "#8d99ae", "accent_gold": "#e63946"}, "twilight_links": {"label": "Twilight Links", "sky_top": "#10002b", "sky_horizon": "#5a189a", "sun_color": "#e0aaff", "hemi_sky": "#9d4edd", "hemi_ground": "#240046", "water": "#3c096c", "island_sand": "#c77dff", "island_grass": "#38b000", "putting_turf": "#008000", "putting_border": "#70e000", "house_wall": "#e0aaff", "house_trim": "#7b2cbf", "house_roof": "#3c096c", "house_floor": "#5a189a", "foliage_dark": "#004b23", "foliage_light": "#007200", "stone": "#5c677d", "accent_gold": "#ff9e00"}};
+
+// --- State ---
+let currentPaletteKey = BLUEPRINT.default_palette || 'walkabout_daybreak';
+let forceFlyMode = false;
+let twoFingerFlightLatched = false;
+let flapEnergy = 0.0;
+let flapPhase = 0.0;
+let isDollhouse = false;
+let hasSkylight = true;
+let widePatio = true;
+let showFurniture = true;
+let strokes = 0;
+let selectedLabel = 'None';
+
+// Player rig state
+const playerPos = new THREE.Vector3(0, 0, 7.5);
+let yaw = 0;
+let pitch = -0.08;
+const eyeHeight = 1.68;
+
+// Input state
+const keys = {};
+let isDraggingLook = false;
+let isAimingTeleport = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+let validTeleportTarget = null;
+
+// --- Scene & Renderer ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.xr.enabled = true;
+container.appendChild(renderer.domElement);
+
+// Rig Hierarchy (XROrigin equivalent for both Desktop and Quest 3 WebXR)
+const xrOrigin = new THREE.Group();
+xrOrigin.position.copy(playerPos);
+scene.add(xrOrigin);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.08, 250);
+camera.position.set(0, eyeHeight, 0);
+xrOrigin.add(camera);
+
+// 3D Wristwatch attached to player view / non-dominant left hand
+const wristWatchGroup = new THREE.Group();
+wristWatchGroup.position.set(-0.26, -0.22, -0.45);
+wristWatchGroup.rotation.set(-0.35, 0.35, 0.1);
+camera.add(wristWatchGroup);
+
+// 3D Articulated Right Hand attached to lower-right view (animates 1-finger, 2-finger, and arm-flap)
+const rightHandGroup = new THREE.Group();
+rightHandGroup.position.set(0.24, -0.20, -0.44);
+camera.add(rightHandGroup);
+let fingerIndexMesh = null;
+let fingerMiddleMesh = null;
+let fingerRingMesh = null;
+let fingerPinkyMesh = null;
+
+// --- Lights ---
+const hemiLight = new THREE.HemisphereLight(0x90e0ef, 0x52796f, 0.85);
+scene.add(hemiLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff3b0, 1.65);
+sunLight.position.set(14, 24, 12);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 1;
+sunLight.shadow.camera.far = 65;
+const d = 22;
+sunLight.shadow.camera.left = -d;
+sunLight.shadow.camera.right = d;
+sunLight.shadow.camera.top = d;
+sunLight.shadow.camera.bottom = -d;
+scene.add(sunLight);
+
+// --- Material Registry (PixPal Flat-Shaded Diorama Materials) ---
+const materials = {};
+function initMaterials(palette) {
+  const keysToBuild = [
+    'water', 'island_sand', 'island_grass', 'putting_turf', 'putting_border',
+    'house_wall', 'house_trim', 'house_roof', 'house_floor',
+    'foliage_dark', 'foliage_light', 'stone', 'accent_gold'
+  ];
+  keysToBuild.forEach((k) => {
+    if (!materials[k]) {
+      materials[k] = new THREE.MeshStandardMaterial({
+        color: palette[k],
+        roughness: k === 'water' ? 0.25 : 0.95,
+        metalness: k === 'accent_gold' ? 0.35 : 0.02,
+        flatShading: true
+      });
+    } else {
+      materials[k].color.set(palette[k]);
+    }
+  });
+  scene.background = new THREE.Color(palette.sky_horizon);
+  scene.fog = new THREE.FogExp2(palette.sky_horizon, 0.012);
+  sunLight.color.set(palette.sun_color);
+  hemiLight.color.set(palette.hemi_sky);
+  hemiLight.groundColor.set(palette.hemi_ground);
+}
+
+initMaterials(PALETTES[currentPaletteKey]);
+
+// --- Build 3D Wristwatch & Articulated Right Hand Meshes ---
+function buildWristWatch3D() {
+  const strap = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.02, 0.16),
+    materials.house_trim
+  );
+  wristWatchGroup.add(strap);
+
+  const bezel = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.055, 0.025, 12),
+    materials.stone
+  );
+  bezel.rotation.x = Math.PI / 2;
+  wristWatchGroup.add(bezel);
+
+  const face = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.045, 0.028, 12),
+    materials.accent_gold
+  );
+  face.rotation.x = Math.PI / 2;
+  wristWatchGroup.add(face);
+
+  // Articulated Right Hand Palm + 4 Finger Bones
+  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.026, 0.085), materials.house_wall);
+  rightHandGroup.add(palm);
+
+  const mkFinger = (xOffset, len) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(xOffset, 0, -0.042);
+    const bone = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, len), materials.house_wall);
+    bone.position.set(0, 0, -len * 0.5);
+    pivot.add(bone);
+    rightHandGroup.add(pivot);
+    return pivot;
+  };
+  fingerIndexMesh = mkFinger(-0.024, 0.068);
+  fingerMiddleMesh = mkFinger(-0.008, 0.072);
+  fingerRingMesh = mkFinger(0.008, 0.064);
+  fingerPinkyMesh = mkFinger(0.024, 0.052);
+}
+buildWristWatch3D();
+
+// --- Build World Groups ---
+const teleportableMeshes = [];
+const worldGroup = new THREE.Group();
+scene.add(worldGroup);
+
+const houseGroup = new THREE.Group();
+worldGroup.add(houseGroup);
+
+const furnitureGroup = new THREE.Group();
+houseGroup.add(furnitureGroup);
+
+// 1. Water & Faceted Walkabout Island
+const waterMesh = new THREE.Mesh(
+  new THREE.CylinderGeometry(85, 85, 0.4, 32),
+  materials.water
+);
+waterMesh.position.y = -0.35;
+waterMesh.receiveShadow = true;
+worldGroup.add(waterMesh);
+
+const sandBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(18.5, 21.0, 0.5, 18),
+  materials.island_sand
+);
+sandBase.position.y = -0.15;
+sandBase.receiveShadow = true;
+worldGroup.add(sandBase);
+
+const grassTop = new THREE.Mesh(
+  new THREE.CylinderGeometry(16.8, 18.2, 0.3, 18),
+  materials.island_grass
+);
+grassTop.position.y = 0.0;
+grassTop.receiveShadow = true;
+worldGroup.add(grassTop);
+teleportableMeshes.push(grassTop);
+
+// 2. Parametric Custom House Builder
+function rebuildHouse() {
+  while (houseGroup.children.length > 0) {
+    const child = houseGroup.children[0];
+    if (child !== furnitureGroup) houseGroup.remove(child);
+    else break;
+  }
+  houseGroup.clear();
+  houseGroup.add(furnitureGroup);
+  furnitureGroup.clear();
+
+  const h = BLUEPRINT.house;
+  const ox = h.origin[0];
+  const oy = h.origin[1];
+  const oz = h.origin[2];
+  const w = h.width;
+  const d = h.depth;
+  const wh = h.wall_height;
+  const wt = h.wall_thickness;
+
+  // Interior Floor + Expandable Patio Deck
+  const patioDepth = widePatio ? h.patio_extension : 0.8;
+  const floorMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w + 0.6, 0.16, d + patioDepth),
+    materials.house_floor
+  );
+  floorMesh.position.set(ox, oy, oz + patioDepth * 0.5);
+  floorMesh.receiveShadow = true;
+  floorMesh.castShadow = true;
+  houseGroup.add(floorMesh);
+  if (!teleportableMeshes.includes(floorMesh)) teleportableMeshes.push(floorMesh);
+
+  // Back Wall
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(w, wh, wt), materials.house_wall);
+  backWall.position.set(ox, oy + wh / 2, oz - d / 2);
+  backWall.castShadow = true;
+  backWall.receiveShadow = true;
+  houseGroup.add(backWall);
+
+  // Left & Right Walls with Picture Window Cutouts
+  [-1, 1].forEach((side) => {
+    const xPos = ox + side * (w / 2);
+    const lowerWall = new THREE.Mesh(new THREE.BoxGeometry(wt, 1.0, d), materials.house_wall);
+    lowerWall.position.set(xPos, oy + 0.5, oz);
+    lowerWall.castShadow = true;
+    houseGroup.add(lowerWall);
+
+    const upperWall = new THREE.Mesh(new THREE.BoxGeometry(wt, 0.6, d), materials.house_wall);
+    upperWall.position.set(xPos, oy + wh - 0.3, oz);
+    upperWall.castShadow = true;
+    houseGroup.add(upperWall);
+
+    [-d * 0.38, d * 0.38].forEach((zPillar) => {
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(wt * 1.2, wh, 0.8), materials.house_trim);
+      pillar.position.set(xPos, oy + wh / 2, oz + zPillar);
+      pillar.castShadow = true;
+      houseGroup.add(pillar);
+    });
+  });
+
+  // Front Wall with Wide Walk-In Doorway
+  const frontLeft = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, wh, wt), materials.house_wall);
+  frontLeft.position.set(ox - w * 0.34, oy + wh / 2, oz + d / 2);
+  frontLeft.castShadow = true;
+  houseGroup.add(frontLeft);
+
+  const frontRight = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, wh, wt), materials.house_wall);
+  frontRight.position.set(ox + w * 0.34, oy + wh / 2, oz + d / 2);
+  frontRight.castShadow = true;
+  houseGroup.add(frontRight);
+
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.36, 0.55, wt), materials.house_trim);
+  lintel.position.set(ox, oy + wh - 0.275, oz + d / 2);
+  lintel.castShadow = true;
+  houseGroup.add(lintel);
+
+  // Interior Partition Divider
+  const divider = new THREE.Mesh(new THREE.BoxGeometry(wt, wh * 0.85, d * 0.55), materials.house_trim);
+  divider.position.set(ox + 0.8, oy + (wh * 0.85) / 2, oz - d * 0.2);
+  divider.castShadow = true;
+  houseGroup.add(divider);
+
+  // Roof (Gabled or Open Skylight)
+  if (hasSkylight) {
+    [-1, 1].forEach((side) => {
+      const roofWing = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.36, 0.22, d + 0.8),
+        materials.house_roof
+      );
+      roofWing.position.set(ox + side * (w * 0.34), oy + wh + 0.12, oz);
+      roofWing.castShadow = true;
+      houseGroup.add(roofWing);
+    });
+    // Skylight Pergola Beams
+    for (let i = -2; i <= 2; i++) {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(w * 0.36, 0.12, 0.16), materials.house_trim);
+      beam.position.set(ox, oy + wh + 0.12, oz + i * 1.2);
+      beam.castShadow = true;
+      houseGroup.add(beam);
+    }
+  } else {
+    const fullRoof = new THREE.Mesh(
+      new THREE.ConeGeometry(w * 0.78, 1.8, 4),
+      materials.house_roof
+    );
+    fullRoof.position.set(ox, oy + wh + 0.9, oz);
+    fullRoof.rotation.y = Math.PI / 4;
+    fullRoof.castShadow = true;
+    houseGroup.add(fullRoof);
+  }
+
+  // Furniture Items
+  if (showFurniture) {
+    h.furniture.forEach((item) => {
+      const [sx, sy, sz] = item.size;
+      const mat = item.type === 'sofa' ? materials.house_roof : materials.house_trim;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
+      mesh.position.set(item.pos[0], oy + sy / 2, item.pos[2]);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      furnitureGroup.add(mesh);
+    });
+  }
+}
+rebuildHouse();
+
+// 3. Walkabout Mini-Golf Putting Course (Hole #1)
+const golfCourse = BLUEPRINT.minigolf_course;
+const laneLength = golfCourse.cup_pos[0] - golfCourse.tee_pos[0] + 1.6;
+const laneCenterZ = golfCourse.tee_pos[2];
+const laneCenterX = (golfCourse.cup_pos[0] + golfCourse.tee_pos[0]) * 0.5;
+
+const turfMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(laneLength, 0.08, golfCourse.lane_width),
+  materials.putting_turf
+);
+turfMesh.position.set(laneCenterX, 0.16, laneCenterZ);
+turfMesh.receiveShadow = true;
+worldGroup.add(turfMesh);
+teleportableMeshes.push(turfMesh);
+
+// Borders around putting lane
+[-1, 1].forEach((side) => {
+  const rail = new THREE.Mesh(
+    new THREE.BoxGeometry(laneLength + 0.2, 0.18, 0.14),
+    materials.putting_border
+  );
+  rail.position.set(laneCenterX, 0.22, laneCenterZ + side * (golfCourse.lane_width * 0.5 + 0.07));
+  rail.castShadow = true;
+  worldGroup.add(rail);
+});
+
+// Flagstick & Cup
+const cupRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.06, 0.11, 16),
+  materials.accent_gold
+);
+cupRing.rotation.x = -Math.PI / 2;
+cupRing.position.set(golfCourse.cup_pos[0], 0.205, golfCourse.cup_pos[2]);
+worldGroup.add(cupRing);
+
+const flagPole = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.02, 0.02, 1.35, 8),
+  materials.putting_border
+);
+flagPole.position.set(golfCourse.cup_pos[0], 0.85, golfCourse.cup_pos[2]);
+flagPole.castShadow = true;
+worldGroup.add(flagPole);
+
+const flagPennant = new THREE.Mesh(
+  new THREE.ConeGeometry(0.22, 0.45, 3),
+  materials.accent_gold
+);
+flagPennant.rotation.z = -Math.PI / 2;
+flagPennant.position.set(golfCourse.cup_pos[0] + 0.2, 1.4, golfCourse.cup_pos[2]);
+worldGroup.add(flagPennant);
+
+// Obstacles
+const obstacleColliders = [];
+golfCourse.obstacles.forEach((obs) => {
+  const bumper = new THREE.Mesh(
+    new THREE.CylinderGeometry(obs.radius, obs.radius * 1.15, 0.26, 7),
+    materials.stone
+  );
+  bumper.position.set(obs.pos[0], 0.26, obs.pos[2]);
+  bumper.castShadow = true;
+  worldGroup.add(bumper);
+  obstacleColliders.push({ x: obs.pos[0], z: obs.pos[2], r: obs.radius });
+});
+
+// Golf Ball
+const golfBall = new THREE.Mesh(
+  new THREE.SphereGeometry(0.055, 12, 12),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+);
+golfBall.position.set(golfCourse.tee_pos[0], 0.255, golfCourse.tee_pos[2]);
+golfBall.castShadow = true;
+worldGroup.add(golfBall);
+const ballVel = new THREE.Vector3(0, 0, 0);
+
+// 4. Low-Poly Faceted Pine Trees & Rocks
+BLUEPRINT.environment.pine_trees.forEach(([tx, ty, tz, s]) => {
+  const tree = new THREE.Group();
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.14 * s, 0.22 * s, 0.9 * s, 6),
+    materials.house_trim
+  );
+  trunk.position.y = 0.45 * s;
+  trunk.castShadow = true;
+  tree.add(trunk);
+
+  [0, 1, 2].forEach((tier) => {
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry((1.1 - tier * 0.24) * s, (1.35 - tier * 0.2) * s, 7),
+      tier % 2 === 0 ? materials.foliage_dark : materials.foliage_light
+    );
+    cone.position.y = (1.15 + tier * 0.68) * s;
+    cone.castShadow = true;
+    cone.receiveShadow = true;
+    tree.add(cone);
+  });
+  tree.position.set(tx, ty + 0.12, tz);
+  worldGroup.add(tree);
+});
+
+BLUEPRINT.environment.low_poly_rocks.forEach(([rx, ry, rz, rs]) => {
+  const rock = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.65 * rs, 0),
+    materials.stone
+  );
+  rock.position.set(rx, ry + 0.25 * rs, rz);
+  rock.rotation.set(rx, rz, 0.4);
+  rock.scale.set(1.2, 0.75, 1.0);
+  rock.castShadow = true;
+  rock.receiveShadow = true;
+  worldGroup.add(rock);
+});
+
+// --- Walkabout Parabolic Teleport Arc Visuals ---
+const arcMaxPoints = 24;
+const arcGeometry = new THREE.BufferGeometry().setFromPoints(
+  Array.from({ length: arcMaxPoints }, () => new THREE.Vector3())
+);
+const arcLine = new THREE.Line(
+  arcGeometry,
+  new THREE.LineBasicMaterial({ color: 0xffb703, linewidth: 3 })
+);
+arcLine.visible = false;
+scene.add(arcLine);
+
+const teleportRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.28, 0.42, 24),
+  new THREE.MeshBasicMaterial({ color: 0xffb703, side: THREE.DoubleSide })
+);
+teleportRing.rotation.x = -Math.PI / 2;
+teleportRing.visible = false;
+scene.add(teleportRing);
+
+// Compute Parabolic Teleport Trajectory & Raycast Intersections
+const raycaster = new THREE.Raycaster();
+function updateParabolicTeleport() {
+  const origin = new THREE.Vector3();
+  const dir = new THREE.Vector3();
+  camera.getWorldPosition(origin);
+  camera.getWorldDirection(dir);
+  origin.addScaledVector(dir, 0.35);
+
+  const speed = BLUEPRINT.locomotion.teleport_speed;
+  const g = BLUEPRINT.locomotion.gravity;
+  const vel = dir.clone().multiplyScalar(speed);
+  const totalT = 1.65;
+  const pts = [];
+  let hitPoint = null;
+
+  for (let i = 0; i < arcMaxPoints; i++) {
+    const t0 = (totalT * i) / (arcMaxPoints - 1);
+    const t1 = (totalT * (i + 1)) / (arcMaxPoints - 1);
+    const p0 = new THREE.Vector3(
+      origin.x + vel.x * t0,
+      origin.y + vel.y * t0 - 0.5 * g * t0 * t0,
+      origin.z + vel.z * t0
+    );
+    pts.push(p0);
+
+    const p1 = new THREE.Vector3(
+      origin.x + vel.x * t1,
+      origin.y + vel.y * t1 - 0.5 * g * t1 * t1,
+      origin.z + vel.z * t1
+    );
+    const seg = p1.clone().sub(p0);
+    const len = seg.length();
+    if (len > 0.001 && !hitPoint) {
+      raycaster.set(p0, seg.clone().normalize());
+      raycaster.far = len;
+      const hits = raycaster.intersectObjects(teleportableMeshes, false);
+      if (hits.length > 0 && hits[0].face && hits[0].face.normal.y > 0.75) {
+        hitPoint = hits[0].point.clone();
+      }
+    }
+  }
+
+  arcGeometry.setFromPoints(pts);
+  arcLine.visible = true;
+  if (hitPoint) {
+    teleportRing.position.set(hitPoint.x, hitPoint.y + 0.03, hitPoint.z);
+    teleportRing.visible = true;
+    validTeleportTarget = hitPoint;
+  } else {
+    teleportRing.visible = false;
+    validTeleportTarget = null;
+  }
+}
+
+function executeTeleport() {
+  if (validTeleportTarget) {
+    xrOrigin.position.set(validTeleportTarget.x, validTeleportTarget.y, validTeleportTarget.z);
+  }
+  arcLine.visible = false;
+  teleportRing.visible = false;
+  validTeleportTarget = null;
+}
+
+// --- Golf Ball Putting Physics ---
+function puttBall() {
+  const toCup = new THREE.Vector3(
+    golfCourse.cup_pos[0] - golfBall.position.x,
+    0,
+    golfCourse.cup_pos[2] - golfBall.position.z
+  );
+  if (toCup.length() < 0.15) {
+    // Reset to Tee
+    golfBall.position.set(golfCourse.tee_pos[0], 0.255, golfCourse.tee_pos[2]);
+    ballVel.set(0, 0, 0);
+    strokes = 0;
+  } else {
+    // Putt along camera horizontal aim or toward cup with slight variance
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    camDir.y = 0;
+    if (camDir.lengthSq() < 0.01) camDir.copy(toCup);
+    camDir.normalize();
+    // Blend 65% toward cup + 35% camera aim so desktop users easily enjoy putting
+    const aim = toCup.clone().normalize().lerp(camDir, 0.35).normalize();
+    ballVel.copy(aim.multiplyScalar(3.6));
+    strokes += 1;
+  }
+  document.getElementById('golf-badge').textContent = `Hole 1 (Par 2): ${strokes} Stroke${strokes === 1 ? '' : 's'}`;
+}
+
+function stepGolfPhysics(dt) {
+  if (ballVel.lengthSq() < 0.0004) return;
+  golfBall.position.addScaledVector(ballVel, dt);
+  ballVel.multiplyScalar(Math.pow(0.28, dt)); // Turf rolling friction
+
+  // Lane border bounce
+  const minZ = laneCenterZ - golfCourse.lane_width * 0.5 + 0.06;
+  const maxZ = laneCenterZ + golfCourse.lane_width * 0.5 - 0.06;
+  const minX = golfCourse.tee_pos[0] - 0.6;
+  const maxX = golfCourse.cup_pos[0] + 0.6;
+  if (golfBall.position.z < minZ || golfBall.position.z > maxZ) {
+    ballVel.z *= -0.8;
+    golfBall.position.z = THREE.MathUtils.clamp(golfBall.position.z, minZ, maxZ);
+  }
+  if (golfBall.position.x < minX || golfBall.position.x > maxX) {
+    ballVel.x *= -0.8;
+    golfBall.position.x = THREE.MathUtils.clamp(golfBall.position.x, minX, maxX);
+  }
+
+  // Obstacle bumper collisions
+  obstacleColliders.forEach((obs) => {
+    const dx = golfBall.position.x - obs.x;
+    const dz = golfBall.position.z - obs.z;
+    const dist = Math.hypot(dx, dz);
+    const minDist = obs.r + 0.055;
+    if (dist < minDist && dist > 0.0001) {
+      const nx = dx / dist;
+      const nz = dz / dist;
+      golfBall.position.x = obs.x + nx * minDist;
+      golfBall.position.z = obs.z + nz * minDist;
+      const dot = ballVel.x * nx + ballVel.z * nz;
+      ballVel.x = (ballVel.x - 2 * dot * nx) * 0.85;
+      ballVel.z = (ballVel.z - 2 * dot * nz) * 0.85;
+    }
+  });
+
+  // Check cup sink
+  const cupDist = Math.hypot(
+    golfBall.position.x - golfCourse.cup_pos[0],
+    golfBall.position.z - golfCourse.cup_pos[2]
+  );
+  if (cupDist < 0.12 && ballVel.length() < 2.2) {
+    ballVel.set(0, 0, 0);
+    golfBall.position.set(golfCourse.cup_pos[0], 0.21, golfCourse.cup_pos[2]);
+    document.getElementById('golf-badge').textContent = `Hole 1 Sunk in ${strokes}! [Space to Reset]`;
+  }
+}
+
+// --- Event Listeners (Desktop & Wristwatch UI) ---
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyT') isAimingTeleport = true;
+  if (e.code === 'KeyV') {
+    // Arm-flap stroke impulse: propels player in head look direction
+    flapEnergy = Math.min(1.0, flapEnergy + 0.48);
+    flapPhase += 1.6;
+  }
+  if (e.code === 'KeyF') {
+    forceFlyMode = !forceFlyMode;
+    document.getElementById('btn-fly-mode').classList.toggle('active', forceFlyMode);
+    document.getElementById('btn-fly-mode').textContent = forceFlyMode ? 'Fly Mode: LOCKED ON' : 'Fly Mode: Auto-Pitch';
+  }
+  if (e.code === 'KeyG') document.getElementById('btn-dollhouse').click();
+  if (e.code === 'Tab') {
+    e.preventDefault();
+    document.getElementById('wrist-panel').classList.toggle('minimized');
+  }
+  if (e.code === 'Space') {
+    e.preventDefault();
+    puttBall();
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+  if (e.code === 'KeyT') {
+    if (!twoFingerFlightLatched) executeTeleport();
+    isAimingTeleport = false;
+    twoFingerFlightLatched = false;
+    arcLine.visible = false;
+    teleportRing.visible = false;
+  }
+});
+
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (e.button === 0) {
+    isDraggingLook = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  } else if (e.button === 2) {
+    isAimingTeleport = true;
+  }
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (isDraggingLook) {
+    const dx = e.clientX - lastMouseX;
+    const dy = e.clientY - lastMouseY;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    yaw -= dx * 0.0045;
+    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0045, -Math.PI / 2.1, Math.PI / 2.1);
+  }
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (e.button === 0) isDraggingLook = false;
+  if (e.button === 2) {
+    if (!twoFingerFlightLatched) executeTeleport();
+    isAimingTeleport = false;
+    twoFingerFlightLatched = false;
+    arcLine.visible = false;
+    teleportRing.visible = false;
+  }
+});
+
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Wristwatch UI bindings
+document.getElementById('watch-header-toggle').addEventListener('click', () => {
+  document.getElementById('wrist-panel').classList.toggle('minimized');
+});
+
+document.getElementById('select-palette').addEventListener('change', (e) => {
+  currentPaletteKey = e.target.value;
+  initMaterials(PALETTES[currentPaletteKey]);
+});
+
+document.getElementById('btn-fly-mode').addEventListener('click', (e) => {
+  forceFlyMode = !forceFlyMode;
+  e.target.classList.toggle('active', forceFlyMode);
+  e.target.textContent = forceFlyMode ? 'Fly Mode: LOCKED ON' : 'Fly Mode: Auto-Pitch';
+});
+
+document.getElementById('btn-dollhouse').addEventListener('click', (e) => {
+  isDollhouse = !isDollhouse;
+  e.target.classList.toggle('active', isDollhouse);
+  const s = isDollhouse ? BLUEPRINT.locomotion.dollhouse_scale : 1.0;
+  xrOrigin.scale.set(s, s, s);
+  if (isDollhouse) {
+    xrOrigin.position.set(0, 0, 12.5);
+    pitch = -0.45;
+    yaw = 0;
+  } else {
+    xrOrigin.position.set(0, 0, 7.5);
+    pitch = -0.08;
+  }
+  document.getElementById('scale-badge').textContent = isDollhouse ? `Scale: 1:${s} Dollhouse` : 'Scale: 1:1 Human';
+});
+
+document.getElementById('btn-skylight').addEventListener('click', (e) => {
+  hasSkylight = !hasSkylight;
+  e.target.classList.toggle('active', hasSkylight);
+  e.target.textContent = hasSkylight ? 'Skylight Roof: ON' : 'Skylight Roof: Gabled';
+  rebuildHouse();
+});
+
+document.getElementById('btn-patio').addEventListener('click', (e) => {
+  widePatio = !widePatio;
+  e.target.classList.toggle('active', widePatio);
+  e.target.textContent = widePatio ? 'Patio Deck: Wide' : 'Patio Deck: Compact';
+  rebuildHouse();
+});
+
+document.getElementById('btn-furniture').addEventListener('click', (e) => {
+  showFurniture = !showFurniture;
+  e.target.classList.toggle('active', showFurniture);
+  e.target.textContent = showFurniture ? 'Furniture: Studio' : 'Furniture: Hidden';
+  rebuildHouse();
+});
+
+document.getElementById('btn-putt').addEventListener('click', () => puttBall());
+
+document.getElementById('btn-teleport-house').addEventListener('click', () => {
+  isDollhouse = false;
+  xrOrigin.scale.set(1, 1, 1);
+  xrOrigin.position.set(-1.2, 0.2, -3.5);
+  yaw = 0;
+  pitch = 0;
+  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
+});
+
+document.getElementById('btn-teleport-tee').addEventListener('click', () => {
+  isDollhouse = false;
+  xrOrigin.scale.set(1, 1, 1);
+  xrOrigin.position.set(golfCourse.tee_pos[0] - 1.2, 0.15, golfCourse.tee_pos[2] + 1.1);
+  yaw = -0.85;
+  pitch = -0.22;
+  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
+});
+
+// WebXR Session Launcher (Native Quest 3 Browser or Desktop Emulation)
+document.getElementById('btn-enter-vr').addEventListener('click', async () => {
+  if (navigator.xr) {
+    try {
+      const supported = await navigator.xr.isSessionSupported('immersive-vr');
+      if (supported) {
+        const session = await navigator.xr.requestSession('immersive-vr', {
+          optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+        });
+        renderer.xr.setSession(session);
+        document.getElementById('mode-badge').textContent = 'Mode: Quest 3 Native WebXR';
+        return;
+      }
+    } catch (err) {
+      console.warn('WebXR session fallback:', err);
+    }
+  }
+  forceFlyMode = !forceFlyMode;
+  document.getElementById('mode-badge').textContent = forceFlyMode
+    ? 'Mode: Desktop VR Flight Simulator'
+    : 'Mode: Desktop Walkabout';
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- Main Render & Locomotion Loop ---
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1);
+
+  if (!renderer.xr.isPresenting) {
+    if (keys['ArrowLeft']) yaw += 1.6 * dt;
+    if (keys['ArrowRight']) yaw -= 1.6 * dt;
+    if (keys['ArrowUp']) pitch = Math.min(Math.PI / 2.1, pitch + 1.2 * dt);
+    if (keys['ArrowDown']) pitch = Math.max(-Math.PI / 2.1, pitch - 1.2 * dt);
+
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+  }
+
+  const camFwd = new THREE.Vector3();
+  camera.getWorldDirection(camFwd);
+  const pitchDeg = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(camFwd.y, -1, 1)));
+
+  // 1. Evaluate 2-Finger (Index + Middle) Sky-Ignited Flight vs Parabolic Teleport:
+  // Pointing index+middle into the sky (>= 55 deg) latches flight; once latched, aim anywhere to fly!
+  if (isAimingTeleport && pitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg) {
+    twoFingerFlightLatched = true;
+  }
+  if (twoFingerFlightLatched && isAimingTeleport) {
+    arcLine.visible = false;
+    teleportRing.visible = false;
+    xrOrigin.position.addScaledVector(camFwd, BLUEPRINT.locomotion.fly_speed * dt);
+  } else if (isAimingTeleport) {
+    updateParabolicTeleport();
+  }
+
+  // 2. Evaluate Arm-Flapping Flight + Head-Direction Steering:
+  flapEnergy *= Math.exp(-1.8 * dt);
+  const isArmFlapFlying = flapEnergy > 0.08;
+  if (isArmFlapFlying) {
+    const flapSpeed = 5.2 * flapEnergy * dt;
+    xrOrigin.position.addScaledVector(camFwd, flapSpeed);
+    xrOrigin.position.y = Math.max(0.2, xrOrigin.position.y + 0.35 * flapSpeed);
+  }
+
+  // 3. Animate Articulated 3D Right Hand Fingers & Arm Flap:
+  const isOneFingerSelect = Boolean(keys['Digit1']);
+  if (fingerIndexMesh && fingerMiddleMesh && fingerRingMesh && fingerPinkyMesh) {
+    // Curl angle: 0 = extended straight, -1.35 = curled into palm
+    fingerIndexMesh.rotation.x = (isOneFingerSelect || isAimingTeleport) ? 0.0 : -0.45;
+    fingerMiddleMesh.rotation.x = isAimingTeleport ? 0.0 : (isOneFingerSelect ? -1.35 : -0.5);
+    fingerRingMesh.rotation.x = (isOneFingerSelect || isAimingTeleport) ? -1.35 : -0.55;
+    fingerPinkyMesh.rotation.x = (isOneFingerSelect || isAimingTeleport) ? -1.35 : -0.6;
+    const flapOffset = isArmFlapFlying ? Math.sin(clock.elapsedTime * 14.0) * 0.045 * flapEnergy : 0.0;
+    rightHandGroup.position.y = -0.20 + flapOffset;
+    wristWatchGroup.position.y = -0.22 + flapOffset;
+  }
+
+  // 4. 1-Finger Point Selection Raycast:
+  if (isOneFingerSelect) {
+    const origin = new THREE.Vector3();
+    camera.getWorldPosition(origin);
+    raycaster.set(origin, camFwd);
+    raycaster.far = 30;
+    const hits = raycaster.intersectObjects(worldGroup.children, true);
+    selectedLabel = hits.length > 0 ? 'Object Highlighted' : 'Sky';
+  }
+
+  // 5. Standard WASD & Point-Up Flight:
+  const isPointUpFlying = forceFlyMode || twoFingerFlightLatched || isArmFlapFlying ||
+    (pitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg && keys['KeyW']);
+
+  const moveSpeed = (isPointUpFlying ? BLUEPRINT.locomotion.fly_speed : 3.8) * dt;
+  const fwdFlat = new THREE.Vector3(camFwd.x, 0, camFwd.z).normalize();
+  const rightFlat = new THREE.Vector3().crossVectors(fwdFlat, new THREE.Vector3(0, 1, 0)).normalize();
+
+  if (keys['KeyW']) {
+    xrOrigin.position.addScaledVector(isPointUpFlying ? camFwd : fwdFlat, moveSpeed);
+  }
+  if (keys['KeyS']) {
+    xrOrigin.position.addScaledVector(isPointUpFlying ? camFwd : fwdFlat, -moveSpeed);
+  }
+  if (keys['KeyA']) xrOrigin.position.addScaledVector(rightFlat, -moveSpeed);
+  if (keys['KeyD']) xrOrigin.position.addScaledVector(rightFlat, moveSpeed);
+  if (keys['KeyE']) xrOrigin.position.y += moveSpeed;
+  if (keys['KeyQ']) xrOrigin.position.y = Math.max(0, xrOrigin.position.y - moveSpeed);
+
+  if (!isPointUpFlying && !forceFlyMode && xrOrigin.position.y > 0.2) {
+    xrOrigin.position.y = Math.max(0, xrOrigin.position.y - 3.5 * dt);
+  }
+
+  stepGolfPhysics(dt);
+
+  // Update Mode & Telemetry UI
+  const modeBadge = document.getElementById('mode-badge');
+  if (!renderer.xr.isPresenting) {
+    if (twoFingerFlightLatched) modeBadge.textContent = 'Mode: 2-Finger Sky Flight!';
+    else if (isArmFlapFlying) modeBadge.textContent = `Mode: Arm-Flap Flight (${Math.round(flapEnergy * 100)}%)`;
+    else if (isOneFingerSelect) modeBadge.textContent = `Mode: 1-Finger Select (${selectedLabel})`;
+    else modeBadge.textContent = isPointUpFlying ? 'Mode: Walkabout Flying!' : 'Mode: Desktop Walkabout';
+  }
+  const telemetry = document.getElementById('telemetry-readout');
+  telemetry.innerHTML = `Pos: (${xrOrigin.position.x.toFixed(1)}, ${(xrOrigin.position.y + eyeHeight).toFixed(1)}, ${xrOrigin.position.z.toFixed(1)}) | Pitch: ${pitchDeg.toFixed(0)}&deg; | Flap: ${Math.round(flapEnergy * 100)}%`;
+
+  renderer.render(scene, camera);
+});
