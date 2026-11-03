@@ -15,3 +15,9 @@ dist/
 build/
 .pytest_cache/
 .xr_server.*
+.xr_server.pid
+.xr_server.log
+.xr_server_meta.json
+.xr_cert.pem
+.xr_key.pem
+_site/
