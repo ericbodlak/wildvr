@@ -1,5 +1,5 @@
 {
-  "project_name": "Quest 3 Walkabout Studio",
+  "project_name": "Wild VR",
   "preset": "house-and-island",
   "default_palette": "walkabout_daybreak",
   "locomotion": {
@@ -34,7 +34,7 @@
       },
       {
         "id": "sun_studio",
-        "label": "Garden Studio Wing",
+        "label": "Garden Sun Wing",
         "bounds": [
           1.0,
           -3.25,

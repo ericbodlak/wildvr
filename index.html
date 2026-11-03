@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quest 3 Walkabout Studio — Desktop &amp; Quest 3 WebXR</title>
+  <title>Wild VR — Desktop &amp; Quest 3 WebXR</title>
   <style>
     :root {
       --bg-glass: rgba(18, 26, 36, 0.84);
@@ -150,32 +150,32 @@
 
   <div id="hud-top">
     <div class="glass-card">
-      <h1>Quest 3 Walkabout Studio</h1>
-      <div class="subtitle">Dual-Mode: Regular Desktop Browser + Meta Quest 3 WebXR</div>
+      <h1>Wild VR</h1>
+      <div class="subtitle">Dual-Mode: Desktop Browser + Meta Quest 3 WebXR</div>
       <div class="status-row">
-        <span class="badge" id="mode-badge">Mode: Desktop Walkabout</span>
+        <span class="badge" id="mode-badge">Mode: Desktop Wild VR</span>
         <span class="badge gold" id="scale-badge">Scale: 1:1 Human</span>
         <span class="badge" id="golf-badge">Hole 1 (Par 2): 0 Strokes</span>
       </div>
     </div>
     <div class="glass-card" style="display:flex; gap:8px; align-items:center;">
-      <button id="btn-enter-vr" class="vr-btn">Enter Quest 3 VR (or Emulate)</button>
+      <button id="btn-enter-vr" class="vr-btn">Enter Wild VR (Quest 3)</button>
     </div>
   </div>
 
   <!-- Interactive Wristwatch UI (Synced with 3D Wristwatch in Scene) -->
   <div id="wrist-panel" class="glass-card">
     <div class="watch-header" id="watch-header-toggle">
-      <span class="watch-title">&#8986; Walkabout Wristwatch Menu</span>
+      <span class="watch-title">&#8986; Wild VR Wristwatch</span>
       <span style="font-size:0.74rem; color:#adb5bd;">[Tab] Toggle</span>
     </div>
     <div style="margin-bottom:8px;">
-      <label style="font-size:0.74rem; color:#ced4da; display:block; margin-bottom:4px;">PixPal Diorama Palette</label>
+      <label style="font-size:0.74rem; color:#ced4da; display:block; margin-bottom:4px;">PixPal Color Palette</label>
       <select id="select-palette" style="width:100%;">
-        <option value="walkabout_daybreak">Walkabout Daybreak (Sunny)</option>
+        <option value="walkabout_daybreak">Wild Daybreak (Sunny)</option>
         <option value="sunset_cove">Sunset Cove (Golden Hour)</option>
-        <option value="nordic_architect">Nordic Architect (Crisp Modern)</option>
-        <option value="twilight_links">Twilight Links (Bioluminescent)</option>
+        <option value="nordic_architect">Nordic Horizon (Crisp Modern)</option>
+        <option value="twilight_links">Twilight Glade (Bioluminescent)</option>
       </select>
     </div>
     <div class="control-grid">
@@ -183,7 +183,7 @@
       <button id="btn-dollhouse">Dollhouse (1:14)</button>
       <button id="btn-skylight" class="active">Skylight Roof: ON</button>
       <button id="btn-patio" class="active">Patio Deck: Wide</button>
-      <button id="btn-furniture" class="active">Furniture: Studio</button>
+      <button id="btn-furniture" class="active">Furniture: Shown</button>
       <button id="btn-putt">Putt Golf Ball [Space]</button>
       <button id="btn-teleport-house">Teleport Inside House</button>
       <button id="btn-teleport-tee">Teleport to Tee #1</button>
@@ -194,19 +194,19 @@
   </div>
 
   <div class="glass-card controls-help">
-    <strong style="color:#b7e4c7; display:block; margin-bottom:4px;">Gesture &amp; Desktop Controls (No Headset Needed):</strong>
-    &bull; <b>1-Finger Point (Select):</b> Hold <kbd>1</kbd> (index finger ray highlights objects)<br/>
-    &bull; <b>2-Finger Point (Teleport):</b> Hold <kbd>Right-Click</kbd> or <kbd>T</kbd> (index+middle arc)<br/>
-    &bull; <b>2-Finger Sky Flight:</b> Hold <kbd>Right-Click</kbd>/<kbd>T</kbd> into sky (&gt;55&deg;) to ignite, then steer anywhere!<br/>
-    &bull; <b>Arm-Flap Flight:</b> Tap <kbd>V</kbd> repeatedly to flap arms &amp; fly in head direction!<br/>
-    &bull; <b>Walk / Look / Watch:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> &bull; <kbd>Left-Drag</kbd> &bull; <kbd>Tab</kbd> Watch &bull; <kbd>Space</kbd> Putt
+    <strong style="color:#b7e4c7; display:block; margin-bottom:4px;">Wild VR Controls (Quest 3 &amp; Desktop):</strong>
+    &bull; <b>Quest Teleport:</b> Push <kbd>Thumbstick Up</kbd> (or hold <kbd>Grip</kbd>) to aim arc, release to teleport!<br/>
+    &bull; <b>Quest Sky Flight:</b> Point controller &gt;55&deg; into sky + push <kbd>Thumbstick Up</kbd> to fly!<br/>
+    &bull; <b>Quest Walk / Turn:</b> Hold <kbd>Trigger</kbd> + <kbd>Stick</kbd> to walk &bull; <kbd>Stick Left/Right</kbd> snap-turn<br/>
+    &bull; <b>Desktop Teleport / Fly:</b> Hold <kbd>Right-Click</kbd> or <kbd>T</kbd> &bull; Tap <kbd>V</kbd> arm-flap<br/>
+    &bull; <b>Desktop Walk / Look:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> &bull; <kbd>Left-Drag</kbd> &bull; <kbd>Tab</kbd> Watch &bull; <kbd>Space</kbd> Putt
   </div>
 
   <script type="module">
 import * as THREE from 'three';
 
-const BLUEPRINT = {"project_name": "Quest 3 Walkabout Studio", "preset": "house-and-island", "default_palette": "walkabout_daybreak", "locomotion": {"teleport_speed": 8.5, "gravity": 9.81, "fly_pitch_threshold_deg": 55.0, "fly_speed": 4.8, "dollhouse_scale": 14.0}, "house": {"origin": [0.0, 0.15, -4.0], "width": 8.0, "depth": 6.5, "wall_height": 3.0, "wall_thickness": 0.22, "has_skylight": true, "patio_extension": 2.5, "rooms": [{"id": "living_room", "label": "Great Room & Lounge", "bounds": [-4.0, -3.25, 1.0, 3.25]}, {"id": "sun_studio", "label": "Garden Studio Wing", "bounds": [1.0, -3.25, 4.0, 3.25]}], "furniture": [{"id": "sofa", "type": "sofa", "pos": [-1.8, 0.15, -4.8], "size": [2.2, 0.85, 0.9]}, {"id": "coffee_table", "type": "table", "pos": [-1.8, 0.15, -3.4], "size": [1.3, 0.45, 0.7]}, {"id": "kitchen_island", "type": "counter", "pos": [2.2, 0.15, -4.5], "size": [1.8, 0.92, 0.85]}, {"id": "architect_desk", "type": "desk", "pos": [2.3, 0.15, -2.2], "size": [1.4, 0.78, 0.7]}]}, "minigolf_course": {"hole_number": 1, "par": 2, "tee_pos": [-4.5, 0.18, 3.2], "cup_pos": [4.2, 0.18, 3.2], "lane_width": 1.6, "obstacles": [{"id": "bridge_ramp", "type": "bumper_stone", "pos": [-0.2, 0.25, 2.9], "radius": 0.28}, {"id": "windmill_post", "type": "bumper_stone", "pos": [1.6, 0.25, 3.55], "radius": 0.24}]}, "environment": {"island_radius": 18.0, "pine_trees": [[-9.5, 0.0, -7.5, 1.2], [-11.0, 0.0, -2.0, 1.0], [-8.5, 0.0, 6.5, 1.35], [8.5, 0.0, -8.0, 1.15], [10.5, 0.0, -3.5, 1.4], [9.2, 0.0, 6.8, 1.1], [0.0, 0.0, -11.5, 1.3]], "low_poly_rocks": [[-6.5, 0.0, -8.5, 0.9], [7.2, 0.0, -9.0, 1.1], [-10.2, 0.0, 3.2, 0.8], [11.0, 0.0, 2.4, 1.25]]}};
-const PALETTES = {"walkabout_daybreak": {"label": "Walkabout Daybreak", "sky_top": "#4895ef", "sky_horizon": "#caf0f8", "sun_color": "#fff3b0", "hemi_sky": "#90e0ef", "hemi_ground": "#52796f", "water": "#0096c7", "island_sand": "#f4d58d", "island_grass": "#52b788", "putting_turf": "#2d6a4f", "putting_border": "#d8f3dc", "house_wall": "#f8edeb", "house_trim": "#ddb892", "house_roof": "#e07a5f", "house_floor": "#b08968", "foliage_dark": "#1b4332", "foliage_light": "#40916c", "stone": "#8d99ae", "accent_gold": "#ffb703"}, "sunset_cove": {"label": "Sunset Cove", "sky_top": "#3d405b", "sky_horizon": "#f2cc8f", "sun_color": "#ff9f1c", "hemi_sky": "#f4a261", "hemi_ground": "#4a4e69", "water": "#2a9d8f", "island_sand": "#e9c46a", "island_grass": "#606c38", "putting_turf": "#283618", "putting_border": "#fefae0", "house_wall": "#fae1dd", "house_trim": "#bc6c25", "house_roof": "#9b2226", "house_floor": "#dda15e", "foliage_dark": "#283618", "foliage_light": "#606c38", "stone": "#6d6875", "accent_gold": "#ffbe0b"}, "nordic_architect": {"label": "Nordic Architect", "sky_top": "#2b2d42", "sky_horizon": "#edf2f4", "sun_color": "#ffffff", "hemi_sky": "#a8dadc", "hemi_ground": "#457b9d", "water": "#1d3557", "island_sand": "#e5e5e5", "island_grass": "#74c69d", "putting_turf": "#40916c", "putting_border": "#ffffff", "house_wall": "#edf2f4", "house_trim": "#2b2d42", "house_roof": "#1d3557", "house_floor": "#ced4da", "foliage_dark": "#1b4332", "foliage_light": "#52b788", "stone": "#8d99ae", "accent_gold": "#e63946"}, "twilight_links": {"label": "Twilight Links", "sky_top": "#10002b", "sky_horizon": "#5a189a", "sun_color": "#e0aaff", "hemi_sky": "#9d4edd", "hemi_ground": "#240046", "water": "#3c096c", "island_sand": "#c77dff", "island_grass": "#38b000", "putting_turf": "#008000", "putting_border": "#70e000", "house_wall": "#e0aaff", "house_trim": "#7b2cbf", "house_roof": "#3c096c", "house_floor": "#5a189a", "foliage_dark": "#004b23", "foliage_light": "#007200", "stone": "#5c677d", "accent_gold": "#ff9e00"}};
+const BLUEPRINT = {"project_name": "Wild VR", "preset": "house-and-island", "default_palette": "walkabout_daybreak", "locomotion": {"teleport_speed": 8.5, "gravity": 9.81, "fly_pitch_threshold_deg": 55.0, "fly_speed": 4.8, "dollhouse_scale": 14.0}, "house": {"origin": [0.0, 0.15, -4.0], "width": 8.0, "depth": 6.5, "wall_height": 3.0, "wall_thickness": 0.22, "has_skylight": true, "patio_extension": 2.5, "rooms": [{"id": "living_room", "label": "Great Room & Lounge", "bounds": [-4.0, -3.25, 1.0, 3.25]}, {"id": "sun_studio", "label": "Garden Sun Wing", "bounds": [1.0, -3.25, 4.0, 3.25]}], "furniture": [{"id": "sofa", "type": "sofa", "pos": [-1.8, 0.15, -4.8], "size": [2.2, 0.85, 0.9]}, {"id": "coffee_table", "type": "table", "pos": [-1.8, 0.15, -3.4], "size": [1.3, 0.45, 0.7]}, {"id": "kitchen_island", "type": "counter", "pos": [2.2, 0.15, -4.5], "size": [1.8, 0.92, 0.85]}, {"id": "architect_desk", "type": "desk", "pos": [2.3, 0.15, -2.2], "size": [1.4, 0.78, 0.7]}]}, "minigolf_course": {"hole_number": 1, "par": 2, "tee_pos": [-4.5, 0.18, 3.2], "cup_pos": [4.2, 0.18, 3.2], "lane_width": 1.6, "obstacles": [{"id": "bridge_ramp", "type": "bumper_stone", "pos": [-0.2, 0.25, 2.9], "radius": 0.28}, {"id": "windmill_post", "type": "bumper_stone", "pos": [1.6, 0.25, 3.55], "radius": 0.24}]}, "environment": {"island_radius": 18.0, "pine_trees": [[-9.5, 0.0, -7.5, 1.2], [-11.0, 0.0, -2.0, 1.0], [-8.5, 0.0, 6.5, 1.35], [8.5, 0.0, -8.0, 1.15], [10.5, 0.0, -3.5, 1.4], [9.2, 0.0, 6.8, 1.1], [0.0, 0.0, -11.5, 1.3]], "low_poly_rocks": [[-6.5, 0.0, -8.5, 0.9], [7.2, 0.0, -9.0, 1.1], [-10.2, 0.0, 3.2, 0.8], [11.0, 0.0, 2.4, 1.25]]}};
+const PALETTES = {"walkabout_daybreak": {"label": "Wild Daybreak", "sky_top": "#4895ef", "sky_horizon": "#caf0f8", "sun_color": "#fff3b0", "hemi_sky": "#90e0ef", "hemi_ground": "#52796f", "water": "#0096c7", "island_sand": "#f4d58d", "island_grass": "#52b788", "putting_turf": "#2d6a4f", "putting_border": "#d8f3dc", "house_wall": "#f8edeb", "house_trim": "#ddb892", "house_roof": "#e07a5f", "house_floor": "#b08968", "foliage_dark": "#1b4332", "foliage_light": "#40916c", "stone": "#8d99ae", "accent_gold": "#ffb703"}, "sunset_cove": {"label": "Sunset Cove", "sky_top": "#3d405b", "sky_horizon": "#f2cc8f", "sun_color": "#ff9f1c", "hemi_sky": "#f4a261", "hemi_ground": "#4a4e69", "water": "#2a9d8f", "island_sand": "#e9c46a", "island_grass": "#606c38", "putting_turf": "#283618", "putting_border": "#fefae0", "house_wall": "#fae1dd", "house_trim": "#bc6c25", "house_roof": "#9b2226", "house_floor": "#dda15e", "foliage_dark": "#283618", "foliage_light": "#606c38", "stone": "#6d6875", "accent_gold": "#ffbe0b"}, "nordic_architect": {"label": "Nordic Horizon", "sky_top": "#2b2d42", "sky_horizon": "#edf2f4", "sun_color": "#ffffff", "hemi_sky": "#a8dadc", "hemi_ground": "#457b9d", "water": "#1d3557", "island_sand": "#e5e5e5", "island_grass": "#74c69d", "putting_turf": "#40916c", "putting_border": "#ffffff", "house_wall": "#edf2f4", "house_trim": "#2b2d42", "house_roof": "#1d3557", "house_floor": "#ced4da", "foliage_dark": "#1b4332", "foliage_light": "#52b788", "stone": "#8d99ae", "accent_gold": "#e63946"}, "twilight_links": {"label": "Twilight Glade", "sky_top": "#10002b", "sky_horizon": "#5a189a", "sun_color": "#e0aaff", "hemi_sky": "#9d4edd", "hemi_ground": "#240046", "water": "#3c096c", "island_sand": "#c77dff", "island_grass": "#38b000", "putting_turf": "#008000", "putting_border": "#70e000", "house_wall": "#e0aaff", "house_trim": "#7b2cbf", "house_roof": "#3c096c", "house_floor": "#5a189a", "foliage_dark": "#004b23", "foliage_light": "#007200", "stone": "#5c677d", "accent_gold": "#ff9e00"}};
 
 // --- State ---
 let currentPaletteKey = BLUEPRINT.default_palette || 'walkabout_daybreak';
@@ -270,6 +270,43 @@ let fingerIndexMesh = null;
 let fingerMiddleMesh = null;
 let fingerRingMesh = null;
 let fingerPinkyMesh = null;
+
+// --- Quest 3 WebXR Controllers (Left & Right Touch Plus + Hand Tracking) ---
+const xrControllers = [renderer.xr.getController(0), renderer.xr.getController(1)];
+let vrWasAimingTeleport = false;
+let vrSkyFlightLatched = false;
+let snapTurnCooldown = 0.0;
+let prevBtnA = false;
+let prevBtnB = false;
+const tempQuat = new THREE.Quaternion();
+
+xrControllers.forEach((ctrl, idx) => {
+  xrOrigin.add(ctrl);
+  const wand = new THREE.Mesh(
+    new THREE.ConeGeometry(0.018, 0.14, 8),
+    new THREE.MeshBasicMaterial({ color: idx === 0 ? 0x52b788 : 0xffb703 })
+  );
+  wand.rotation.x = -Math.PI / 2;
+  wand.position.z = -0.07;
+  ctrl.add(wand);
+
+  ctrl.addEventListener('connected', (e) => {
+    ctrl.userData.handedness = e.data.handedness || (idx === 0 ? 'left' : 'right');
+    if (ctrl.userData.handedness === 'left') {
+      wristWatchGroup.position.set(0, 0.03, 0.06);
+      wristWatchGroup.rotation.set(0, 0, 0);
+      ctrl.add(wristWatchGroup);
+    } else if (ctrl.userData.handedness === 'right') {
+      rightHandGroup.position.set(0, 0, -0.02);
+      rightHandGroup.rotation.set(0, 0, 0);
+      ctrl.add(rightHandGroup);
+    }
+  });
+  ctrl.addEventListener('squeezestart', () => { ctrl.userData.squeezeHeld = true; });
+  ctrl.addEventListener('squeezeend', () => { ctrl.userData.squeezeHeld = false; });
+  ctrl.addEventListener('selectstart', () => { ctrl.userData.selectHeld = true; puttBall(); });
+  ctrl.addEventListener('selectend', () => { ctrl.userData.selectHeld = false; });
+});
 
 // --- Lights ---
 const hemiLight = new THREE.HemisphereLight(0x90e0ef, 0x52796f, 0.85);
@@ -657,12 +694,17 @@ scene.add(teleportRing);
 
 // Compute Parabolic Teleport Trajectory & Raycast Intersections
 const raycaster = new THREE.Raycaster();
-function updateParabolicTeleport() {
+function updateParabolicTeleport(customOrigin = null, customDir = null) {
   const origin = new THREE.Vector3();
   const dir = new THREE.Vector3();
-  camera.getWorldPosition(origin);
-  camera.getWorldDirection(dir);
-  origin.addScaledVector(dir, 0.35);
+  if (customOrigin && customDir) {
+    origin.copy(customOrigin);
+    dir.copy(customDir).normalize();
+  } else {
+    camera.getWorldPosition(origin);
+    camera.getWorldDirection(dir);
+    origin.addScaledVector(dir, 0.35);
+  }
 
   const speed = BLUEPRINT.locomotion.teleport_speed;
   const g = BLUEPRINT.locomotion.gravity;
@@ -913,7 +955,7 @@ document.getElementById('btn-patio').addEventListener('click', (e) => {
 document.getElementById('btn-furniture').addEventListener('click', (e) => {
   showFurniture = !showFurniture;
   e.target.classList.toggle('active', showFurniture);
-  e.target.textContent = showFurniture ? 'Furniture: Studio' : 'Furniture: Hidden';
+  e.target.textContent = showFurniture ? 'Furniture: Shown' : 'Furniture: Hidden';
   rebuildHouse();
 });
 
@@ -947,7 +989,7 @@ document.getElementById('btn-enter-vr').addEventListener('click', async () => {
           optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
         });
         renderer.xr.setSession(session);
-        document.getElementById('mode-badge').textContent = 'Mode: Quest 3 Native WebXR';
+        document.getElementById('mode-badge').textContent = 'Mode: Wild VR (Quest 3 WebXR)';
         return;
       }
     } catch (err) {
@@ -956,8 +998,8 @@ document.getElementById('btn-enter-vr').addEventListener('click', async () => {
   }
   forceFlyMode = !forceFlyMode;
   document.getElementById('mode-badge').textContent = forceFlyMode
-    ? 'Mode: Desktop VR Flight Simulator'
-    : 'Mode: Desktop Walkabout';
+    ? 'Mode: Desktop Wild VR Flight'
+    : 'Mode: Desktop Wild VR';
 });
 
 window.addEventListener('resize', () => {
@@ -965,6 +1007,96 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// --- Quest 3 Touch Plus Controller Locomotion (Teleport, Sky Flight, Walk & Snap Turn) ---
+const paletteKeys = Object.keys(PALETTES);
+function pollXRControllers(dt, camFwd) {
+  const session = renderer.xr.getSession();
+  if (!session) return false;
+  snapTurnCooldown = Math.max(0, snapTurnCooldown - dt);
+
+  let aimingNow = false;
+  let flyingNow = false;
+  let activeOrigin = new THREE.Vector3();
+  let activeDir = new THREE.Vector3();
+  let anyBtnA = false;
+  let anyBtnB = false;
+
+  session.inputSources.forEach((src, idx) => {
+    const gp = src.gamepad;
+    const ctrl = xrControllers[idx] || xrControllers[0];
+    if (!gp || !ctrl) return;
+
+    const stickX = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
+    const stickY = gp.axes.length >= 4 ? gp.axes[3] : (gp.axes[1] || 0);
+    const triggerHeld = Boolean(gp.buttons[0] && gp.buttons[0].pressed);
+    const gripHeld = Boolean((gp.buttons[1] && gp.buttons[1].pressed) || ctrl.userData.squeezeHeld);
+    if (gp.buttons[4] && gp.buttons[4].pressed) anyBtnA = true;
+    if (gp.buttons[5] && gp.buttons[5].pressed) anyBtnB = true;
+
+    // Snap-turn on Left/Right thumbstick flick
+    if (Math.abs(stickX) > 0.65 && snapTurnCooldown <= 0) {
+      xrOrigin.rotation.y -= Math.sign(stickX) * (Math.PI / 6);
+      snapTurnCooldown = 0.28;
+    }
+
+    const cOrigin = new THREE.Vector3();
+    const cDir = new THREE.Vector3(0, 0, -1);
+    ctrl.getWorldPosition(cOrigin);
+    cDir.applyQuaternion(ctrl.getWorldQuaternion(tempQuat)).normalize();
+    const ctrlPitchDeg = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(cDir.y, -1, 1)));
+
+    // Push thumbstick forward (stickY < -0.45) without Trigger, OR hold Side Grip -> Teleport / Sky Flight
+    const wantsTeleportOrFly = (!triggerHeld && stickY < -0.45) || gripHeld;
+    if (wantsTeleportOrFly) {
+      if (ctrlPitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg || vrSkyFlightLatched) {
+        vrSkyFlightLatched = true;
+        flyingNow = true;
+        const steerDir = triggerHeld ? camFwd : cDir;
+        const throttle = Math.max(0.55, Math.abs(stickY));
+        xrOrigin.position.addScaledVector(steerDir, BLUEPRINT.locomotion.fly_speed * throttle * dt);
+        xrOrigin.position.y = Math.max(0.0, xrOrigin.position.y);
+      } else {
+        aimingNow = true;
+        activeOrigin.copy(cOrigin);
+        activeDir.copy(cDir);
+      }
+    } else if (triggerHeld && Math.abs(stickY) > 0.2) {
+      // Trigger + Thumbstick -> Smooth Ground Walk
+      const walkDir = new THREE.Vector3(cDir.x, 0, cDir.z).normalize();
+      xrOrigin.position.addScaledVector(walkDir, -stickY * 2.8 * dt);
+    }
+  });
+
+  if (anyBtnA && !prevBtnA) document.getElementById('btn-dollhouse').click();
+  if (anyBtnB && !prevBtnB) {
+    const nextIdx = (paletteKeys.indexOf(currentPaletteKey) + 1) % paletteKeys.length;
+    currentPaletteKey = paletteKeys[nextIdx];
+    document.getElementById('select-palette').value = currentPaletteKey;
+    initMaterials(PALETTES[currentPaletteKey]);
+  }
+  prevBtnA = anyBtnA;
+  prevBtnB = anyBtnB;
+
+  if (flyingNow) {
+    arcLine.visible = false;
+    teleportRing.visible = false;
+  } else if (aimingNow) {
+    updateParabolicTeleport(activeOrigin, activeDir);
+  } else if (vrWasAimingTeleport && !vrSkyFlightLatched) {
+    executeTeleport();
+  }
+
+  if (!aimingNow && !flyingNow) {
+    vrSkyFlightLatched = false;
+    if (!isAimingTeleport) {
+      arcLine.visible = false;
+      teleportRing.visible = false;
+    }
+  }
+  vrWasAimingTeleport = aimingNow;
+  return flyingNow;
+}
 
 // --- Main Render & Locomotion Loop ---
 const clock = new THREE.Clock();
@@ -986,8 +1118,9 @@ renderer.setAnimationLoop(() => {
   camera.getWorldDirection(camFwd);
   const pitchDeg = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(camFwd.y, -1, 1)));
 
-  // 1. Evaluate 2-Finger (Index + Middle) Sky-Ignited Flight vs Parabolic Teleport:
-  // Pointing index+middle into the sky (>= 55 deg) latches flight; once latched, aim anywhere to fly!
+  const isVrControllerFlying = renderer.xr.isPresenting ? pollXRControllers(dt, camFwd) : false;
+
+  // 1. Evaluate Desktop 2-Finger Sky-Ignited Flight vs Parabolic Teleport:
   if (isAimingTeleport && pitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg) {
     twoFingerFlightLatched = true;
   }
@@ -1011,14 +1144,16 @@ renderer.setAnimationLoop(() => {
   // 3. Animate Articulated 3D Right Hand Fingers & Arm Flap:
   const isOneFingerSelect = Boolean(keys['Digit1']);
   if (fingerIndexMesh && fingerMiddleMesh && fingerRingMesh && fingerPinkyMesh) {
-    // Curl angle: 0 = extended straight, -1.35 = curled into palm
-    fingerIndexMesh.rotation.x = (isOneFingerSelect || isAimingTeleport) ? 0.0 : -0.45;
-    fingerMiddleMesh.rotation.x = isAimingTeleport ? 0.0 : (isOneFingerSelect ? -1.35 : -0.5);
-    fingerRingMesh.rotation.x = (isOneFingerSelect || isAimingTeleport) ? -1.35 : -0.55;
-    fingerPinkyMesh.rotation.x = (isOneFingerSelect || isAimingTeleport) ? -1.35 : -0.6;
-    const flapOffset = isArmFlapFlying ? Math.sin(clock.elapsedTime * 14.0) * 0.045 * flapEnergy : 0.0;
-    rightHandGroup.position.y = -0.20 + flapOffset;
-    wristWatchGroup.position.y = -0.22 + flapOffset;
+    const activeTp = isAimingTeleport || vrWasAimingTeleport;
+    fingerIndexMesh.rotation.x = (isOneFingerSelect || activeTp) ? 0.0 : -0.45;
+    fingerMiddleMesh.rotation.x = activeTp ? 0.0 : (isOneFingerSelect ? -1.35 : -0.5);
+    fingerRingMesh.rotation.x = (isOneFingerSelect || activeTp) ? -1.35 : -0.55;
+    fingerPinkyMesh.rotation.x = (isOneFingerSelect || activeTp) ? -1.35 : -0.6;
+    if (!renderer.xr.isPresenting) {
+      const flapOffset = isArmFlapFlying ? Math.sin(clock.elapsedTime * 14.0) * 0.045 * flapEnergy : 0.0;
+      rightHandGroup.position.y = -0.20 + flapOffset;
+      wristWatchGroup.position.y = -0.22 + flapOffset;
+    }
   }
 
   // 4. 1-Finger Point Selection Raycast:
@@ -1032,7 +1167,7 @@ renderer.setAnimationLoop(() => {
   }
 
   // 5. Standard WASD & Point-Up Flight:
-  const isPointUpFlying = forceFlyMode || twoFingerFlightLatched || isArmFlapFlying ||
+  const isPointUpFlying = forceFlyMode || twoFingerFlightLatched || isArmFlapFlying || isVrControllerFlying ||
     (pitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg && keys['KeyW']);
 
   const moveSpeed = (isPointUpFlying ? BLUEPRINT.locomotion.fly_speed : 3.8) * dt;
@@ -1062,7 +1197,7 @@ renderer.setAnimationLoop(() => {
     if (twoFingerFlightLatched) modeBadge.textContent = 'Mode: 2-Finger Sky Flight!';
     else if (isArmFlapFlying) modeBadge.textContent = `Mode: Arm-Flap Flight (${Math.round(flapEnergy * 100)}%)`;
     else if (isOneFingerSelect) modeBadge.textContent = `Mode: 1-Finger Select (${selectedLabel})`;
-    else modeBadge.textContent = isPointUpFlying ? 'Mode: Walkabout Flying!' : 'Mode: Desktop Walkabout';
+    else modeBadge.textContent = isPointUpFlying ? 'Mode: Wild VR Flying!' : 'Mode: Desktop Wild VR';
   }
   const telemetry = document.getElementById('telemetry-readout');
   telemetry.innerHTML = `Pos: (${xrOrigin.position.x.toFixed(1)}, ${(xrOrigin.position.y + eyeHeight).toFixed(1)}, ${xrOrigin.position.z.toFixed(1)}) | Pitch: ${pitchDeg.toFixed(0)}&deg; | Flap: ${Math.round(flapEnergy * 100)}%`;
