@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wild VR — Desktop &amp; Quest 3 WebXR</title>
+  <title>Wild VR — Prehistoric Wilderness &amp; Style Explorer</title>
   <style>
     :root {
-      --bg-glass: rgba(18, 26, 36, 0.84);
+      --bg-glass: rgba(14, 22, 30, 0.86);
       --accent: #52b788;
       --gold: #ffb703;
       --text: #f8f9fa;
@@ -14,7 +14,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
       overflow: hidden;
-      background: #101820;
+      background: #0d151c;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: var(--text);
     }
@@ -39,7 +39,7 @@
       pointer-events: auto;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
-    h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 4px; color: #fff; }
+    h1 { font-size: 1.08rem; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 4px; color: #fff; }
     .subtitle { font-size: 0.8rem; color: #b7e4c7; margin-bottom: 8px; }
     .status-row { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.78rem; }
     .badge {
@@ -55,15 +55,15 @@
       border-color: var(--gold);
       color: #ffe8a3;
     }
-    #wrist-panel {
+    #style-panel {
       position: fixed;
       bottom: 18px;
       left: 18px;
-      width: 340px;
+      width: 360px;
       z-index: 25;
       transition: transform 0.22s ease, opacity 0.22s ease;
     }
-    #wrist-panel.minimized {
+    #style-panel.minimized {
       transform: translateY(calc(100% - 46px));
       opacity: 0.9;
     }
@@ -90,7 +90,7 @@
       font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      transition: background 0.15s, border-color 0.15s;
     }
     button:hover, select:hover {
       background: rgba(82, 183, 136, 0.28);
@@ -110,9 +110,9 @@
       position: fixed;
       bottom: 18px;
       right: 18px;
-      max-width: 330px;
+      max-width: 355px;
       font-size: 0.76rem;
-      line-height: 1.45;
+      line-height: 1.48;
       z-index: 20;
     }
     .controls-help kbd {
@@ -121,19 +121,6 @@
       padding: 1px 5px;
       font-family: monospace;
       color: var(--gold);
-    }
-    #crosshair {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 10px;
-      height: 10px;
-      margin-left: -5px;
-      margin-top: -5px;
-      border: 2px solid rgba(255, 255, 255, 0.75);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 15;
     }
   </style>
   <script type="importmap">
@@ -146,16 +133,15 @@
 </head>
 <body>
   <div id="canvas-container"></div>
-  <div id="crosshair"></div>
 
   <div id="hud-top">
     <div class="glass-card">
       <h1>Wild VR</h1>
-      <div class="subtitle">Dual-Mode: Desktop Browser + Meta Quest 3 WebXR</div>
+      <div class="subtitle">Prehistoric Wilderness Valley &amp; Visual Style Selector</div>
       <div class="status-row">
         <span class="badge" id="mode-badge">Mode: Desktop Wild VR</span>
-        <span class="badge gold" id="scale-badge">Scale: 1:1 Human</span>
-        <span class="badge" id="golf-badge">Hole 1 (Par 2): 0 Strokes</span>
+        <span class="badge gold" id="style-badge">Style 1/10: Crisp Faceted Daybreak</span>
+        <span class="badge" id="scale-badge">Scale: 1:1 Human</span>
       </div>
     </div>
     <div class="glass-card" style="display:flex; gap:8px; align-items:center;">
@@ -163,71 +149,161 @@
     </div>
   </div>
 
-  <!-- Interactive Wristwatch UI (Synced with 3D Wristwatch in Scene) -->
-  <div id="wrist-panel" class="glass-card">
+  <div id="style-panel" class="glass-card">
     <div class="watch-header" id="watch-header-toggle">
-      <span class="watch-title">&#8986; Wild VR Wristwatch</span>
-      <span style="font-size:0.74rem; color:#adb5bd;">[Tab] Toggle</span>
+      <span class="watch-title">&#9728; Wild VR Style &amp; World Controls</span>
+      <span style="font-size:0.74rem; color:#adb5bd;">[B] Next Style</span>
     </div>
     <div style="margin-bottom:8px;">
-      <label style="font-size:0.74rem; color:#ced4da; display:block; margin-bottom:4px;">PixPal Color Palette</label>
-      <select id="select-palette" style="width:100%;">
-        <option value="walkabout_daybreak">Wild Daybreak (Sunny)</option>
-        <option value="sunset_cove">Sunset Cove (Golden Hour)</option>
-        <option value="nordic_architect">Nordic Horizon (Crisp Modern)</option>
-        <option value="twilight_links">Twilight Glade (Bioluminescent)</option>
+      <label style="font-size:0.74rem; color:#ced4da; display:block; margin-bottom:4px;">Visual Rendering Style (Press B on Controller)</label>
+      <select id="select-style" style="width:100%;">
+        <option value="0">1/10: Crisp Faceted Daybreak (Low-Poly Matte)</option>
+        <option value="1">2/10: Smooth Organic Realism (PBR Luster &amp; Wet Stone)</option>
+        <option value="2">3/10: Golden Hour Firewatch (Warm Stylized Sunset)</option>
+        <option value="3">4/10: Illustrated Ink &amp; Storyboard (Contour Outlines)</option>
+        <option value="4">5/10: Nordic Glacial Tundra (Snowline &amp; Frozen Lake)</option>
+        <option value="5">6/10: Misty Pacific Rainforest (Deep Emerald &amp; Fog)</option>
+        <option value="6">7/10: Red-Rock Canyon Oasis (Sandstone &amp; Turquoise)</option>
+        <option value="7">8/10: Starlight &amp; Aurora Borealis (Arctic Night)</option>
+        <option value="8">9/10: Bioluminescent Twilight (Luminous Flora &amp; Falls)</option>
+        <option value="9">10/10: Secret IR Thermal Vision (Heat-Signature Glow)</option>
       </select>
     </div>
     <div class="control-grid">
-      <button id="btn-fly-mode">Fly Mode: Auto-Pitch</button>
-      <button id="btn-dollhouse">Dollhouse (1:14)</button>
-      <button id="btn-skylight" class="active">Skylight Roof: ON</button>
-      <button id="btn-patio" class="active">Patio Deck: Wide</button>
-      <button id="btn-furniture" class="active">Furniture: Shown</button>
-      <button id="btn-putt">Putt Golf Ball [Space]</button>
-      <button id="btn-teleport-house">Teleport Inside House</button>
-      <button id="btn-teleport-tee">Teleport to Tee #1</button>
+      <button id="btn-next-style" class="active">Next Style [B]</button>
+      <button id="btn-prev-style">Prev Style [A]</button>
+      <button id="btn-tp-meadow">Valley Meadow</button>
+      <button id="btn-tp-overlook">Smilodon Cliff Overlook</button>
+      <button id="btn-tp-mammoth">By the Mammoth</button>
+      <button id="btn-dollhouse">Giant Overview (1:14)</button>
     </div>
     <div id="telemetry-readout" style="font-size:0.72rem; color:#adb5bd; border-top:1px solid rgba(255,255,255,0.12); padding-top:6px;">
-      Pos: (0.0, 1.7, 6.0) | Pitch: 0&deg; | Quest 3 Budget: ~2,960 tris (PASS)
+      Pos: (0.0, 1.7, 9.0) | Single-Controller Ready | Hold Up 1.8s to Launch Flight
     </div>
   </div>
 
   <div class="glass-card controls-help">
-    <strong style="color:#b7e4c7; display:block; margin-bottom:4px;">Wild VR Controls (Quest 3 &amp; Desktop):</strong>
-    &bull; <b>Quest Teleport:</b> Push <kbd>Thumbstick Up</kbd> (or hold <kbd>Grip</kbd>) to aim arc, release to teleport!<br/>
-    &bull; <b>Quest Sky Flight:</b> Point controller &gt;55&deg; into sky + push <kbd>Thumbstick Up</kbd> to fly!<br/>
-    &bull; <b>Quest Walk / Turn:</b> Hold <kbd>Trigger</kbd> + <kbd>Stick</kbd> to walk &bull; <kbd>Stick Left/Right</kbd> snap-turn<br/>
-    &bull; <b>Desktop Teleport / Fly:</b> Hold <kbd>Right-Click</kbd> or <kbd>T</kbd> &bull; Tap <kbd>V</kbd> arm-flap<br/>
-    &bull; <b>Desktop Walk / Look:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> &bull; <kbd>Left-Drag</kbd> &bull; <kbd>Tab</kbd> Watch &bull; <kbd>Space</kbd> Putt
+    <strong style="color:#b7e4c7; display:block; margin-bottom:4px;">Single-Controller Quest 3 &amp; Desktop Controls:</strong>
+    &bull; <b>Teleport:</b> Push <kbd>Thumbstick Up</kbd> to aim arc, release to land<br/>
+    &bull; <b>Delayed Sky Flight:</b> Point controller &gt;55&deg; up + hold <kbd>Stick Up</kbd> for <b>1.8s</b> until haptic pulse launches flight!<br/>
+    &bull; <b>Thumbs-Up Gesture:</b> Squeeze &amp; hold <kbd>Side Grip</kbd> button (or <kbd>G</kbd>)<br/>
+    &bull; <b>Cycle 10 Styles:</b> Press <kbd>B</kbd> (next) or <kbd>A</kbd> (prev) on controller/keyboard<br/>
+    &bull; <b>Walk / Snap-Turn:</b> Hold <kbd>Trigger</kbd> + <kbd>Stick</kbd> walk &bull; <kbd>Stick Left/Right</kbd> turn
   </div>
 
   <script type="module">
 import * as THREE from 'three';
 
-const BLUEPRINT = {"project_name": "Wild VR", "preset": "house-and-island", "default_palette": "walkabout_daybreak", "locomotion": {"teleport_speed": 8.5, "gravity": 9.81, "fly_pitch_threshold_deg": 55.0, "fly_speed": 4.8, "dollhouse_scale": 14.0}, "house": {"origin": [0.0, 0.15, -4.0], "width": 8.0, "depth": 6.5, "wall_height": 3.0, "wall_thickness": 0.22, "has_skylight": true, "patio_extension": 2.5, "rooms": [{"id": "living_room", "label": "Great Room & Lounge", "bounds": [-4.0, -3.25, 1.0, 3.25]}, {"id": "sun_studio", "label": "Garden Sun Wing", "bounds": [1.0, -3.25, 4.0, 3.25]}], "furniture": [{"id": "sofa", "type": "sofa", "pos": [-1.8, 0.15, -4.8], "size": [2.2, 0.85, 0.9]}, {"id": "coffee_table", "type": "table", "pos": [-1.8, 0.15, -3.4], "size": [1.3, 0.45, 0.7]}, {"id": "kitchen_island", "type": "counter", "pos": [2.2, 0.15, -4.5], "size": [1.8, 0.92, 0.85]}, {"id": "architect_desk", "type": "desk", "pos": [2.3, 0.15, -2.2], "size": [1.4, 0.78, 0.7]}]}, "minigolf_course": {"hole_number": 1, "par": 2, "tee_pos": [-4.5, 0.18, 3.2], "cup_pos": [4.2, 0.18, 3.2], "lane_width": 1.6, "obstacles": [{"id": "bridge_ramp", "type": "bumper_stone", "pos": [-0.2, 0.25, 2.9], "radius": 0.28}, {"id": "windmill_post", "type": "bumper_stone", "pos": [1.6, 0.25, 3.55], "radius": 0.24}]}, "environment": {"island_radius": 18.0, "pine_trees": [[-9.5, 0.0, -7.5, 1.2], [-11.0, 0.0, -2.0, 1.0], [-8.5, 0.0, 6.5, 1.35], [8.5, 0.0, -8.0, 1.15], [10.5, 0.0, -3.5, 1.4], [9.2, 0.0, 6.8, 1.1], [0.0, 0.0, -11.5, 1.3]], "low_poly_rocks": [[-6.5, 0.0, -8.5, 0.9], [7.2, 0.0, -9.0, 1.1], [-10.2, 0.0, 3.2, 0.8], [11.0, 0.0, 2.4, 1.25]]}};
-const PALETTES = {"walkabout_daybreak": {"label": "Wild Daybreak", "sky_top": "#4895ef", "sky_horizon": "#caf0f8", "sun_color": "#fff3b0", "hemi_sky": "#90e0ef", "hemi_ground": "#52796f", "water": "#0096c7", "island_sand": "#f4d58d", "island_grass": "#52b788", "putting_turf": "#2d6a4f", "putting_border": "#d8f3dc", "house_wall": "#f8edeb", "house_trim": "#ddb892", "house_roof": "#e07a5f", "house_floor": "#b08968", "foliage_dark": "#1b4332", "foliage_light": "#40916c", "stone": "#8d99ae", "accent_gold": "#ffb703"}, "sunset_cove": {"label": "Sunset Cove", "sky_top": "#3d405b", "sky_horizon": "#f2cc8f", "sun_color": "#ff9f1c", "hemi_sky": "#f4a261", "hemi_ground": "#4a4e69", "water": "#2a9d8f", "island_sand": "#e9c46a", "island_grass": "#606c38", "putting_turf": "#283618", "putting_border": "#fefae0", "house_wall": "#fae1dd", "house_trim": "#bc6c25", "house_roof": "#9b2226", "house_floor": "#dda15e", "foliage_dark": "#283618", "foliage_light": "#606c38", "stone": "#6d6875", "accent_gold": "#ffbe0b"}, "nordic_architect": {"label": "Nordic Horizon", "sky_top": "#2b2d42", "sky_horizon": "#edf2f4", "sun_color": "#ffffff", "hemi_sky": "#a8dadc", "hemi_ground": "#457b9d", "water": "#1d3557", "island_sand": "#e5e5e5", "island_grass": "#74c69d", "putting_turf": "#40916c", "putting_border": "#ffffff", "house_wall": "#edf2f4", "house_trim": "#2b2d42", "house_roof": "#1d3557", "house_floor": "#ced4da", "foliage_dark": "#1b4332", "foliage_light": "#52b788", "stone": "#8d99ae", "accent_gold": "#e63946"}, "twilight_links": {"label": "Twilight Glade", "sky_top": "#10002b", "sky_horizon": "#5a189a", "sun_color": "#e0aaff", "hemi_sky": "#9d4edd", "hemi_ground": "#240046", "water": "#3c096c", "island_sand": "#c77dff", "island_grass": "#38b000", "putting_turf": "#008000", "putting_border": "#70e000", "house_wall": "#e0aaff", "house_trim": "#7b2cbf", "house_roof": "#3c096c", "house_floor": "#5a189a", "foliage_dark": "#004b23", "foliage_light": "#007200", "stone": "#5c677d", "accent_gold": "#ff9e00"}};
+const STYLES = [
+  {
+    name: "1/10: Crisp Faceted Daybreak",
+    flat: true, outlines: false, fogDensity: 0.008,
+    sky: "#bfe8ff", sunColor: "#fff4c2", sunIntensity: 1.75, hemiSky: "#8ecae6", hemiGround: "#3a5a40",
+    terrain: "#52b788", cliff: "#8d99ae", trail: "#d4a373", water: "#0096c7", waterRough: 0.25,
+    trunk: "#6c584c", foliage1: "#2d6a4f", foliage2: "#40916c", rock: "#6c757d",
+    mammothFur: "#7f4f24", tusk: "#f8f9fa", elkCoat: "#9c6644", smilodonCoat: "#e9c46a",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.92, metalness: 0.02
+  },
+  {
+    name: "2/10: Smooth Organic Realism",
+    flat: false, outlines: false, fogDensity: 0.011,
+    sky: "#cfe2f3", sunColor: "#ffe599", sunIntensity: 2.1, hemiSky: "#a2d2ff", hemiGround: "#283618",
+    terrain: "#386641", cliff: "#5c677d", trail: "#a98467", water: "#0077b6", waterRough: 0.06,
+    trunk: "#4a3b32", foliage1: "#1b4332", foliage2: "#2d6a4f", rock: "#495057",
+    mammothFur: "#582f0e", tusk: "#fdfcdc", elkCoat: "#7f4f24", smilodonCoat: "#d4a373",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.55, metalness: 0.08
+  },
+  {
+    name: "3/10: Golden Hour Firewatch",
+    flat: true, outlines: false, fogDensity: 0.015,
+    sky: "#f4a261", sunColor: "#ff6b35", sunIntensity: 2.2, hemiSky: "#e76f51", hemiGround: "#2b2d42",
+    terrain: "#bc6c25", cliff: "#6d597a", trail: "#e07a5f", water: "#2a9d8f", waterRough: 0.18,
+    trunk: "#3d2c2e", foliage1: "#264653", foliage2: "#e76f51", rock: "#5a4e69",
+    mammothFur: "#4a2511", tusk: "#ffe8d6", elkCoat: "#8d5524", smilodonCoat: "#f4a261",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.85, metalness: 0.04
+  },
+  {
+    name: "4/10: Illustrated Ink & Storyboard",
+    flat: true, outlines: true, fogDensity: 0.006,
+    sky: "#f4f1de", sunColor: "#ffffff", sunIntensity: 1.45, hemiSky: "#f4f1de", hemiGround: "#81b29a",
+    terrain: "#81b29a", cliff: "#a8a29e", trail: "#f2cc8f", water: "#4ea8de", waterRough: 0.4,
+    trunk: "#774936", foliage1: "#3d5a80", foliage2: "#52b788", rock: "#9ca3af",
+    mammothFur: "#8d5b4c", tusk: "#ffffff", elkCoat: "#b08968", smilodonCoat: "#f2cc8f",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.98, metalness: 0.0
+  },
+  {
+    name: "5/10: Nordic Glacial Tundra",
+    flat: true, outlines: false, fogDensity: 0.012,
+    sky: "#dbeafe", sunColor: "#e0f2fe", sunIntensity: 1.65, hemiSky: "#bae6fd", hemiGround: "#64748b",
+    terrain: "#f1f5f9", cliff: "#64748b", trail: "#94a3b8", water: "#7dd3fc", waterRough: 0.05,
+    trunk: "#475569", foliage1: "#1e3a8a", foliage2: "#cbd5e1", rock: "#475569",
+    mammothFur: "#6b4423", tusk: "#ffffff", elkCoat: "#78716c", smilodonCoat: "#e2e8f0",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.35, metalness: 0.18
+  },
+  {
+    name: "6/10: Misty Pacific Rainforest",
+    flat: false, outlines: false, fogDensity: 0.024,
+    sky: "#94a3b8", sunColor: "#cbd5e1", sunIntensity: 1.15, hemiSky: "#94a3b8", hemiGround: "#132a13",
+    terrain: "#2d6a4f", cliff: "#334155", trail: "#7f5539", water: "#0f766e", waterRough: 0.12,
+    trunk: "#3b2f2f", foliage1: "#081c15", foliage2: "#1b4332", rock: "#3f4e4f",
+    mammothFur: "#4e3629", tusk: "#e2e8f0", elkCoat: "#6c584c", smilodonCoat: "#ca8a04",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.45, metalness: 0.05
+  },
+  {
+    name: "7/10: Red-Rock Canyon Oasis",
+    flat: true, outlines: false, fogDensity: 0.007,
+    sky: "#fde68a", sunColor: "#fef08a", sunIntensity: 2.0, hemiSky: "#fcd34d", hemiGround: "#9a3412",
+    terrain: "#ea580c", cliff: "#9a3412", trail: "#fdba74", water: "#06b6d4", waterRough: 0.15,
+    trunk: "#78350f", foliage1: "#3f6212", foliage2: "#65a30d", rock: "#b45309",
+    mammothFur: "#7c2d12", tusk: "#fef3c7", elkCoat: "#a16207", smilodonCoat: "#fbbf24",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.88, metalness: 0.02
+  },
+  {
+    name: "8/10: Starlight & Aurora Borealis",
+    flat: true, outlines: false, fogDensity: 0.010,
+    sky: "#090d16", sunColor: "#4ade80", sunIntensity: 0.85, hemiSky: "#2dd4bf", hemiGround: "#0f172a",
+    terrain: "#1e293b", cliff: "#0f172a", trail: "#334155", water: "#0d9488", waterRough: 0.08,
+    trunk: "#1e1b18", foliage1: "#064e3b", foliage2: "#115e59", rock: "#1e293b",
+    mammothFur: "#3f2e21", tusk: "#cbd5e1", elkCoat: "#475569", smilodonCoat: "#94a3b8",
+    emissiveFlora: "#10b981", emissiveFauna: "#000000", emissiveStrength: 0.18, roughness: 0.65, metalness: 0.12
+  },
+  {
+    name: "9/10: Bioluminescent Twilight",
+    flat: false, outlines: false, fogDensity: 0.014,
+    sky: "#10002b", sunColor: "#c77dff", sunIntensity: 1.1, hemiSky: "#7b2cbf", hemiGround: "#240046",
+    terrain: "#240046", cliff: "#3c096c", trail: "#5a189a", water: "#00f5d4", waterRough: 0.05,
+    trunk: "#10002b", foliage1: "#00bbf9", foliage2: "#f15bb5", rock: "#3c096c",
+    mammothFur: "#5a189a", tusk: "#00f5d4", elkCoat: "#9b5de5", smilodonCoat: "#fee440",
+    emissiveFlora: "#00f5d4", emissiveFauna: "#9b5de5", emissiveStrength: 0.42, roughness: 0.35, metalness: 0.2
+  },
+  {
+    name: "10/10: Secret IR Thermal Vision",
+    flat: true, outlines: true, fogDensity: 0.016,
+    sky: "#030712", sunColor: "#3b82f6", sunIntensity: 0.5, hemiSky: "#1d4ed8", hemiGround: "#030712",
+    terrain: "#0f172a", cliff: "#1e1b4b", trail: "#1e3a8a", water: "#020617", waterRough: 0.8,
+    trunk: "#172554", foliage1: "#1e1b4b", foliage2: "#1e3a8a", rock: "#0f172a",
+    mammothFur: "#ff4d00", tusk: "#ffff00", elkCoat: "#ff8800", smilodonCoat: "#ff0055",
+    emissiveFlora: "#1d4ed8", emissiveFauna: "#ff5500", emissiveStrength: 0.85, roughness: 0.9, metalness: 0.0
+  }
+];
 
-// --- State ---
-let currentPaletteKey = BLUEPRINT.default_palette || 'walkabout_daybreak';
+let currentStyleIdx = 0;
 let forceFlyMode = false;
-let twoFingerFlightLatched = false;
-let flapEnergy = 0.0;
-let flapPhase = 0.0;
 let isDollhouse = false;
-let hasSkylight = true;
-let widePatio = true;
-let showFurniture = true;
-let strokes = 0;
-let selectedLabel = 'None';
+let desktopThumbsUp = false;
+let desktopFlyHoldSec = 0.0;
+let desktopSkyFlightLatched = false;
+
+const FLY_LAUNCH_DELAY_SEC = 1.8;
+const FLY_PITCH_THRESHOLD_DEG = 55.0;
+const FLY_SPEED = 6.2;
+const TELEPORT_SPEED = 9.5;
+const GRAVITY = 9.81;
 
 // Player rig state
-const playerPos = new THREE.Vector3(0, 0, 7.5);
 let yaw = 0;
-let pitch = -0.08;
+let pitch = -0.06;
 const eyeHeight = 1.68;
-
-// Input state
 const keys = {};
 let isDraggingLook = false;
 let isAimingTeleport = false;
@@ -247,34 +323,131 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.xr.enabled = true;
 container.appendChild(renderer.domElement);
 
-// Rig Hierarchy (XROrigin equivalent for both Desktop and Quest 3 WebXR)
+// Rig Hierarchy (NO objects attached to camera so nothing ever blocks your field of vision!)
 const xrOrigin = new THREE.Group();
-xrOrigin.position.copy(playerPos);
+xrOrigin.position.set(0, 0, 10.5);
 scene.add(xrOrigin);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.08, 250);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.08, 300);
 camera.position.set(0, eyeHeight, 0);
 xrOrigin.add(camera);
 
-// 3D Wristwatch attached to player view / non-dominant left hand
-const wristWatchGroup = new THREE.Group();
-wristWatchGroup.position.set(-0.26, -0.22, -0.45);
-wristWatchGroup.rotation.set(-0.35, 0.35, 0.1);
-camera.add(wristWatchGroup);
+// --- Lights ---
+const hemiLight = new THREE.HemisphereLight(0x8ecae6, 0x3a5a40, 0.9);
+scene.add(hemiLight);
 
-// 3D Articulated Right Hand attached to lower-right view (animates 1-finger, 2-finger, and arm-flap)
-const rightHandGroup = new THREE.Group();
-rightHandGroup.position.set(0.24, -0.20, -0.44);
-camera.add(rightHandGroup);
-let fingerIndexMesh = null;
-let fingerMiddleMesh = null;
-let fingerRingMesh = null;
-let fingerPinkyMesh = null;
+const sunLight = new THREE.DirectionalLight(0xfff4c2, 1.75);
+sunLight.position.set(18, 28, 14);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+const d = 28;
+sunLight.shadow.camera.left = -d;
+sunLight.shadow.camera.right = d;
+sunLight.shadow.camera.top = d;
+sunLight.shadow.camera.bottom = -d;
+scene.add(sunLight);
 
-// --- Quest 3 WebXR Controllers (Left & Right Touch Plus + Hand Tracking) ---
+// --- Material Registry & 10-Style Switcher ---
+const materials = {
+  terrain: new THREE.MeshStandardMaterial({ flatShading: true }),
+  cliff: new THREE.MeshStandardMaterial({ flatShading: true }),
+  trail: new THREE.MeshStandardMaterial({ flatShading: true }),
+  water: new THREE.MeshStandardMaterial({ flatShading: true, transparent: true, opacity: 0.88 }),
+  trunk: new THREE.MeshStandardMaterial({ flatShading: true }),
+  foliage1: new THREE.MeshStandardMaterial({ flatShading: true }),
+  foliage2: new THREE.MeshStandardMaterial({ flatShading: true }),
+  rock: new THREE.MeshStandardMaterial({ flatShading: true }),
+  mammothFur: new THREE.MeshStandardMaterial({ flatShading: true }),
+  tusk: new THREE.MeshStandardMaterial({ flatShading: true }),
+  elkCoat: new THREE.MeshStandardMaterial({ flatShading: true }),
+  smilodonCoat: new THREE.MeshStandardMaterial({ flatShading: true }),
+  handSkin: new THREE.MeshStandardMaterial({ color: 0xe6ccb2, roughness: 0.7, flatShading: true }),
+  wristRing: new THREE.MeshBasicMaterial({ color: 0x52b788 })
+};
+
+const outlineMeshes = [];
+const outlineMat = new THREE.LineBasicMaterial({ color: 0x111827, transparent: true, opacity: 0.75 });
+
+function applyStyle(idx) {
+  currentStyleIdx = (idx + STYLES.length) % STYLES.length;
+  const s = STYLES[currentStyleIdx];
+
+  const keysToSet = ['terrain', 'cliff', 'trail', 'water', 'trunk', 'foliage1', 'foliage2', 'rock', 'mammothFur', 'tusk', 'elkCoat', 'smilodonCoat'];
+  keysToSet.forEach((k) => {
+    const m = materials[k];
+    m.color.set(s[k]);
+    m.flatShading = s.flat;
+    m.roughness = k === 'water' ? s.waterRough : s.roughness;
+    m.metalness = s.metalness;
+    if (k === 'foliage1' || k === 'foliage2') {
+      m.emissive.set(s.emissiveFlora);
+      m.emissiveIntensity = s.emissiveStrength;
+    } else if (k === 'mammothFur' || k === 'elkCoat' || k === 'smilodonCoat') {
+      m.emissive.set(s.emissiveFauna);
+      m.emissiveIntensity = s.emissiveStrength;
+    } else {
+      m.emissive.set('#000000');
+      m.emissiveIntensity = 0;
+    }
+    m.needsUpdate = true;
+  });
+
+  outlineMat.color.set(currentStyleIdx === 9 ? 0x38bdf8 : 0x1e293b);
+  outlineMeshes.forEach((line) => { line.visible = s.outlines; });
+
+  scene.background = new THREE.Color(s.sky);
+  scene.fog = new THREE.FogExp2(s.sky, s.fogDensity);
+  sunLight.color.set(s.sunColor);
+  sunLight.intensity = s.sunIntensity;
+  hemiLight.color.set(s.hemiSky);
+  hemiLight.groundColor.set(s.hemiGround);
+
+  document.getElementById('style-badge').textContent = `Style ${s.name}`;
+  document.getElementById('select-style').value = String(currentStyleIdx);
+}
+
+// --- Articulated 3D Hand with Dedicated Thumb for Side-Grip Thumbs-Up ---
+const handGroup = new THREE.Group();
+const palmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.026, 0.085), materials.handSkin);
+handGroup.add(palmMesh);
+
+// Wrist charge / Thumbs-Up status ring on the back of the hand
+const wristRingMesh = new THREE.Mesh(new THREE.RingGeometry(0.022, 0.032, 20), materials.wristRing);
+wristRingMesh.rotation.x = -Math.PI / 2;
+wristRingMesh.position.set(0, 0.016, 0.02);
+handGroup.add(wristRingMesh);
+
+// Thumb pivot at the left/inner side of the palm (rotates up for Thumbs-Up!)
+const fingerThumbPivot = new THREE.Group();
+fingerThumbPivot.position.set(-0.042, 0.005, -0.015);
+const thumbBone = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.058, 0.018), materials.handSkin);
+thumbBone.position.set(0, 0.028, 0);
+fingerThumbPivot.add(thumbBone);
+handGroup.add(fingerThumbPivot);
+
+function mkFinger(xOffset, len) {
+  const pivot = new THREE.Group();
+  pivot.position.set(xOffset, 0, -0.042);
+  const bone = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, len), materials.handSkin);
+  bone.position.set(0, 0, -len * 0.5);
+  pivot.add(bone);
+  handGroup.add(pivot);
+  return pivot;
+}
+const fingerIndex = mkFinger(-0.024, 0.068);
+const fingerMiddle = mkFinger(-0.008, 0.072);
+const fingerRing = mkFinger(0.008, 0.064);
+const fingerPinky = mkFinger(0.024, 0.052);
+
+// --- Single-Controller Ready Quest 3 Rig (No floating FOV shapes!) ---
 const xrControllers = [renderer.xr.getController(0), renderer.xr.getController(1)];
+let activeController = xrControllers[0];
 let vrWasAimingTeleport = false;
 let vrSkyFlightLatched = false;
+let vrFlyHoldSec = 0.0;
+let vrThumbsUpActive = false;
+let prevThumbsUpState = false;
 let snapTurnCooldown = 0.0;
 let prevBtnA = false;
 let prevBtnB = false;
@@ -282,417 +455,226 @@ const tempQuat = new THREE.Quaternion();
 
 xrControllers.forEach((ctrl, idx) => {
   xrOrigin.add(ctrl);
-  const wand = new THREE.Mesh(
-    new THREE.ConeGeometry(0.018, 0.14, 8),
-    new THREE.MeshBasicMaterial({ color: idx === 0 ? 0x52b788 : 0xffb703 })
-  );
-  wand.rotation.x = -Math.PI / 2;
-  wand.position.z = -0.07;
-  ctrl.add(wand);
-
   ctrl.addEventListener('connected', (e) => {
-    ctrl.userData.handedness = e.data.handedness || (idx === 0 ? 'left' : 'right');
-    if (ctrl.userData.handedness === 'left') {
-      wristWatchGroup.position.set(0, 0.03, 0.06);
-      wristWatchGroup.rotation.set(0, 0, 0);
-      ctrl.add(wristWatchGroup);
-    } else if (ctrl.userData.handedness === 'right') {
-      rightHandGroup.position.set(0, 0, -0.02);
-      rightHandGroup.rotation.set(0, 0, 0);
-      ctrl.add(rightHandGroup);
-    }
+    ctrl.userData.handedness = (e.data && e.data.handedness) || (idx === 0 ? 'right' : 'left');
+    ctrl.userData.inputSource = e.data;
+    activeController = ctrl;
+    // Mirror thumb side automatically if using a Left controller!
+    fingerThumbPivot.position.x = ctrl.userData.handedness === 'left' ? 0.042 : -0.042;
+    ctrl.add(handGroup);
   });
   ctrl.addEventListener('squeezestart', () => { ctrl.userData.squeezeHeld = true; });
   ctrl.addEventListener('squeezeend', () => { ctrl.userData.squeezeHeld = false; });
-  ctrl.addEventListener('selectstart', () => { ctrl.userData.selectHeld = true; puttBall(); });
-  ctrl.addEventListener('selectend', () => { ctrl.userData.selectHeld = false; });
 });
 
-// --- Lights ---
-const hemiLight = new THREE.HemisphereLight(0x90e0ef, 0x52796f, 0.85);
-scene.add(hemiLight);
-
-const sunLight = new THREE.DirectionalLight(0xfff3b0, 1.65);
-sunLight.position.set(14, 24, 12);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
-sunLight.shadow.camera.near = 1;
-sunLight.shadow.camera.far = 65;
-const d = 22;
-sunLight.shadow.camera.left = -d;
-sunLight.shadow.camera.right = d;
-sunLight.shadow.camera.top = d;
-sunLight.shadow.camera.bottom = -d;
-scene.add(sunLight);
-
-// --- Material Registry (PixPal Flat-Shaded Diorama Materials) ---
-const materials = {};
-function initMaterials(palette) {
-  const keysToBuild = [
-    'water', 'island_sand', 'island_grass', 'putting_turf', 'putting_border',
-    'house_wall', 'house_trim', 'house_roof', 'house_floor',
-    'foliage_dark', 'foliage_light', 'stone', 'accent_gold'
-  ];
-  keysToBuild.forEach((k) => {
-    if (!materials[k]) {
-      materials[k] = new THREE.MeshStandardMaterial({
-        color: palette[k],
-        roughness: k === 'water' ? 0.25 : 0.95,
-        metalness: k === 'accent_gold' ? 0.35 : 0.02,
-        flatShading: true
-      });
-    } else {
-      materials[k].color.set(palette[k]);
-    }
-  });
-  scene.background = new THREE.Color(palette.sky_horizon);
-  scene.fog = new THREE.FogExp2(palette.sky_horizon, 0.012);
-  sunLight.color.set(palette.sun_color);
-  hemiLight.color.set(palette.hemi_sky);
-  hemiLight.groundColor.set(palette.hemi_ground);
+function pulseHaptics(inputSource, intensity = 0.85, durationMs = 160) {
+  if (!inputSource || !inputSource.gamepad) return;
+  const actuators = inputSource.gamepad.hapticActuators;
+  if (actuators && actuators.length > 0 && typeof actuators[0].pulse === 'function') {
+    actuators[0].pulse(intensity, durationMs).catch(() => {});
+  }
 }
 
-initMaterials(PALETTES[currentPaletteKey]);
-
-// --- Build 3D Wristwatch & Articulated Right Hand Meshes ---
-function buildWristWatch3D() {
-  const strap = new THREE.Mesh(
-    new THREE.BoxGeometry(0.05, 0.02, 0.16),
-    materials.house_trim
-  );
-  wristWatchGroup.add(strap);
-
-  const bezel = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.055, 0.055, 0.025, 12),
-    materials.stone
-  );
-  bezel.rotation.x = Math.PI / 2;
-  wristWatchGroup.add(bezel);
-
-  const face = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.045, 0.045, 0.028, 12),
-    materials.accent_gold
-  );
-  face.rotation.x = Math.PI / 2;
-  wristWatchGroup.add(face);
-
-  // Articulated Right Hand Palm + 4 Finger Bones
-  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.026, 0.085), materials.house_wall);
-  rightHandGroup.add(palm);
-
-  const mkFinger = (xOffset, len) => {
-    const pivot = new THREE.Group();
-    pivot.position.set(xOffset, 0, -0.042);
-    const bone = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, len), materials.house_wall);
-    bone.position.set(0, 0, -len * 0.5);
-    pivot.add(bone);
-    rightHandGroup.add(pivot);
-    return pivot;
-  };
-  fingerIndexMesh = mkFinger(-0.024, 0.068);
-  fingerMiddleMesh = mkFinger(-0.008, 0.072);
-  fingerRingMesh = mkFinger(0.008, 0.064);
-  fingerPinkyMesh = mkFinger(0.024, 0.052);
-}
-buildWristWatch3D();
-
-// --- Build World Groups ---
+// --- Build Representative Prehistoric Wilderness Valley ---
 const teleportableMeshes = [];
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
 
-const houseGroup = new THREE.Group();
-worldGroup.add(houseGroup);
+function addMeshWithOutline(geom, mat, parent = worldGroup, teleportable = false) {
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  parent.add(mesh);
+  if (teleportable) teleportableMeshes.push(mesh);
 
-const furnitureGroup = new THREE.Group();
-houseGroup.add(furnitureGroup);
-
-// 1. Water & Faceted Walkabout Island
-const waterMesh = new THREE.Mesh(
-  new THREE.CylinderGeometry(85, 85, 0.4, 32),
-  materials.water
-);
-waterMesh.position.y = -0.35;
-waterMesh.receiveShadow = true;
-worldGroup.add(waterMesh);
-
-const sandBase = new THREE.Mesh(
-  new THREE.CylinderGeometry(18.5, 21.0, 0.5, 18),
-  materials.island_sand
-);
-sandBase.position.y = -0.15;
-sandBase.receiveShadow = true;
-worldGroup.add(sandBase);
-
-const grassTop = new THREE.Mesh(
-  new THREE.CylinderGeometry(16.8, 18.2, 0.3, 18),
-  materials.island_grass
-);
-grassTop.position.y = 0.0;
-grassTop.receiveShadow = true;
-worldGroup.add(grassTop);
-teleportableMeshes.push(grassTop);
-
-// 2. Parametric Custom House Builder
-function rebuildHouse() {
-  while (houseGroup.children.length > 0) {
-    const child = houseGroup.children[0];
-    if (child !== furnitureGroup) houseGroup.remove(child);
-    else break;
-  }
-  houseGroup.clear();
-  houseGroup.add(furnitureGroup);
-  furnitureGroup.clear();
-
-  const h = BLUEPRINT.house;
-  const ox = h.origin[0];
-  const oy = h.origin[1];
-  const oz = h.origin[2];
-  const w = h.width;
-  const d = h.depth;
-  const wh = h.wall_height;
-  const wt = h.wall_thickness;
-
-  // Interior Floor + Expandable Patio Deck
-  const patioDepth = widePatio ? h.patio_extension : 0.8;
-  const floorMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w + 0.6, 0.16, d + patioDepth),
-    materials.house_floor
-  );
-  floorMesh.position.set(ox, oy, oz + patioDepth * 0.5);
-  floorMesh.receiveShadow = true;
-  floorMesh.castShadow = true;
-  houseGroup.add(floorMesh);
-  if (!teleportableMeshes.includes(floorMesh)) teleportableMeshes.push(floorMesh);
-
-  // Back Wall
-  const backWall = new THREE.Mesh(new THREE.BoxGeometry(w, wh, wt), materials.house_wall);
-  backWall.position.set(ox, oy + wh / 2, oz - d / 2);
-  backWall.castShadow = true;
-  backWall.receiveShadow = true;
-  houseGroup.add(backWall);
-
-  // Left & Right Walls with Picture Window Cutouts
-  [-1, 1].forEach((side) => {
-    const xPos = ox + side * (w / 2);
-    const lowerWall = new THREE.Mesh(new THREE.BoxGeometry(wt, 1.0, d), materials.house_wall);
-    lowerWall.position.set(xPos, oy + 0.5, oz);
-    lowerWall.castShadow = true;
-    houseGroup.add(lowerWall);
-
-    const upperWall = new THREE.Mesh(new THREE.BoxGeometry(wt, 0.6, d), materials.house_wall);
-    upperWall.position.set(xPos, oy + wh - 0.3, oz);
-    upperWall.castShadow = true;
-    houseGroup.add(upperWall);
-
-    [-d * 0.38, d * 0.38].forEach((zPillar) => {
-      const pillar = new THREE.Mesh(new THREE.BoxGeometry(wt * 1.2, wh, 0.8), materials.house_trim);
-      pillar.position.set(xPos, oy + wh / 2, oz + zPillar);
-      pillar.castShadow = true;
-      houseGroup.add(pillar);
-    });
-  });
-
-  // Front Wall with Wide Walk-In Doorway
-  const frontLeft = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, wh, wt), materials.house_wall);
-  frontLeft.position.set(ox - w * 0.34, oy + wh / 2, oz + d / 2);
-  frontLeft.castShadow = true;
-  houseGroup.add(frontLeft);
-
-  const frontRight = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, wh, wt), materials.house_wall);
-  frontRight.position.set(ox + w * 0.34, oy + wh / 2, oz + d / 2);
-  frontRight.castShadow = true;
-  houseGroup.add(frontRight);
-
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.36, 0.55, wt), materials.house_trim);
-  lintel.position.set(ox, oy + wh - 0.275, oz + d / 2);
-  lintel.castShadow = true;
-  houseGroup.add(lintel);
-
-  // Interior Partition Divider
-  const divider = new THREE.Mesh(new THREE.BoxGeometry(wt, wh * 0.85, d * 0.55), materials.house_trim);
-  divider.position.set(ox + 0.8, oy + (wh * 0.85) / 2, oz - d * 0.2);
-  divider.castShadow = true;
-  houseGroup.add(divider);
-
-  // Roof (Gabled or Open Skylight)
-  if (hasSkylight) {
-    [-1, 1].forEach((side) => {
-      const roofWing = new THREE.Mesh(
-        new THREE.BoxGeometry(w * 0.36, 0.22, d + 0.8),
-        materials.house_roof
-      );
-      roofWing.position.set(ox + side * (w * 0.34), oy + wh + 0.12, oz);
-      roofWing.castShadow = true;
-      houseGroup.add(roofWing);
-    });
-    // Skylight Pergola Beams
-    for (let i = -2; i <= 2; i++) {
-      const beam = new THREE.Mesh(new THREE.BoxGeometry(w * 0.36, 0.12, 0.16), materials.house_trim);
-      beam.position.set(ox, oy + wh + 0.12, oz + i * 1.2);
-      beam.castShadow = true;
-      houseGroup.add(beam);
-    }
-  } else {
-    const fullRoof = new THREE.Mesh(
-      new THREE.ConeGeometry(w * 0.78, 1.8, 4),
-      materials.house_roof
-    );
-    fullRoof.position.set(ox, oy + wh + 0.9, oz);
-    fullRoof.rotation.y = Math.PI / 4;
-    fullRoof.castShadow = true;
-    houseGroup.add(fullRoof);
-  }
-
-  // Furniture Items
-  if (showFurniture) {
-    h.furniture.forEach((item) => {
-      const [sx, sy, sz] = item.size;
-      const mat = item.type === 'sofa' ? materials.house_roof : materials.house_trim;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
-      mesh.position.set(item.pos[0], oy + sy / 2, item.pos[2]);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      furnitureGroup.add(mesh);
-    });
-  }
+  const edges = new THREE.EdgesGeometry(geom, 22);
+  const line = new THREE.LineSegments(edges, outlineMat);
+  line.visible = false;
+  mesh.add(line);
+  outlineMeshes.push(line);
+  return mesh;
 }
-rebuildHouse();
 
-// 3. Walkabout Mini-Golf Putting Course (Hole #1)
-const golfCourse = BLUEPRINT.minigolf_course;
-const laneLength = golfCourse.cup_pos[0] - golfCourse.tee_pos[0] + 1.6;
-const laneCenterZ = golfCourse.tee_pos[2];
-const laneCenterX = (golfCourse.cup_pos[0] + golfCourse.tee_pos[0]) * 0.5;
+// 1. Mountain Lake, Valley Meadows, Stepped Cliff Overlook & Stone Arch
+const lakeMesh = new THREE.Mesh(new THREE.CylinderGeometry(45, 45, 0.35, 36), materials.water);
+lakeMesh.position.set(0, -0.22, 0);
+lakeMesh.receiveShadow = true;
+worldGroup.add(lakeMesh);
 
-const turfMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(laneLength, 0.08, golfCourse.lane_width),
-  materials.putting_turf
-);
-turfMesh.position.set(laneCenterX, 0.16, laneCenterZ);
-turfMesh.receiveShadow = true;
-worldGroup.add(turfMesh);
-teleportableMeshes.push(turfMesh);
+// Main Valley Meadow Bank (South/East bank)
+const mainMeadow = addMeshWithOutline(new THREE.CylinderGeometry(22.5, 25.0, 0.7, 24), materials.terrain, worldGroup, true);
+mainMeadow.position.set(0, -0.1, 4.5);
 
-// Borders around putting lane
-[-1, 1].forEach((side) => {
-  const rail = new THREE.Mesh(
-    new THREE.BoxGeometry(laneLength + 0.2, 0.18, 0.14),
-    materials.putting_border
-  );
-  rail.position.set(laneCenterX, 0.22, laneCenterZ + side * (golfCourse.lane_width * 0.5 + 0.07));
-  rail.castShadow = true;
-  worldGroup.add(rail);
+// North Creek Bank (Across the water)
+const northBank = addMeshWithOutline(new THREE.CylinderGeometry(16.0, 18.5, 0.9, 20), materials.terrain, worldGroup, true);
+northBank.position.set(-5.0, 0.0, -18.5);
+
+// Stepped Cliff Overlook & Waterfall Ridge (West/Northwest)
+const cliffTier1 = addMeshWithOutline(new THREE.CylinderGeometry(7.5, 9.5, 2.8, 12), materials.cliff, worldGroup, true);
+cliffTier1.position.set(-14.5, 1.4, -7.5);
+
+const cliffTier2 = addMeshWithOutline(new THREE.CylinderGeometry(5.2, 6.8, 5.4, 10), materials.cliff, worldGroup, true);
+cliffTier2.position.set(-17.0, 2.7, -10.5);
+
+const cliffDeck = addMeshWithOutline(new THREE.CylinderGeometry(5.0, 5.2, 0.3, 10), materials.terrain, worldGroup, true);
+cliffDeck.position.set(-17.0, 5.45, -10.5);
+
+// Cascading Waterfall Sheet
+const waterfallMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 5.5, 0.35), materials.water);
+waterfallMesh.position.set(-13.2, 2.6, -8.8);
+waterfallMesh.rotation.z = -0.18;
+worldGroup.add(waterfallMesh);
+
+// Winding Natural Hiking Trail & Timber Footbridge
+[
+  [0, 0.26, 11.0, 2.2, 3.2, 0.05],
+  [-0.8, 0.26, 8.0, 2.1, 3.2, -0.2],
+  [-2.2, 0.26, 5.0, 2.0, 3.2, -0.35],
+  [-3.8, 0.26, 2.0, 2.0, 3.2, -0.25],
+  [-4.5, 0.26, -1.2, 2.0, 3.2, 0.0]
+].forEach(([tx, ty, tz, w, len, rotY]) => {
+  const tread = addMeshWithOutline(new THREE.BoxGeometry(w, 0.08, len), materials.trail, worldGroup, true);
+  tread.position.set(tx, ty, tz);
+  tread.rotation.y = rotY;
 });
 
-// Flagstick & Cup
-const cupRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.06, 0.11, 16),
-  materials.accent_gold
-);
-cupRing.rotation.x = -Math.PI / 2;
-cupRing.position.set(golfCourse.cup_pos[0], 0.205, golfCourse.cup_pos[2]);
-worldGroup.add(cupRing);
+// Timber Footbridge across the narrow lake inlet
+const bridgeDeck = addMeshWithOutline(new THREE.BoxGeometry(2.4, 0.18, 6.5), materials.trunk, worldGroup, true);
+bridgeDeck.position.set(-4.6, 0.38, -5.8);
 
-const flagPole = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.02, 0.02, 1.35, 8),
-  materials.putting_border
-);
-flagPole.position.set(golfCourse.cup_pos[0], 0.85, golfCourse.cup_pos[2]);
-flagPole.castShadow = true;
-worldGroup.add(flagPole);
-
-const flagPennant = new THREE.Mesh(
-  new THREE.ConeGeometry(0.22, 0.45, 3),
-  materials.accent_gold
-);
-flagPennant.rotation.z = -Math.PI / 2;
-flagPennant.position.set(golfCourse.cup_pos[0] + 0.2, 1.4, golfCourse.cup_pos[2]);
-worldGroup.add(flagPennant);
-
-// Obstacles
-const obstacleColliders = [];
-golfCourse.obstacles.forEach((obs) => {
-  const bumper = new THREE.Mesh(
-    new THREE.CylinderGeometry(obs.radius, obs.radius * 1.15, 0.26, 7),
-    materials.stone
-  );
-  bumper.position.set(obs.pos[0], 0.26, obs.pos[2]);
-  bumper.castShadow = true;
-  worldGroup.add(bumper);
-  obstacleColliders.push({ x: obs.pos[0], z: obs.pos[2], r: obs.radius });
-});
-
-// Golf Ball
-const golfBall = new THREE.Mesh(
-  new THREE.SphereGeometry(0.055, 12, 12),
-  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
-);
-golfBall.position.set(golfCourse.tee_pos[0], 0.255, golfCourse.tee_pos[2]);
-golfBall.castShadow = true;
-worldGroup.add(golfBall);
-const ballVel = new THREE.Vector3(0, 0, 0);
-
-// 4. Low-Poly Faceted Pine Trees & Rocks
-BLUEPRINT.environment.pine_trees.forEach(([tx, ty, tz, s]) => {
+// 2. Prehistoric Megaflora (Giant Sequoias & Araucaria Conifers)
+const treeSpecs = [
+  [-10.5, 0.25, 7.5, 1.55], [-12.5, 0.25, 1.2, 1.35], [-8.5, 0.25, 12.5, 1.4],
+  [9.5, 0.25, 9.0, 1.65], [13.5, 0.25, 3.5, 1.5], [11.0, 0.25, -2.5, 1.3],
+  [7.0, 0.25, 14.5, 1.45], [-2.5, 0.45, -16.5, 1.6], [-9.5, 0.45, -19.0, 1.75],
+  [2.5, 0.45, -19.5, 1.5], [-19.5, 5.55, -12.0, 1.25]
+];
+treeSpecs.forEach(([tx, ty, tz, s], idx) => {
   const tree = new THREE.Group();
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14 * s, 0.22 * s, 0.9 * s, 6),
-    materials.house_trim
-  );
-  trunk.position.y = 0.45 * s;
-  trunk.castShadow = true;
-  tree.add(trunk);
-
-  [0, 1, 2].forEach((tier) => {
-    const cone = new THREE.Mesh(
-      new THREE.ConeGeometry((1.1 - tier * 0.24) * s, (1.35 - tier * 0.2) * s, 7),
-      tier % 2 === 0 ? materials.foliage_dark : materials.foliage_light
+  const trunk = addMeshWithOutline(new THREE.CylinderGeometry(0.18 * s, 0.32 * s, 1.6 * s, 7), materials.trunk, tree);
+  trunk.position.y = 0.8 * s;
+  for (let tier = 0; tier < 4; tier++) {
+    const cone = addMeshWithOutline(
+      new THREE.ConeGeometry((1.35 - tier * 0.24) * s, (1.5 - tier * 0.22) * s, 7),
+      (tier + idx) % 2 === 0 ? materials.foliage1 : materials.foliage2,
+      tree
     );
-    cone.position.y = (1.15 + tier * 0.68) * s;
-    cone.castShadow = true;
-    cone.receiveShadow = true;
-    tree.add(cone);
-  });
-  tree.position.set(tx, ty + 0.12, tz);
+    cone.position.y = (1.65 + tier * 0.82) * s;
+  }
+  tree.position.set(tx, ty, tz);
   worldGroup.add(tree);
 });
 
-BLUEPRINT.environment.low_poly_rocks.forEach(([rx, ry, rz, rs]) => {
-  const rock = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(0.65 * rs, 0),
-    materials.stone
-  );
-  rock.position.set(rx, ry + 0.25 * rs, rz);
-  rock.rotation.set(rx, rz, 0.4);
-  rock.scale.set(1.2, 0.75, 1.0);
-  rock.castShadow = true;
-  rock.receiveShadow = true;
-  worldGroup.add(rock);
+// Mossy Boulders (with a glinting Obsidian Arrowhead on the creek gravel bar)
+[
+  [-7.2, 0.25, 4.5, 1.15], [6.8, 0.25, 2.2, 1.3], [-11.5, 0.25, -2.0, 1.45],
+  [12.0, 0.25, 8.5, 1.1], [-1.5, 0.45, -13.5, 1.25], [8.5, 0.25, -5.5, 1.35]
+].forEach(([rx, ry, rz, rs]) => {
+  const rock = addMeshWithOutline(new THREE.DodecahedronGeometry(0.75 * rs, 0), materials.rock, worldGroup, true);
+  rock.position.set(rx, ry + 0.2 * rs, rz);
+  rock.scale.set(1.25, 0.72, 1.05);
 });
 
-// --- Walkabout Parabolic Teleport Arc Visuals ---
+// 3. Prehistoric Megafauna at 1:1 Scale (Mammoth, Megaloceros & Smilodon)
+// A. Woolly Mammoth (3.8m tall shoulder hump, curved ivory tusks, swaying trunk)
+const mammothGroup = new THREE.Group();
+const mBody = addMeshWithOutline(new THREE.BoxGeometry(2.3, 2.2, 3.6), materials.mammothFur, mammothGroup);
+mBody.position.set(0, 2.2, 0);
+const mShoulder = addMeshWithOutline(new THREE.DodecahedronGeometry(1.35, 0), materials.mammothFur, mammothGroup);
+mShoulder.position.set(0, 3.05, 1.0);
+const mHead = addMeshWithOutline(new THREE.DodecahedronGeometry(0.95, 0), materials.mammothFur, mammothGroup);
+mHead.position.set(0, 2.95, 2.15);
+
+const mammothTrunkPivot = new THREE.Group();
+mammothTrunkPivot.position.set(0, 2.6, 2.75);
+const mTrunk = addMeshWithOutline(new THREE.CylinderGeometry(0.18, 0.28, 1.85, 7), materials.mammothFur, mammothTrunkPivot);
+mTrunk.position.set(0, -0.8, 0.15);
+mammothGroup.add(mammothTrunkPivot);
+
+[-0.55, 0.55].forEach((sideX) => {
+  const tusk = addMeshWithOutline(new THREE.TorusGeometry(1.15, 0.11, 7, 14, Math.PI * 0.72), materials.tusk, mammothGroup);
+  tusk.position.set(sideX, 2.35, 2.55);
+  tusk.rotation.y = Math.PI / 2 + (sideX > 0 ? -0.18 : 0.18);
+  tusk.rotation.z = -0.35;
+});
+[[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.2], [0.7, -1.2]].forEach(([lx, lz]) => {
+  const leg = addMeshWithOutline(new THREE.CylinderGeometry(0.36, 0.32, 1.8, 7), materials.mammothFur, mammothGroup);
+  leg.position.set(lx, 0.9, lz);
+});
+mammothGroup.position.set(5.2, 0.25, 3.8);
+mammothGroup.rotation.y = -0.55;
+worldGroup.add(mammothGroup);
+
+// B. Giant Irish Elk (Megaloceros — 2.1m shoulder, 3.4m broad palmate antler span)
+const elkGroup = new THREE.Group();
+const eBody = addMeshWithOutline(new THREE.BoxGeometry(0.95, 1.05, 2.1), materials.elkCoat, elkGroup);
+eBody.position.set(0, 1.65, 0);
+const eNeck = addMeshWithOutline(new THREE.CylinderGeometry(0.24, 0.34, 1.1, 6), materials.elkCoat, elkGroup);
+eNeck.position.set(0, 2.35, 0.85);
+eNeck.rotation.x = 0.35;
+const eHead = addMeshWithOutline(new THREE.BoxGeometry(0.38, 0.38, 0.75), materials.elkCoat, elkGroup);
+eHead.position.set(0, 2.75, 1.15);
+
+[-1, 1].forEach((side) => {
+  const antler = addMeshWithOutline(new THREE.ConeGeometry(0.55, 1.75, 5), materials.tusk, elkGroup);
+  antler.position.set(side * 0.95, 3.15, 1.05);
+  antler.rotation.z = -side * 1.08;
+  antler.scale.set(1.0, 1.0, 0.32);
+});
+[[-0.32, 0.75], [0.32, 0.75], [-0.32, -0.75], [0.32, -0.75]].forEach(([lx, lz]) => {
+  const leg = addMeshWithOutline(new THREE.CylinderGeometry(0.12, 0.09, 1.4, 6), materials.elkCoat, elkGroup);
+  leg.position.set(lx, 0.7, lz);
+});
+elkGroup.position.set(-4.5, 0.45, -13.5);
+elkGroup.rotation.y = 0.4;
+worldGroup.add(elkGroup);
+
+// C. Saber-Toothed Cat (Smilodon — watching from the high cliff overlook)
+const smilodonGroup = new THREE.Group();
+const sBody = addMeshWithOutline(new THREE.BoxGeometry(0.68, 0.65, 1.45), materials.smilodonCoat, smilodonGroup);
+sBody.position.set(0, 0.82, 0);
+const sHead = addMeshWithOutline(new THREE.DodecahedronGeometry(0.36, 0), materials.smilodonCoat, smilodonGroup);
+sHead.position.set(0, 1.12, 0.78);
+[-0.12, 0.12].forEach((sx) => {
+  const fang = addMeshWithOutline(new THREE.ConeGeometry(0.04, 0.26, 5), materials.tusk, smilodonGroup);
+  fang.position.set(sx, 0.92, 0.98);
+  fang.rotation.x = Math.PI;
+});
+[[-0.24, 0.5], [0.24, 0.5], [-0.24, -0.5], [0.24, -0.5]].forEach(([lx, lz]) => {
+  const leg = addMeshWithOutline(new THREE.CylinderGeometry(0.11, 0.09, 0.65, 6), materials.smilodonCoat, smilodonGroup);
+  leg.position.set(lx, 0.32, lz);
+});
+smilodonGroup.position.set(-15.5, 5.6, -9.2);
+smilodonGroup.rotation.y = 0.78;
+worldGroup.add(smilodonGroup);
+
+// D. Circling Teratorn Vultures High Overhead
+const vultureFlock = new THREE.Group();
+for (let v = 0; v < 3; v++) {
+  const bird = addMeshWithOutline(new THREE.ConeGeometry(1.1, 0.35, 4), materials.cliff, vultureFlock);
+  const angle = (v * Math.PI * 2) / 3;
+  bird.position.set(Math.cos(angle) * 11, 22 + v * 1.5, Math.sin(angle) * 11);
+  bird.scale.set(1.8, 0.25, 0.6);
+}
+scene.add(vultureFlock);
+
+// --- Parabolic Teleport Arc & Landing Ring ---
 const arcMaxPoints = 24;
 const arcGeometry = new THREE.BufferGeometry().setFromPoints(
   Array.from({ length: arcMaxPoints }, () => new THREE.Vector3())
 );
-const arcLine = new THREE.Line(
-  arcGeometry,
-  new THREE.LineBasicMaterial({ color: 0xffb703, linewidth: 3 })
-);
+const arcLine = new THREE.Line(arcGeometry, new THREE.LineBasicMaterial({ color: 0xffb703, linewidth: 3 }));
 arcLine.visible = false;
 scene.add(arcLine);
 
 const teleportRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.28, 0.42, 24),
+  new THREE.RingGeometry(0.28, 0.44, 24),
   new THREE.MeshBasicMaterial({ color: 0xffb703, side: THREE.DoubleSide })
 );
 teleportRing.rotation.x = -Math.PI / 2;
 teleportRing.visible = false;
 scene.add(teleportRing);
 
-// Compute Parabolic Teleport Trajectory & Raycast Intersections
 const raycaster = new THREE.Raycaster();
 function updateParabolicTeleport(customOrigin = null, customDir = null) {
   const origin = new THREE.Vector3();
@@ -706,35 +688,24 @@ function updateParabolicTeleport(customOrigin = null, customDir = null) {
     origin.addScaledVector(dir, 0.35);
   }
 
-  const speed = BLUEPRINT.locomotion.teleport_speed;
-  const g = BLUEPRINT.locomotion.gravity;
-  const vel = dir.clone().multiplyScalar(speed);
-  const totalT = 1.65;
+  const vel = dir.clone().multiplyScalar(TELEPORT_SPEED);
+  const totalT = 1.75;
   const pts = [];
   let hitPoint = null;
 
   for (let i = 0; i < arcMaxPoints; i++) {
     const t0 = (totalT * i) / (arcMaxPoints - 1);
     const t1 = (totalT * (i + 1)) / (arcMaxPoints - 1);
-    const p0 = new THREE.Vector3(
-      origin.x + vel.x * t0,
-      origin.y + vel.y * t0 - 0.5 * g * t0 * t0,
-      origin.z + vel.z * t0
-    );
+    const p0 = new THREE.Vector3(origin.x + vel.x * t0, origin.y + vel.y * t0 - 0.5 * GRAVITY * t0 * t0, origin.z + vel.z * t0);
     pts.push(p0);
-
-    const p1 = new THREE.Vector3(
-      origin.x + vel.x * t1,
-      origin.y + vel.y * t1 - 0.5 * g * t1 * t1,
-      origin.z + vel.z * t1
-    );
+    const p1 = new THREE.Vector3(origin.x + vel.x * t1, origin.y + vel.y * t1 - 0.5 * GRAVITY * t1 * t1, origin.z + vel.z * t1);
     const seg = p1.clone().sub(p0);
     const len = seg.length();
     if (len > 0.001 && !hitPoint) {
       raycaster.set(p0, seg.clone().normalize());
       raycaster.far = len;
       const hits = raycaster.intersectObjects(teleportableMeshes, false);
-      if (hits.length > 0 && hits[0].face && hits[0].face.normal.y > 0.75) {
+      if (hits.length > 0 && hits[0].face && hits[0].face.normal.y > 0.7) {
         hitPoint = hits[0].point.clone();
       }
     }
@@ -743,7 +714,7 @@ function updateParabolicTeleport(customOrigin = null, customDir = null) {
   arcGeometry.setFromPoints(pts);
   arcLine.visible = true;
   if (hitPoint) {
-    teleportRing.position.set(hitPoint.x, hitPoint.y + 0.03, hitPoint.z);
+    teleportRing.position.set(hitPoint.x, hitPoint.y + 0.04, hitPoint.z);
     teleportRing.visible = true;
     validTeleportTarget = hitPoint;
   } else {
@@ -761,112 +732,27 @@ function executeTeleport() {
   validTeleportTarget = null;
 }
 
-// --- Golf Ball Putting Physics ---
-function puttBall() {
-  const toCup = new THREE.Vector3(
-    golfCourse.cup_pos[0] - golfBall.position.x,
-    0,
-    golfCourse.cup_pos[2] - golfBall.position.z
-  );
-  if (toCup.length() < 0.15) {
-    // Reset to Tee
-    golfBall.position.set(golfCourse.tee_pos[0], 0.255, golfCourse.tee_pos[2]);
-    ballVel.set(0, 0, 0);
-    strokes = 0;
-  } else {
-    // Putt along camera horizontal aim or toward cup with slight variance
-    const camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
-    camDir.y = 0;
-    if (camDir.lengthSq() < 0.01) camDir.copy(toCup);
-    camDir.normalize();
-    // Blend 65% toward cup + 35% camera aim so desktop users easily enjoy putting
-    const aim = toCup.clone().normalize().lerp(camDir, 0.35).normalize();
-    ballVel.copy(aim.multiplyScalar(3.6));
-    strokes += 1;
-  }
-  document.getElementById('golf-badge').textContent = `Hole 1 (Par 2): ${strokes} Stroke${strokes === 1 ? '' : 's'}`;
-}
-
-function stepGolfPhysics(dt) {
-  if (ballVel.lengthSq() < 0.0004) return;
-  golfBall.position.addScaledVector(ballVel, dt);
-  ballVel.multiplyScalar(Math.pow(0.28, dt)); // Turf rolling friction
-
-  // Lane border bounce
-  const minZ = laneCenterZ - golfCourse.lane_width * 0.5 + 0.06;
-  const maxZ = laneCenterZ + golfCourse.lane_width * 0.5 - 0.06;
-  const minX = golfCourse.tee_pos[0] - 0.6;
-  const maxX = golfCourse.cup_pos[0] + 0.6;
-  if (golfBall.position.z < minZ || golfBall.position.z > maxZ) {
-    ballVel.z *= -0.8;
-    golfBall.position.z = THREE.MathUtils.clamp(golfBall.position.z, minZ, maxZ);
-  }
-  if (golfBall.position.x < minX || golfBall.position.x > maxX) {
-    ballVel.x *= -0.8;
-    golfBall.position.x = THREE.MathUtils.clamp(golfBall.position.x, minX, maxX);
-  }
-
-  // Obstacle bumper collisions
-  obstacleColliders.forEach((obs) => {
-    const dx = golfBall.position.x - obs.x;
-    const dz = golfBall.position.z - obs.z;
-    const dist = Math.hypot(dx, dz);
-    const minDist = obs.r + 0.055;
-    if (dist < minDist && dist > 0.0001) {
-      const nx = dx / dist;
-      const nz = dz / dist;
-      golfBall.position.x = obs.x + nx * minDist;
-      golfBall.position.z = obs.z + nz * minDist;
-      const dot = ballVel.x * nx + ballVel.z * nz;
-      ballVel.x = (ballVel.x - 2 * dot * nx) * 0.85;
-      ballVel.z = (ballVel.z - 2 * dot * nz) * 0.85;
-    }
-  });
-
-  // Check cup sink
-  const cupDist = Math.hypot(
-    golfBall.position.x - golfCourse.cup_pos[0],
-    golfBall.position.z - golfCourse.cup_pos[2]
-  );
-  if (cupDist < 0.12 && ballVel.length() < 2.2) {
-    ballVel.set(0, 0, 0);
-    golfBall.position.set(golfCourse.cup_pos[0], 0.21, golfCourse.cup_pos[2]);
-    document.getElementById('golf-badge').textContent = `Hole 1 Sunk in ${strokes}! [Space to Reset]`;
-  }
-}
-
-// --- Event Listeners (Desktop & Wristwatch UI) ---
+// --- Desktop & UI Controls ---
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyT') isAimingTeleport = true;
-  if (e.code === 'KeyV') {
-    // Arm-flap stroke impulse: propels player in head look direction
-    flapEnergy = Math.min(1.0, flapEnergy + 0.48);
-    flapPhase += 1.6;
-  }
-  if (e.code === 'KeyF') {
-    forceFlyMode = !forceFlyMode;
-    document.getElementById('btn-fly-mode').classList.toggle('active', forceFlyMode);
-    document.getElementById('btn-fly-mode').textContent = forceFlyMode ? 'Fly Mode: LOCKED ON' : 'Fly Mode: Auto-Pitch';
-  }
-  if (e.code === 'KeyG') document.getElementById('btn-dollhouse').click();
+  if (e.code === 'KeyG') desktopThumbsUp = true;
+  if (e.code === 'KeyB') applyStyle(currentStyleIdx + 1);
+  if (e.code === 'KeyN') applyStyle(currentStyleIdx - 1);
   if (e.code === 'Tab') {
     e.preventDefault();
-    document.getElementById('wrist-panel').classList.toggle('minimized');
-  }
-  if (e.code === 'Space') {
-    e.preventDefault();
-    puttBall();
+    document.getElementById('style-panel').classList.toggle('minimized');
   }
 });
 
 window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
+  if (e.code === 'KeyG') desktopThumbsUp = false;
   if (e.code === 'KeyT') {
-    if (!twoFingerFlightLatched) executeTeleport();
+    if (!desktopSkyFlightLatched) executeTeleport();
     isAimingTeleport = false;
-    twoFingerFlightLatched = false;
+    desktopSkyFlightLatched = false;
+    desktopFlyHoldSec = 0.0;
     arcLine.visible = false;
     teleportRing.visible = false;
   }
@@ -884,102 +770,54 @@ renderer.domElement.addEventListener('mousedown', (e) => {
 
 window.addEventListener('mousemove', (e) => {
   if (isDraggingLook) {
-    const dx = e.clientX - lastMouseX;
-    const dy = e.clientY - lastMouseY;
+    yaw -= (e.clientX - lastMouseX) * 0.0045;
+    pitch = THREE.MathUtils.clamp(pitch - (e.clientY - lastMouseY) * 0.0045, -Math.PI / 2.1, Math.PI / 2.1);
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
-    yaw -= dx * 0.0045;
-    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0045, -Math.PI / 2.1, Math.PI / 2.1);
   }
 });
 
 window.addEventListener('mouseup', (e) => {
   if (e.button === 0) isDraggingLook = false;
   if (e.button === 2) {
-    if (!twoFingerFlightLatched) executeTeleport();
+    if (!desktopSkyFlightLatched) executeTeleport();
     isAimingTeleport = false;
-    twoFingerFlightLatched = false;
+    desktopSkyFlightLatched = false;
+    desktopFlyHoldSec = 0.0;
     arcLine.visible = false;
     teleportRing.visible = false;
   }
 });
-
 window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// Wristwatch UI bindings
 document.getElementById('watch-header-toggle').addEventListener('click', () => {
-  document.getElementById('wrist-panel').classList.toggle('minimized');
+  document.getElementById('style-panel').classList.toggle('minimized');
 });
+document.getElementById('select-style').addEventListener('change', (e) => applyStyle(Number(e.target.value)));
+document.getElementById('btn-next-style').addEventListener('click', () => applyStyle(currentStyleIdx + 1));
+document.getElementById('btn-prev-style').addEventListener('click', () => applyStyle(currentStyleIdx - 1));
 
-document.getElementById('select-palette').addEventListener('change', (e) => {
-  currentPaletteKey = e.target.value;
-  initMaterials(PALETTES[currentPaletteKey]);
+document.getElementById('btn-tp-meadow').addEventListener('click', () => {
+  isDollhouse = false; xrOrigin.scale.set(1, 1, 1); xrOrigin.position.set(0, 0.25, 10.5); yaw = 0; pitch = -0.05;
+  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
 });
-
-document.getElementById('btn-fly-mode').addEventListener('click', (e) => {
-  forceFlyMode = !forceFlyMode;
-  e.target.classList.toggle('active', forceFlyMode);
-  e.target.textContent = forceFlyMode ? 'Fly Mode: LOCKED ON' : 'Fly Mode: Auto-Pitch';
+document.getElementById('btn-tp-overlook').addEventListener('click', () => {
+  isDollhouse = false; xrOrigin.scale.set(1, 1, 1); xrOrigin.position.set(-16.8, 5.6, -11.5); yaw = -0.75; pitch = -0.22;
+  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
 });
-
+document.getElementById('btn-tp-mammoth').addEventListener('click', () => {
+  isDollhouse = false; xrOrigin.scale.set(1, 1, 1); xrOrigin.position.set(1.8, 0.25, 7.2); yaw = -0.45; pitch = 0.08;
+  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
+});
 document.getElementById('btn-dollhouse').addEventListener('click', (e) => {
   isDollhouse = !isDollhouse;
   e.target.classList.toggle('active', isDollhouse);
-  const s = isDollhouse ? BLUEPRINT.locomotion.dollhouse_scale : 1.0;
+  const s = isDollhouse ? 14.0 : 1.0;
   xrOrigin.scale.set(s, s, s);
-  if (isDollhouse) {
-    xrOrigin.position.set(0, 0, 12.5);
-    pitch = -0.45;
-    yaw = 0;
-  } else {
-    xrOrigin.position.set(0, 0, 7.5);
-    pitch = -0.08;
-  }
-  document.getElementById('scale-badge').textContent = isDollhouse ? `Scale: 1:${s} Dollhouse` : 'Scale: 1:1 Human';
+  xrOrigin.position.set(0, 0.25, isDollhouse ? 16.0 : 10.5);
+  document.getElementById('scale-badge').textContent = isDollhouse ? 'Scale: 1:14 Giant' : 'Scale: 1:1 Human';
 });
 
-document.getElementById('btn-skylight').addEventListener('click', (e) => {
-  hasSkylight = !hasSkylight;
-  e.target.classList.toggle('active', hasSkylight);
-  e.target.textContent = hasSkylight ? 'Skylight Roof: ON' : 'Skylight Roof: Gabled';
-  rebuildHouse();
-});
-
-document.getElementById('btn-patio').addEventListener('click', (e) => {
-  widePatio = !widePatio;
-  e.target.classList.toggle('active', widePatio);
-  e.target.textContent = widePatio ? 'Patio Deck: Wide' : 'Patio Deck: Compact';
-  rebuildHouse();
-});
-
-document.getElementById('btn-furniture').addEventListener('click', (e) => {
-  showFurniture = !showFurniture;
-  e.target.classList.toggle('active', showFurniture);
-  e.target.textContent = showFurniture ? 'Furniture: Shown' : 'Furniture: Hidden';
-  rebuildHouse();
-});
-
-document.getElementById('btn-putt').addEventListener('click', () => puttBall());
-
-document.getElementById('btn-teleport-house').addEventListener('click', () => {
-  isDollhouse = false;
-  xrOrigin.scale.set(1, 1, 1);
-  xrOrigin.position.set(-1.2, 0.2, -3.5);
-  yaw = 0;
-  pitch = 0;
-  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
-});
-
-document.getElementById('btn-teleport-tee').addEventListener('click', () => {
-  isDollhouse = false;
-  xrOrigin.scale.set(1, 1, 1);
-  xrOrigin.position.set(golfCourse.tee_pos[0] - 1.2, 0.15, golfCourse.tee_pos[2] + 1.1);
-  yaw = -0.85;
-  pitch = -0.22;
-  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
-});
-
-// WebXR Session Launcher (Native Quest 3 Browser or Desktop Emulation)
 document.getElementById('btn-enter-vr').addEventListener('click', async () => {
   if (navigator.xr) {
     try {
@@ -989,17 +827,13 @@ document.getElementById('btn-enter-vr').addEventListener('click', async () => {
           optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
         });
         renderer.xr.setSession(session);
-        document.getElementById('mode-badge').textContent = 'Mode: Wild VR (Quest 3 WebXR)';
+        document.getElementById('mode-badge').textContent = 'Mode: Wild VR (Quest 3)';
         return;
       }
     } catch (err) {
-      console.warn('WebXR session fallback:', err);
+      console.warn('WebXR fallback:', err);
     }
   }
-  forceFlyMode = !forceFlyMode;
-  document.getElementById('mode-badge').textContent = forceFlyMode
-    ? 'Mode: Desktop Wild VR Flight'
-    : 'Mode: Desktop Wild VR';
 });
 
 window.addEventListener('resize', () => {
@@ -1008,8 +842,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- Quest 3 Touch Plus Controller Locomotion (Teleport, Sky Flight, Walk & Snap Turn) ---
-const paletteKeys = Object.keys(PALETTES);
+// --- Single-Controller Quest 3 Input Polling (Delayed Haptic Flight, Thumbs-Up, Style Switch) ---
 function pollXRControllers(dt, camFwd) {
   const session = renderer.xr.getSession();
   if (!session) return false;
@@ -1017,24 +850,35 @@ function pollXRControllers(dt, camFwd) {
 
   let aimingNow = false;
   let flyingNow = false;
+  let pointingUpWithStick = false;
   let activeOrigin = new THREE.Vector3();
   let activeDir = new THREE.Vector3();
+  let activeInputSrc = null;
   let anyBtnA = false;
   let anyBtnB = false;
+  let anyGripThumbsUp = false;
 
   session.inputSources.forEach((src, idx) => {
     const gp = src.gamepad;
-    const ctrl = xrControllers[idx] || xrControllers[0];
+    const ctrl = xrControllers[idx] || activeController;
     if (!gp || !ctrl) return;
+    if (handGroup.parent !== ctrl) ctrl.add(handGroup);
 
     const stickX = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
     const stickY = gp.axes.length >= 4 ? gp.axes[3] : (gp.axes[1] || 0);
     const triggerHeld = Boolean(gp.buttons[0] && gp.buttons[0].pressed);
     const gripHeld = Boolean((gp.buttons[1] && gp.buttons[1].pressed) || ctrl.userData.squeezeHeld);
-    if (gp.buttons[4] && gp.buttons[4].pressed) anyBtnA = true;
-    if (gp.buttons[5] && gp.buttons[5].pressed) anyBtnB = true;
 
-    // Snap-turn on Left/Right thumbstick flick
+    // Side Grip button -> Thumbs-Up gesture ONLY (never teleports or flies!)
+    if (gripHeld) {
+      anyGripThumbsUp = true;
+      activeInputSrc = src;
+    }
+
+    if (gp.buttons[4] && gp.buttons[4].pressed) { anyBtnA = true; activeInputSrc = src; }
+    if (gp.buttons[5] && gp.buttons[5].pressed) { anyBtnB = true; activeInputSrc = src; }
+
+    // Comfort snap-turn on Thumbstick Left/Right
     if (Math.abs(stickX) > 0.65 && snapTurnCooldown <= 0) {
       xrOrigin.rotation.y -= Math.sign(stickX) * (Math.PI / 6);
       snapTurnCooldown = 0.28;
@@ -1046,48 +890,65 @@ function pollXRControllers(dt, camFwd) {
     cDir.applyQuaternion(ctrl.getWorldQuaternion(tempQuat)).normalize();
     const ctrlPitchDeg = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(cDir.y, -1, 1)));
 
-    // Push thumbstick forward (stickY < -0.45) without Trigger, OR hold Side Grip -> Teleport / Sky Flight
-    const wantsTeleportOrFly = (!triggerHeld && stickY < -0.45) || gripHeld;
-    if (wantsTeleportOrFly) {
-      if (ctrlPitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg || vrSkyFlightLatched) {
-        vrSkyFlightLatched = true;
+    // Push Thumbstick Forward (without Trigger) -> Teleport OR 1.8s Delayed Sky-Flight Launch
+    if (!triggerHeld && stickY < -0.45) {
+      activeInputSrc = src;
+      if (vrSkyFlightLatched) {
         flyingNow = true;
-        const steerDir = triggerHeld ? camFwd : cDir;
         const throttle = Math.max(0.55, Math.abs(stickY));
-        xrOrigin.position.addScaledVector(steerDir, BLUEPRINT.locomotion.fly_speed * throttle * dt);
+        xrOrigin.position.addScaledVector(cDir, FLY_SPEED * throttle * dt);
         xrOrigin.position.y = Math.max(0.0, xrOrigin.position.y);
+      } else if (ctrlPitchDeg >= FLY_PITCH_THRESHOLD_DEG) {
+        // Holding pointed up into the sky: charge for 1.8 seconds before launching with Haptic Pulse!
+        pointingUpWithStick = true;
+        vrFlyHoldSec += dt;
+        if (vrFlyHoldSec >= FLY_LAUNCH_DELAY_SEC) {
+          vrSkyFlightLatched = true;
+          flyingNow = true;
+          pulseHaptics(src, 0.95, 220);
+        }
       } else {
+        vrFlyHoldSec = 0.0;
         aimingNow = true;
         activeOrigin.copy(cOrigin);
         activeDir.copy(cDir);
       }
     } else if (triggerHeld && Math.abs(stickY) > 0.2) {
-      // Trigger + Thumbstick -> Smooth Ground Walk
-      const walkDir = new THREE.Vector3(cDir.x, 0, cDir.z).normalize();
-      xrOrigin.position.addScaledVector(walkDir, -stickY * 2.8 * dt);
+      // Trigger + Thumbstick -> Smooth Ground Walk (or Gaze-Steered Flight if airborne)
+      if (vrSkyFlightLatched) {
+        flyingNow = true;
+        xrOrigin.position.addScaledVector(camFwd, -stickY * FLY_SPEED * dt);
+      } else {
+        const walkDir = new THREE.Vector3(cDir.x, 0, cDir.z).normalize();
+        xrOrigin.position.addScaledVector(walkDir, -stickY * 3.0 * dt);
+      }
     }
   });
 
-  if (anyBtnA && !prevBtnA) document.getElementById('btn-dollhouse').click();
-  if (anyBtnB && !prevBtnB) {
-    const nextIdx = (paletteKeys.indexOf(currentPaletteKey) + 1) % paletteKeys.length;
-    currentPaletteKey = paletteKeys[nextIdx];
-    document.getElementById('select-palette').value = currentPaletteKey;
-    initMaterials(PALETTES[currentPaletteKey]);
-  }
+  if (!pointingUpWithStick && !flyingNow) vrFlyHoldSec = 0.0;
+
+  // Haptic tap when Thumbs-Up first engages
+  if (anyGripThumbsUp && !prevThumbsUpState) pulseHaptics(activeInputSrc, 0.45, 70);
+  prevThumbsUpState = anyGripThumbsUp;
+  vrThumbsUpActive = anyGripThumbsUp;
+
+  // B Button -> Next Visual Style; A Button -> Previous Visual Style
+  if (anyBtnB && !prevBtnB) { applyStyle(currentStyleIdx + 1); pulseHaptics(activeInputSrc, 0.55, 60); }
+  if (anyBtnA && !prevBtnA) { applyStyle(currentStyleIdx - 1); pulseHaptics(activeInputSrc, 0.55, 60); }
   prevBtnA = anyBtnA;
   prevBtnB = anyBtnB;
 
-  if (flyingNow) {
+  if (flyingNow || pointingUpWithStick) {
     arcLine.visible = false;
     teleportRing.visible = false;
   } else if (aimingNow) {
     updateParabolicTeleport(activeOrigin, activeDir);
   } else if (vrWasAimingTeleport && !vrSkyFlightLatched) {
     executeTeleport();
+    pulseHaptics(activeInputSrc, 0.35, 45);
   }
 
-  if (!aimingNow && !flyingNow) {
+  if (!aimingNow && !flyingNow && !pointingUpWithStick) {
     vrSkyFlightLatched = false;
     if (!isAimingTeleport) {
       arcLine.visible = false;
@@ -1098,17 +959,56 @@ function pollXRControllers(dt, camFwd) {
   return flyingNow;
 }
 
-// --- Main Render & Locomotion Loop ---
+// --- Animate 3D Hand Pose (Thumbs-Up on Side Grip, Point on Teleport, Charge Ring on Flight Hold) ---
+function updateHandPose(dt) {
+  const thumbsUp = vrThumbsUpActive || desktopThumbsUp;
+  const tpActive = isAimingTeleport || vrWasAimingTeleport;
+  const chargeRatio = Math.min(1.0, Math.max(vrFlyHoldSec, desktopFlyHoldSec) / FLY_LAUNCH_DELAY_SEC);
+
+  if (thumbsUp) {
+    // Classic Thumbs-Up: Curl all 4 fingers into palm, extend thumb straight up!
+    fingerIndex.rotation.x = -1.45;
+    fingerMiddle.rotation.x = -1.45;
+    fingerRing.rotation.x = -1.45;
+    fingerPinky.rotation.x = -1.45;
+    fingerThumbPivot.rotation.set(0, 0, 0);
+    palmMesh.rotation.z = 0.35;
+    materials.wristRing.color.setHex(0x52b788);
+    wristRingMesh.scale.setScalar(1.35);
+  } else {
+    palmMesh.rotation.z = 0.0;
+    fingerThumbPivot.rotation.set(0.55, 0, -0.65);
+    fingerIndex.rotation.x = tpActive ? 0.0 : -0.4;
+    fingerMiddle.rotation.x = tpActive ? 0.0 : -0.48;
+    fingerRing.rotation.x = tpActive ? -1.35 : -0.55;
+    fingerPinky.rotation.x = tpActive ? -1.35 : -0.62;
+    if (chargeRatio > 0.02) {
+      materials.wristRing.color.setHex(0xffb703);
+      wristRingMesh.scale.setScalar(0.8 + chargeRatio * 0.9);
+    } else {
+      materials.wristRing.color.setHex(0x52b788);
+      wristRingMesh.scale.setScalar(1.0);
+    }
+  }
+}
+
+applyStyle(0);
 const clock = new THREE.Clock();
+
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
+  const t = clock.elapsedTime;
+
+  // Subtle living wilderness animations (Mammoth trunk sway & circling Teratorn vultures)
+  mammothTrunkPivot.rotation.z = Math.sin(t * 1.4) * 0.14;
+  mammothTrunkPivot.rotation.x = Math.cos(t * 0.9) * 0.08;
+  vultureFlock.rotation.y = t * 0.18;
 
   if (!renderer.xr.isPresenting) {
     if (keys['ArrowLeft']) yaw += 1.6 * dt;
     if (keys['ArrowRight']) yaw -= 1.6 * dt;
     if (keys['ArrowUp']) pitch = Math.min(Math.PI / 2.1, pitch + 1.2 * dt);
     if (keys['ArrowDown']) pitch = Math.max(-Math.PI / 2.1, pitch - 1.2 * dt);
-
     camera.rotation.order = 'YXZ';
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
@@ -1118,89 +1018,48 @@ renderer.setAnimationLoop(() => {
   camera.getWorldDirection(camFwd);
   const pitchDeg = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(camFwd.y, -1, 1)));
 
-  const isVrControllerFlying = renderer.xr.isPresenting ? pollXRControllers(dt, camFwd) : false;
+  const isVrFlying = renderer.xr.isPresenting ? pollXRControllers(dt, camFwd) : false;
 
-  // 1. Evaluate Desktop 2-Finger Sky-Ignited Flight vs Parabolic Teleport:
-  if (isAimingTeleport && pitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg) {
-    twoFingerFlightLatched = true;
-  }
-  if (twoFingerFlightLatched && isAimingTeleport) {
-    arcLine.visible = false;
-    teleportRing.visible = false;
-    xrOrigin.position.addScaledVector(camFwd, BLUEPRINT.locomotion.fly_speed * dt);
-  } else if (isAimingTeleport) {
-    updateParabolicTeleport();
-  }
-
-  // 2. Evaluate Arm-Flapping Flight + Head-Direction Steering:
-  flapEnergy *= Math.exp(-1.8 * dt);
-  const isArmFlapFlying = flapEnergy > 0.08;
-  if (isArmFlapFlying) {
-    const flapSpeed = 5.2 * flapEnergy * dt;
-    xrOrigin.position.addScaledVector(camFwd, flapSpeed);
-    xrOrigin.position.y = Math.max(0.2, xrOrigin.position.y + 0.35 * flapSpeed);
-  }
-
-  // 3. Animate Articulated 3D Right Hand Fingers & Arm Flap:
-  const isOneFingerSelect = Boolean(keys['Digit1']);
-  if (fingerIndexMesh && fingerMiddleMesh && fingerRingMesh && fingerPinkyMesh) {
-    const activeTp = isAimingTeleport || vrWasAimingTeleport;
-    fingerIndexMesh.rotation.x = (isOneFingerSelect || activeTp) ? 0.0 : -0.45;
-    fingerMiddleMesh.rotation.x = activeTp ? 0.0 : (isOneFingerSelect ? -1.35 : -0.5);
-    fingerRingMesh.rotation.x = (isOneFingerSelect || activeTp) ? -1.35 : -0.55;
-    fingerPinkyMesh.rotation.x = (isOneFingerSelect || activeTp) ? -1.35 : -0.6;
-    if (!renderer.xr.isPresenting) {
-      const flapOffset = isArmFlapFlying ? Math.sin(clock.elapsedTime * 14.0) * 0.045 * flapEnergy : 0.0;
-      rightHandGroup.position.y = -0.20 + flapOffset;
-      wristWatchGroup.position.y = -0.22 + flapOffset;
+  // Desktop 1.8s Delayed Sky-Flight Launch vs Parabolic Teleport
+  if (isAimingTeleport) {
+    if (desktopSkyFlightLatched) {
+      arcLine.visible = false; teleportRing.visible = false;
+      xrOrigin.position.addScaledVector(camFwd, FLY_SPEED * dt);
+    } else if (pitchDeg >= FLY_PITCH_THRESHOLD_DEG) {
+      arcLine.visible = false; teleportRing.visible = false;
+      desktopFlyHoldSec += dt;
+      if (desktopFlyHoldSec >= FLY_LAUNCH_DELAY_SEC) desktopSkyFlightLatched = true;
+    } else {
+      desktopFlyHoldSec = 0.0;
+      updateParabolicTeleport();
     }
   }
 
-  // 4. 1-Finger Point Selection Raycast:
-  if (isOneFingerSelect) {
-    const origin = new THREE.Vector3();
-    camera.getWorldPosition(origin);
-    raycaster.set(origin, camFwd);
-    raycaster.far = 30;
-    const hits = raycaster.intersectObjects(worldGroup.children, true);
-    selectedLabel = hits.length > 0 ? 'Object Highlighted' : 'Sky';
-  }
+  updateHandPose(dt);
 
-  // 5. Standard WASD & Point-Up Flight:
-  const isPointUpFlying = forceFlyMode || twoFingerFlightLatched || isArmFlapFlying || isVrControllerFlying ||
-    (pitchDeg >= BLUEPRINT.locomotion.fly_pitch_threshold_deg && keys['KeyW']);
-
-  const moveSpeed = (isPointUpFlying ? BLUEPRINT.locomotion.fly_speed : 3.8) * dt;
+  const isFlyingNow = forceFlyMode || desktopSkyFlightLatched || isVrFlying;
+  const moveSpeed = (isFlyingNow ? FLY_SPEED : 3.8) * dt;
   const fwdFlat = new THREE.Vector3(camFwd.x, 0, camFwd.z).normalize();
   const rightFlat = new THREE.Vector3().crossVectors(fwdFlat, new THREE.Vector3(0, 1, 0)).normalize();
 
-  if (keys['KeyW']) {
-    xrOrigin.position.addScaledVector(isPointUpFlying ? camFwd : fwdFlat, moveSpeed);
-  }
-  if (keys['KeyS']) {
-    xrOrigin.position.addScaledVector(isPointUpFlying ? camFwd : fwdFlat, -moveSpeed);
-  }
+  if (keys['KeyW']) xrOrigin.position.addScaledVector(isFlyingNow ? camFwd : fwdFlat, moveSpeed);
+  if (keys['KeyS']) xrOrigin.position.addScaledVector(isFlyingNow ? camFwd : fwdFlat, -moveSpeed);
   if (keys['KeyA']) xrOrigin.position.addScaledVector(rightFlat, -moveSpeed);
   if (keys['KeyD']) xrOrigin.position.addScaledVector(rightFlat, moveSpeed);
-  if (keys['KeyE']) xrOrigin.position.y += moveSpeed;
-  if (keys['KeyQ']) xrOrigin.position.y = Math.max(0, xrOrigin.position.y - moveSpeed);
 
-  if (!isPointUpFlying && !forceFlyMode && xrOrigin.position.y > 0.2) {
-    xrOrigin.position.y = Math.max(0, xrOrigin.position.y - 3.5 * dt);
+  if (!isFlyingNow && !renderer.xr.isPresenting && xrOrigin.position.y > 0.25 && xrOrigin.position.x > -10) {
+    xrOrigin.position.y = Math.max(0.25, xrOrigin.position.y - 3.5 * dt);
   }
 
-  stepGolfPhysics(dt);
-
-  // Update Mode & Telemetry UI
   const modeBadge = document.getElementById('mode-badge');
   if (!renderer.xr.isPresenting) {
-    if (twoFingerFlightLatched) modeBadge.textContent = 'Mode: 2-Finger Sky Flight!';
-    else if (isArmFlapFlying) modeBadge.textContent = `Mode: Arm-Flap Flight (${Math.round(flapEnergy * 100)}%)`;
-    else if (isOneFingerSelect) modeBadge.textContent = `Mode: 1-Finger Select (${selectedLabel})`;
-    else modeBadge.textContent = isPointUpFlying ? 'Mode: Wild VR Flying!' : 'Mode: Desktop Wild VR';
+    if (desktopThumbsUp) modeBadge.textContent = 'Mode: Thumbs-Up Gesture!';
+    else if (desktopSkyFlightLatched) modeBadge.textContent = 'Mode: Sky Flight Launched!';
+    else if (desktopFlyHoldSec > 0.05) modeBadge.textContent = `Charging Flight (${desktopFlyHoldSec.toFixed(1)}/1.8s)...`;
+    else modeBadge.textContent = 'Mode: Desktop Wild VR';
   }
   const telemetry = document.getElementById('telemetry-readout');
-  telemetry.innerHTML = `Pos: (${xrOrigin.position.x.toFixed(1)}, ${(xrOrigin.position.y + eyeHeight).toFixed(1)}, ${xrOrigin.position.z.toFixed(1)}) | Pitch: ${pitchDeg.toFixed(0)}&deg; | Flap: ${Math.round(flapEnergy * 100)}%`;
+  telemetry.innerHTML = `Pos: (${xrOrigin.position.x.toFixed(1)}, ${(xrOrigin.position.y + eyeHeight).toFixed(1)}, ${xrOrigin.position.z.toFixed(1)}) | Style ${currentStyleIdx + 1}/10 | [B] Cycle Style`;
 
   renderer.render(scene, camera);
 });
