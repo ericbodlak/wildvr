@@ -1,0 +1,61 @@
+{
+  "isolated_asset_id": null,
+  "assets": [
+    {
+      "id": "woolly_mammoth",
+      "category": "megafauna",
+      "label": "Woolly Mammoth",
+      "scale_m": 3.8,
+      "status": "DRAFT",
+      "locked": false
+    },
+    {
+      "id": "megaloceros",
+      "category": "megafauna",
+      "label": "Giant Irish Elk (Megaloceros)",
+      "scale_m": 2.1,
+      "status": "DRAFT",
+      "locked": false
+    },
+    {
+      "id": "smilodon",
+      "category": "megafauna",
+      "label": "Saber-Toothed Cat (Smilodon)",
+      "scale_m": 1.15,
+      "status": "DRAFT",
+      "locked": false
+    },
+    {
+      "id": "teratorn_vulture",
+      "category": "megafauna",
+      "label": "Teratorn Vulture Flock",
+      "scale_m": 3.5,
+      "status": "DRAFT",
+      "locked": false
+    },
+    {
+      "id": "giant_sequoia",
+      "category": "megaflora",
+      "label": "Giant Sequoia Tree",
+      "scale_m": 8.5,
+      "status": "DRAFT",
+      "locked": false
+    },
+    {
+      "id": "araucaria_conifer",
+      "category": "megaflora",
+      "label": "Araucaria Monkey-Puzzle Conifer",
+      "scale_m": 7.0,
+      "status": "DRAFT",
+      "locked": false
+    },
+    {
+      "id": "waterfall_cliff",
+      "category": "geology",
+      "label": "Stepped Waterfall & Overlook",
+      "scale_m": 5.5,
+      "status": "DRAFT",
+      "locked": false
+    }
+  ]
+}

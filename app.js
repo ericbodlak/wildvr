@@ -283,8 +283,19 @@ function pulseHaptics(inputSource, intensity = 0.85, durationMs = 160) {
 
 // --- Build Representative Prehistoric Wilderness Valley ---
 const teleportableMeshes = [];
+const inspectableMeshes = [];
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
+
+function tagAsset(obj, assetId, assetLabel) {
+  obj.userData.assetId = assetId;
+  obj.userData.assetLabel = assetLabel;
+  obj.traverse((child) => {
+    child.userData.assetId = assetId;
+    child.userData.assetLabel = assetLabel;
+    if (child.isMesh) inspectableMeshes.push(child);
+  });
+}
 
 function addMeshWithOutline(geom, mat, parent = worldGroup, teleportable = false) {
   const mesh = new THREE.Mesh(geom, mat);
@@ -316,20 +327,23 @@ const northBank = addMeshWithOutline(new THREE.CylinderGeometry(16.0, 18.5, 0.9,
 northBank.position.set(-5.0, 0.0, -18.5);
 
 // Stepped Cliff Overlook & Waterfall Ridge (West/Northwest)
-const cliffTier1 = addMeshWithOutline(new THREE.CylinderGeometry(7.5, 9.5, 2.8, 12), materials.cliff, worldGroup, true);
+const cliffWaterfallGroup = new THREE.Group();
+const cliffTier1 = addMeshWithOutline(new THREE.CylinderGeometry(7.5, 9.5, 2.8, 12), materials.cliff, cliffWaterfallGroup, true);
 cliffTier1.position.set(-14.5, 1.4, -7.5);
 
-const cliffTier2 = addMeshWithOutline(new THREE.CylinderGeometry(5.2, 6.8, 5.4, 10), materials.cliff, worldGroup, true);
+const cliffTier2 = addMeshWithOutline(new THREE.CylinderGeometry(5.2, 6.8, 5.4, 10), materials.cliff, cliffWaterfallGroup, true);
 cliffTier2.position.set(-17.0, 2.7, -10.5);
 
-const cliffDeck = addMeshWithOutline(new THREE.CylinderGeometry(5.0, 5.2, 0.3, 10), materials.terrain, worldGroup, true);
+const cliffDeck = addMeshWithOutline(new THREE.CylinderGeometry(5.0, 5.2, 0.3, 10), materials.terrain, cliffWaterfallGroup, true);
 cliffDeck.position.set(-17.0, 5.45, -10.5);
 
 // Cascading Waterfall Sheet
 const waterfallMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 5.5, 0.35), materials.water);
 waterfallMesh.position.set(-13.2, 2.6, -8.8);
 waterfallMesh.rotation.z = -0.18;
-worldGroup.add(waterfallMesh);
+cliffWaterfallGroup.add(waterfallMesh);
+tagAsset(cliffWaterfallGroup, 'waterfall_cliff', 'Cascading Waterfall & Cliff Overlook');
+worldGroup.add(cliffWaterfallGroup);
 
 // Winding Natural Hiking Trail & Timber Footbridge
 [
@@ -349,6 +363,8 @@ const bridgeDeck = addMeshWithOutline(new THREE.BoxGeometry(2.4, 0.18, 6.5), mat
 bridgeDeck.position.set(-4.6, 0.38, -5.8);
 
 // 2. Prehistoric Megaflora (Giant Sequoias & Araucaria Conifers)
+let prototypeSequoia = null;
+let prototypeAraucaria = null;
 const treeSpecs = [
   [-10.5, 0.25, 7.5, 1.55], [-12.5, 0.25, 1.2, 1.35], [-8.5, 0.25, 12.5, 1.4],
   [9.5, 0.25, 9.0, 1.65], [13.5, 0.25, 3.5, 1.5], [11.0, 0.25, -2.5, 1.3],
@@ -357,6 +373,7 @@ const treeSpecs = [
 ];
 treeSpecs.forEach(([tx, ty, tz, s], idx) => {
   const tree = new THREE.Group();
+  const isSequoia = idx % 2 === 0;
   const trunk = addMeshWithOutline(new THREE.CylinderGeometry(0.18 * s, 0.32 * s, 1.6 * s, 7), materials.trunk, tree);
   trunk.position.y = 0.8 * s;
   for (let tier = 0; tier < 4; tier++) {
@@ -368,6 +385,13 @@ treeSpecs.forEach(([tx, ty, tz, s], idx) => {
     cone.position.y = (1.65 + tier * 0.82) * s;
   }
   tree.position.set(tx, ty, tz);
+  tagAsset(
+    tree,
+    isSequoia ? 'giant_sequoia' : 'araucaria_conifer',
+    isSequoia ? 'Prehistoric Giant Sequoia' : 'Araucaria Monkey-Puzzle Conifer'
+  );
+  if (isSequoia && !prototypeSequoia) prototypeSequoia = tree;
+  if (!isSequoia && !prototypeAraucaria) prototypeAraucaria = tree;
   worldGroup.add(tree);
 });
 
@@ -409,6 +433,7 @@ mammothGroup.add(mammothTrunkPivot);
 });
 mammothGroup.position.set(5.2, 0.25, 3.8);
 mammothGroup.rotation.y = -0.55;
+tagAsset(mammothGroup, 'woolly_mammoth', 'Woolly Mammoth (Mammuthus primigenius)');
 worldGroup.add(mammothGroup);
 
 // B. Giant Irish Elk (Megaloceros — 2.1m shoulder, 3.4m broad palmate antler span)
@@ -433,6 +458,7 @@ eHead.position.set(0, 2.75, 1.15);
 });
 elkGroup.position.set(-4.5, 0.45, -13.5);
 elkGroup.rotation.y = 0.4;
+tagAsset(elkGroup, 'megaloceros', 'Giant Irish Elk (Megaloceros giganteus)');
 worldGroup.add(elkGroup);
 
 // C. Saber-Toothed Cat (Smilodon — watching from the high cliff overlook)
@@ -452,6 +478,7 @@ sHead.position.set(0, 1.12, 0.78);
 });
 smilodonGroup.position.set(-15.5, 5.6, -9.2);
 smilodonGroup.rotation.y = 0.78;
+tagAsset(smilodonGroup, 'smilodon', 'Saber-Toothed Cat (Smilodon fatalis)');
 worldGroup.add(smilodonGroup);
 
 // D. Circling Teratorn Vultures High Overhead
@@ -462,7 +489,232 @@ for (let v = 0; v < 3; v++) {
   bird.position.set(Math.cos(angle) * 11, 22 + v * 1.5, Math.sin(angle) * 11);
   bird.scale.set(1.8, 0.25, 0.6);
 }
+tagAsset(vultureFlock, 'teratorn_vulture', 'Circling Teratorn Giant Vulture');
 scene.add(vultureFlock);
+
+// --- 4. Isolated Asset Turntable Studio (1:1 Scale + 1.75m Human Reference + Approval Lock) ---
+let isolatedAssetId = 'all';
+let approveHoldSec = 0.0;
+const approvedAssets = JSON.parse(localStorage.getItem('wildvr_approved_assets') || '{}');
+
+const turntableGroup = new THREE.Group();
+turntableGroup.position.set(0, 0.25, 5.2);
+turntableGroup.visible = false;
+scene.add(turntableGroup);
+
+const pedestalBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(3.4, 3.8, 0.24, 32),
+  new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, flatShading: true })
+);
+pedestalBase.position.y = -0.12;
+pedestalBase.receiveShadow = true;
+turntableGroup.add(pedestalBase);
+
+const pedestalRingMat = new THREE.MeshBasicMaterial({ color: 0xffb703, side: THREE.DoubleSide });
+const pedestalRing = new THREE.Mesh(new THREE.RingGeometry(3.42, 3.62, 36), pedestalRingMat);
+pedestalRing.rotation.x = -Math.PI / 2;
+pedestalRing.position.y = 0.02;
+turntableGroup.add(pedestalRing);
+
+// 1.75m Human Scale Reference Post next to the turntable
+const scaleRefPost = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.06, 0.06, 1.75, 10),
+  new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+);
+scaleRefPost.position.set(-3.1, 0.875, 0.8);
+turntableGroup.add(scaleRefPost);
+
+const turntableSpecimenSlot = new THREE.Group();
+turntableGroup.add(turntableSpecimenSlot);
+
+const ASSET_PROTOTYPES = {
+  woolly_mammoth: { src: () => mammothGroup, label: 'Woolly Mammoth (3.8m)', scale: 1.0, offset: [0, 0, 0] },
+  megaloceros: { src: () => elkGroup, label: 'Giant Irish Elk (3.1m)', scale: 1.0, offset: [0, 0, 0] },
+  smilodon: { src: () => smilodonGroup, label: 'Saber-Toothed Cat (1.2m)', scale: 1.0, offset: [0, 0, 0] },
+  teratorn_vulture: { src: () => vultureFlock.children[0], label: 'Teratorn Giant Vulture (3.5m)', scale: 1.0, offset: [0, 1.6, 0] },
+  giant_sequoia: { src: () => prototypeSequoia, label: 'Prehistoric Giant Sequoia (11.5m)', scale: 1.0, offset: [0, 0, 0] },
+  araucaria_conifer: { src: () => prototypeAraucaria, label: 'Monkey-Puzzle Conifer (7.2m)', scale: 1.0, offset: [0, 0, 0] },
+  waterfall_cliff: { src: () => cliffWaterfallGroup, label: 'Cascading Waterfall & Cliff', scale: 0.45, offset: [6.8, 0, 4.0] }
+};
+
+function isolateAsset(assetId) {
+  isolatedAssetId = assetId || 'all';
+  document.getElementById('select-asset').value = isolatedAssetId;
+  while (turntableSpecimenSlot.children.length > 0) {
+    turntableSpecimenSlot.remove(turntableSpecimenSlot.children[0]);
+  }
+  const badge = document.getElementById('asset-badge');
+  const approveBtn = document.getElementById('btn-approve-asset');
+
+  if (isolatedAssetId === 'all' || !ASSET_PROTOTYPES[isolatedAssetId]) {
+    worldGroup.visible = true;
+    vultureFlock.visible = true;
+    turntableGroup.visible = false;
+    badge.textContent = 'Scene: Full Prehistoric Valley';
+    approveBtn.classList.remove('active');
+    approveBtn.textContent = '👍 Approve';
+    return;
+  }
+
+  const spec = ASSET_PROTOTYPES[isolatedAssetId];
+  const srcObj = spec.src();
+  if (!srcObj) return;
+
+  worldGroup.visible = false;
+  vultureFlock.visible = false;
+  turntableGroup.visible = true;
+  xrOrigin.position.set(0, 0.25, 10.5);
+  yaw = 0; pitch = -0.04;
+
+  const clone = srcObj.clone(true);
+  clone.position.set(spec.offset[0], spec.offset[1], spec.offset[2]);
+  clone.rotation.set(0, 0, 0);
+  clone.scale.setScalar(spec.scale);
+  turntableSpecimenSlot.add(clone);
+
+  const isLocked = Boolean(approvedAssets[isolatedAssetId]);
+  pedestalRingMat.color.setHex(isLocked ? 0x10b981 : 0xffb703);
+  badge.textContent = `Turntable: ${spec.label} ${isLocked ? '[APPROVED 🔒]' : '[Needs Review]'}`;
+  approveBtn.classList.toggle('active', isLocked);
+  approveBtn.textContent = isLocked ? '🔒 Approved!' : '👍 Approve';
+}
+
+function approveCurrentAsset(targetId = null) {
+  const idToApprove = targetId || (isolatedAssetId !== 'all' ? isolatedAssetId : getSpatialAndTargetContext().targeted_asset_id);
+  if (!idToApprove || idToApprove === 'all' || idToApprove === 'terrain_or_sky') return;
+  approvedAssets[idToApprove] = { approved: true, locked: true, styleIdx: currentStyleIdx, timestamp: new Date().toISOString() };
+  localStorage.setItem('wildvr_approved_assets', JSON.stringify(approvedAssets));
+  pedestalRingMat.color.setHex(0x10b981);
+  const spec = ASSET_PROTOTYPES[idToApprove];
+  document.getElementById('asset-badge').textContent = `Approved & Locked: ${spec ? spec.label : idToApprove} 🔒`;
+  const approveBtn = document.getElementById('btn-approve-asset');
+  approveBtn.classList.add('active');
+  approveBtn.textContent = '🔒 Approved!';
+
+  ['https://192.168.86.226:8443/api/vr-approve', 'http://localhost:8765/api/vr-approve'].forEach((endpoint) => {
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asset_id: idToApprove, approved: true, notes: `Approved in Style ${currentStyleIdx + 1}/10` })
+    }).catch(() => {});
+  });
+}
+
+// --- 5. In-Headset Microphone Push-to-Talk + 3D Spatial & Action Context Bridge ---
+const targetRaycaster = new THREE.Raycaster();
+let btnAHoldSec = 0.0;
+let btnAVoiceTriggered = false;
+
+function getSpatialAndTargetContext() {
+  const origin = new THREE.Vector3();
+  const dir = new THREE.Vector3(0, 0, -1);
+  const headPos = new THREE.Vector3();
+  const headDir = new THREE.Vector3();
+  camera.getWorldPosition(headPos);
+  camera.getWorldDirection(headDir);
+
+  if (renderer.xr.isPresenting && activeController) {
+    activeController.getWorldPosition(origin);
+    dir.applyQuaternion(activeController.getWorldQuaternion(tempQuat)).normalize();
+  } else {
+    origin.copy(headPos);
+    dir.copy(headDir);
+  }
+
+  targetRaycaster.set(origin, dir);
+  targetRaycaster.far = 85.0;
+  const hits = targetRaycaster.intersectObjects(inspectableMeshes, true);
+  let targetId = isolatedAssetId !== 'all' ? isolatedAssetId : 'terrain_or_sky';
+  let targetLabel = isolatedAssetId !== 'all' && ASSET_PROTOTYPES[isolatedAssetId]
+    ? ASSET_PROTOTYPES[isolatedAssetId].label
+    : 'Valley Terrain / Sky';
+  let hitPt = [
+    Number((origin.x + dir.x * 5).toFixed(2)),
+    Number((origin.y + dir.y * 5).toFixed(2)),
+    Number((origin.z + dir.z * 5).toFixed(2))
+  ];
+
+  if (hits.length > 0) {
+    let obj = hits[0].object;
+    while (obj && !obj.userData.assetId && obj.parent) obj = obj.parent;
+    if (obj && obj.userData.assetId) {
+      targetId = obj.userData.assetId;
+      targetLabel = obj.userData.assetLabel || targetId;
+    }
+    hitPt = [
+      Number(hits[0].point.x.toFixed(2)),
+      Number(hits[0].point.y.toFixed(2)),
+      Number(hits[0].point.z.toFixed(2))
+    ];
+  }
+
+  return {
+    player_position: [Number(xrOrigin.position.x.toFixed(2)), Number((xrOrigin.position.y + eyeHeight).toFixed(2)), Number(xrOrigin.position.z.toFixed(2))],
+    head_direction: [Number(headDir.x.toFixed(3)), Number(headDir.y.toFixed(3)), Number(headDir.z.toFixed(3))],
+    controller_direction: [Number(dir.x.toFixed(3)), Number(dir.y.toFixed(3)), Number(dir.z.toFixed(3))],
+    targeted_asset_id: targetId,
+    targeted_asset_label: targetLabel,
+    targeted_hit_point: hitPt,
+    active_style_index: currentStyleIdx,
+    active_style: STYLES[currentStyleIdx].name,
+    isolated_asset_id: isolatedAssetId,
+    locomotion_mode: vrSkyFlightLatched || desktopSkyFlightLatched ? 'sky_flight' : (isolatedAssetId !== 'all' ? 'asset_turntable' : 'ground_explore')
+  };
+}
+
+function sendVrSpatialRequest(transcriptText) {
+  if (!transcriptText || !transcriptText.trim()) return;
+  const ctx = getSpatialAndTargetContext();
+  const payload = { ...ctx, transcript: transcriptText.trim(), timestamp: new Date().toISOString() };
+
+  const history = JSON.parse(localStorage.getItem('wildvr_voice_requests') || '[]');
+  history.push(payload);
+  localStorage.setItem('wildvr_voice_requests', JSON.stringify(history));
+
+  const micBadge = document.getElementById('mic-badge');
+  micBadge.textContent = `Sent (${ctx.targeted_asset_id}): "${transcriptText.slice(0, 28)}..."`;
+
+  ['https://192.168.86.226:8443/api/vr-request', 'http://localhost:8765/api/vr-request'].forEach((endpoint) => {
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  });
+}
+
+function triggerVoiceRequest(activeInputSrc = null) {
+  const ctx = getSpatialAndTargetContext();
+  const micBadge = document.getElementById('mic-badge');
+  pulseHaptics(activeInputSrc, 0.8, 120);
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRec) {
+    try {
+      const rec = new SpeechRec();
+      rec.lang = 'en-US';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      micBadge.textContent = `🎤 Listening (Target: ${ctx.targeted_asset_id})...`;
+      rec.onresult = (ev) => {
+        const spoken = ev.results[0][0].transcript;
+        sendVrSpatialRequest(spoken);
+        pulseHaptics(activeInputSrc, 0.9, 160);
+      };
+      rec.onerror = () => {
+        const fallback = window.prompt(`Voice Request for [${ctx.targeted_asset_label}] at (${ctx.targeted_hit_point.join(', ')}):`, '');
+        if (fallback) sendVrSpatialRequest(fallback);
+        else micBadge.textContent = 'Mic: Ready [Hold A / M]';
+      };
+      rec.start();
+      return;
+    } catch (e) {
+      console.warn('SpeechRecognition fallback:', e);
+    }
+  }
+  const typed = window.prompt(`Speak/Type Request for [${ctx.targeted_asset_label}] at (${ctx.targeted_hit_point.join(', ')}):`, '');
+  if (typed) sendVrSpatialRequest(typed);
+}
 
 // --- Parabolic Teleport Arc & Landing Ring ---
 const arcMaxPoints = 24;
@@ -545,6 +797,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyG') desktopThumbsUp = true;
   if (e.code === 'KeyB') applyStyle(currentStyleIdx + 1);
   if (e.code === 'KeyN') applyStyle(currentStyleIdx - 1);
+  if (e.code === 'KeyM') triggerVoiceRequest();
   if (e.code === 'Tab') {
     e.preventDefault();
     document.getElementById('style-panel').classList.toggle('minimized');
@@ -602,26 +855,33 @@ document.getElementById('watch-header-toggle').addEventListener('click', () => {
 document.getElementById('select-style').addEventListener('change', (e) => applyStyle(Number(e.target.value)));
 document.getElementById('btn-next-style').addEventListener('click', () => applyStyle(currentStyleIdx + 1));
 document.getElementById('btn-prev-style').addEventListener('click', () => applyStyle(currentStyleIdx - 1));
+document.getElementById('select-asset').addEventListener('change', (e) => isolateAsset(e.target.value));
+document.getElementById('btn-approve-asset').addEventListener('click', () => approveCurrentAsset());
+document.getElementById('btn-voice-req').addEventListener('click', () => triggerVoiceRequest());
 
 document.getElementById('btn-tp-meadow').addEventListener('click', () => {
+  isolateAsset('all');
   isDollhouse = false; xrOrigin.scale.set(1, 1, 1); xrOrigin.position.set(0, 0.25, 10.5); yaw = 0; pitch = -0.05;
-  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
+  document.getElementById('asset-badge').textContent = 'Scene: Valley Meadow (1:1)';
 });
 document.getElementById('btn-tp-overlook').addEventListener('click', () => {
+  isolateAsset('all');
   isDollhouse = false; xrOrigin.scale.set(1, 1, 1); xrOrigin.position.set(-16.8, 5.6, -11.5); yaw = -0.75; pitch = -0.22;
-  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
+  document.getElementById('asset-badge').textContent = 'Scene: Smilodon Cliff Overlook (1:1)';
 });
 document.getElementById('btn-tp-mammoth').addEventListener('click', () => {
+  isolateAsset('all');
   isDollhouse = false; xrOrigin.scale.set(1, 1, 1); xrOrigin.position.set(1.8, 0.25, 7.2); yaw = -0.45; pitch = 0.08;
-  document.getElementById('scale-badge').textContent = 'Scale: 1:1 Human';
+  document.getElementById('asset-badge').textContent = 'Scene: By the Woolly Mammoth (1:1)';
 });
 document.getElementById('btn-dollhouse').addEventListener('click', (e) => {
+  isolateAsset('all');
   isDollhouse = !isDollhouse;
   e.target.classList.toggle('active', isDollhouse);
   const s = isDollhouse ? 14.0 : 1.0;
   xrOrigin.scale.set(s, s, s);
   xrOrigin.position.set(0, 0.25, isDollhouse ? 16.0 : 10.5);
-  document.getElementById('scale-badge').textContent = isDollhouse ? 'Scale: 1:14 Giant' : 'Scale: 1:1 Human';
+  document.getElementById('asset-badge').textContent = isDollhouse ? 'Scale: 1:14 Giant Overview' : 'Scene: Full Prehistoric Valley';
 });
 
 document.getElementById('btn-enter-vr').addEventListener('click', async () => {
@@ -675,7 +935,7 @@ function pollXRControllers(dt, camFwd) {
     const triggerHeld = Boolean(gp.buttons[0] && gp.buttons[0].pressed);
     const gripHeld = Boolean((gp.buttons[1] && gp.buttons[1].pressed) || ctrl.userData.squeezeHeld);
 
-    // Side Grip button -> Thumbs-Up gesture ONLY (never teleports or flies!)
+    // Side Grip button -> Thumbs-Up gesture ONLY (plus 1s hold on Turntable to Approve & Lock!)
     if (gripHeld) {
       anyGripThumbsUp = true;
       activeInputSrc = src;
@@ -733,14 +993,36 @@ function pollXRControllers(dt, camFwd) {
 
   if (!pointingUpWithStick && !flyingNow) vrFlyHoldSec = 0.0;
 
-  // Haptic tap when Thumbs-Up first engages
+  // Haptic tap when Thumbs-Up first engages; hold 1.0s while inspecting an asset to Approve & Lock!
   if (anyGripThumbsUp && !prevThumbsUpState) pulseHaptics(activeInputSrc, 0.45, 70);
+  if (anyGripThumbsUp) {
+    approveHoldSec += dt;
+    if (approveHoldSec >= 1.0 && approveHoldSec - dt < 1.0) {
+      approveCurrentAsset();
+      pulseHaptics(activeInputSrc, 0.95, 200);
+    }
+  } else {
+    approveHoldSec = 0.0;
+  }
   prevThumbsUpState = anyGripThumbsUp;
   vrThumbsUpActive = anyGripThumbsUp;
 
-  // B Button -> Next Visual Style; A Button -> Previous Visual Style
+  // B Button -> Next Visual Style; A Button -> Tap (<0.75s) for Prev Style, Hold (>=0.75s) for Voice Request!
   if (anyBtnB && !prevBtnB) { applyStyle(currentStyleIdx + 1); pulseHaptics(activeInputSrc, 0.55, 60); }
-  if (anyBtnA && !prevBtnA) { applyStyle(currentStyleIdx - 1); pulseHaptics(activeInputSrc, 0.55, 60); }
+  if (anyBtnA) {
+    btnAHoldSec += dt;
+    if (btnAHoldSec >= 0.75 && !btnAVoiceTriggered) {
+      btnAVoiceTriggered = true;
+      triggerVoiceRequest(activeInputSrc);
+    }
+  } else {
+    if (prevBtnA && !btnAVoiceTriggered) {
+      applyStyle(currentStyleIdx - 1);
+      pulseHaptics(activeInputSrc, 0.55, 60);
+    }
+    btnAHoldSec = 0.0;
+    btnAVoiceTriggered = false;
+  }
   prevBtnA = anyBtnA;
   prevBtnB = anyBtnB;
 
@@ -805,10 +1087,13 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   const t = clock.elapsedTime;
 
-  // Subtle living wilderness animations (Mammoth trunk sway & circling Teratorn vultures)
+  // Subtle living wilderness animations (Mammoth trunk sway, circling Teratorn vultures, & Turntable rotation)
   mammothTrunkPivot.rotation.z = Math.sin(t * 1.4) * 0.14;
   mammothTrunkPivot.rotation.x = Math.cos(t * 0.9) * 0.08;
   vultureFlock.rotation.y = t * 0.18;
+  if (turntableGroup.visible) {
+    turntableSpecimenSlot.rotation.y = t * 0.38;
+  }
 
   if (!renderer.xr.isPresenting) {
     if (keys['ArrowLeft']) yaw += 1.6 * dt;
