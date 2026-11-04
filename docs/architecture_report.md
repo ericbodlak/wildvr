@@ -15,7 +15,7 @@ This report documents the architectural, methodological, and mathematical founda
 | :--- | :--- | :--- | :--- |
 | **Bidirectional Sync Rate** | **100.0%** | 100.0% | `PASS (SYNCHRONIZED)` |
 | **Formal Design Premises** | **7 Premises** | $\ge 1$ Validated | `PASS` |
-| **Implementing Code Symbols** | **15 Tagged Symbols** | $1:1$ Symbol Linkage | `PASS` |
+| **Implementing Code Symbols** | **17 Tagged Symbols** | $1:1$ Symbol Linkage | `PASS` |
 | **Unimplemented Premises** | **0** | 0 | `PASS` |
 | **Orphaned Code Tags** | **0** | 0 | `PASS` |
 | **Symbolic Math Claims** | **2/2 Claims** | SymPy Verification | `PASS (100% VERIFIED)` |
@@ -158,6 +158,12 @@ Links all formal premises in docs/architecture_argument.md to executable studio 
     - *Docstring Intent:* Loads scene_blueprint.json and verifies PixPal draw-call and triangle budgets.
 @premise(P5_PIXPAL_DIORAMA_BUDGET)
 @premise(P6_PARAMETRIC_CSG_HOUSE)
+  - **Function** `[verify_lod_and_shader_matrix](xr_studio_engine.py#L111)` (`xr_studio_engine.py:111`)
+    - *Signature:* `def verify_lod_and_shader_matrix(studio_dir)`
+    - *Docstring Intent:* Audits the Multi-LOD geometry tiers (LOD 0..3 + 4-Pedestal Lineups) and
+10 Shader/Texture rendering pipelines in the studio bundle.
+@premise(P5_PIXPAL_DIORAMA_BUDGET)
+@premise(P7_STUDIO_CONVERGENCE)
 
 ### 3.6 [P6_PARAMETRIC_CSG_HOUSE] Rapid architectural iteration and minigame prototyping require compiling declarative JSON floorplans into live-modifiable 3D room, roof, patio, and putting-green primitives.
 
@@ -193,7 +199,13 @@ Links all formal premises in docs/architecture_argument.md to executable studio 
 and Quest 3 performance auditing for the Walkabout Studio workspace.
 @premise(P1_DUAL_MODE_PARITY)
 @premise(P7_STUDIO_CONVERGENCE)
-  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L111)` (`xr_studio_engine.py:111`)
+  - **Function** `[verify_lod_and_shader_matrix](xr_studio_engine.py#L111)` (`xr_studio_engine.py:111`)
+    - *Signature:* `def verify_lod_and_shader_matrix(studio_dir)`
+    - *Docstring Intent:* Audits the Multi-LOD geometry tiers (LOD 0..3 + 4-Pedestal Lineups) and
+10 Shader/Texture rendering pipelines in the studio bundle.
+@premise(P5_PIXPAL_DIORAMA_BUDGET)
+@premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L145)` (`xr_studio_engine.py:145`)
     - *Signature:* `def run_full_studio_convergence(cls, studio_dir)`
     - *Docstring Intent:* Executes end-to-end studio verification across locomotion, wristwatch UI, and scene budget.
 @premise(P7_STUDIO_CONVERGENCE)
@@ -257,11 +269,13 @@ The following matrix maps every formal premise in the architecture argument to i
 | `P4_WRIST_GLANCE_UI` | `V_FLIGHT >> V_WRIST_UI` | `verify_wristwatch_glance` | `function` | `xr_studio_engine.py:80` | `SYNCHRONIZED` |
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `audit_studio_blueprint` | `function` | `xr_studio_engine.py:94` | `SYNCHRONIZED` |
+| `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
 | `P6_PARAMETRIC_CSG_HOUSE` | `(V_PIXPAL & V_WRIST_UI) >> V_CSG_HOUSE` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P6_PARAMETRIC_CSG_HOUSE` | `(V_PIXPAL & V_WRIST_UI) >> V_CSG_HOUSE` | `audit_studio_blueprint` | `function` | `xr_studio_engine.py:94` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `WalkaboutStudioController` | `class` | `xr_studio_engine.py:34` | `SYNCHRONIZED` |
-| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:145` | `SYNCHRONIZED` |
 
 ---
 
