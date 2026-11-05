@@ -1431,7 +1431,7 @@ function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
   if (!baseGeom.userData.lodGeomCache) baseGeom.userData.lodGeomCache = {};
   if (baseGeom.userData.lodGeomCache[clampedLod]) return baseGeom.userData.lodGeomCache[clampedLod];
 
-  const gridResByLod = [13, 21, 34, 64];
+  const gridResByLod = [14, 28, 40, 64];
   const gridRes = gridResByLod[clampedLod];
   baseGeom.computeBoundingBox();
   const bb = baseGeom.boundingBox;
@@ -1455,11 +1455,17 @@ function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
 
   for (let i = 0; i < vCount; i++) {
     const px = posAttr.getX(i), py = posAttr.getY(i), pz = posAttr.getZ(i);
-    const dx = px - cx, dy = py - cy, dz = pz - cz;
     const zZone = zoneArr ? zoneArr[i] : 1;
-    const isPawOrIvory = zZone === 3 || zZone === 0 || (pz - minZ) < spanZ * 0.16;
-    const isExtremity = isPawOrIvory || (dx * dx + dy * dy + dz * dz) > maxRadSq * 0.44;
-    const res = isPawOrIvory ? gridRes * 3.4 : (isExtremity ? gridRes * 2.2 : gridRes);
+    // Never cluster sculpted Ivory features (tusks, saber blades, 16 Smilodon claws) or dark eyes/nails
+    if (zZone === 3 || zZone === 0) {
+      remap[i] = i;
+      clusterSum[i] = [px, py, pz, 1];
+      continue;
+    }
+    const dx = px - cx, dy = py - cy, dz = pz - cz;
+    const isPaw = (pz - minZ) < spanZ * 0.16;
+    const isExtremity = isPaw || (dx * dx + dy * dy + dz * dz) > maxRadSq * 0.44;
+    const res = isPaw ? gridRes * 3.0 : (isExtremity ? gridRes * 2.0 : gridRes);
     const qx = Math.floor(((px - minX) / spanX) * res);
     const qy = Math.floor(((py - minY) / spanY) * res);
     const qz = Math.floor(((pz - minZ) / spanZ) * res);
@@ -1472,7 +1478,7 @@ function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
     if (rep === undefined) {
       rep = i;
       cellMap.set(key, rep);
-      clusterSum[rep] = [px, py, pz, 1];
+      clusterSum[i] = [px, py, pz, 1];
     } else {
       const s = clusterSum[rep];
       s[0] += px; s[1] += py; s[2] += pz; s[3] += 1;
@@ -1516,6 +1522,10 @@ function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
   lodGeom.setIndex(newIndices);
   lodGeom.clearGroups();
   newGroups.forEach((ng) => lodGeom.addGroup(ng.start, ng.count, ng.materialIndex));
+  if (zoneArr && newGroups.length >= 2 && newGroups[1].count > 0) {
+    const bodyIdxSlice = newIndices.slice(newGroups[1].start, newGroups[1].start + newGroups[1].count);
+    smoothMammothBodyMesh(newPos, lodGeom.attributes.skinIndex, bodyIdxSlice, 4);
+  }
   lodGeom.computeVertexNormals();
   baseGeom.userData.lodGeomCache[clampedLod] = lodGeom;
   return lodGeom;
@@ -3642,6 +3652,217 @@ function appendFittedBalloonSaberBlades(geom, vZones, ivoryBucket, cx, cy, topZ,
   return newVZones;
 }
 
+/**
+ * Seam-welded topological Laplacian smoothing to melt scraggly hair spikes/tufts on the Mammoth
+ * into a clean, rounded, well-sculpted body contour without tearing UV seams.
+ */
+function smoothMammothBodyMesh(posAttr, skinAttr, indexArr, passes = 8) {
+  const vCount = posAttr.count;
+  const vertToNode = new Int32Array(vCount);
+  const nodeMap = new Map();
+  const nodeCoords = [];
+  const nodeWeight = [];
+
+  for (let i = 0; i < vCount; i++) {
+    const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
+    const b0 = skinAttr ? skinAttr.getX(i) : -1;
+    const key = `${Math.round(x * 5)}_${Math.round(y * 5)}_${Math.round(z * 5)}`;
+    let nIdx = nodeMap.get(key);
+    if (nIdx === undefined) {
+      nIdx = nodeCoords.length;
+      nodeMap.set(key, nIdx);
+      nodeCoords.push([x, y, z]);
+      const isEyeOrSole = (b0 === 19 || b0 === 20 || z < 10.0);
+      const w = isEyeOrSole ? 0.0 : Math.min(1.0, (z - 10.0) / 22.0) * 0.54;
+      nodeWeight.push(w);
+    }
+    vertToNode[i] = nIdx;
+  }
+
+  const nCount = nodeCoords.length;
+  const adj = Array.from({ length: nCount }, () => []);
+  for (let t = 0; t < indexArr.length; t += 3) {
+    const na = vertToNode[indexArr[t]];
+    const nb = vertToNode[indexArr[t + 1]];
+    const nc = vertToNode[indexArr[t + 2]];
+    if (na !== nb && !adj[na].includes(nb)) { adj[na].push(nb); adj[nb].push(na); }
+    if (nb !== nc && !adj[nb].includes(nc)) { adj[nb].push(nc); adj[nc].push(nb); }
+    if (nc !== na && !adj[nc].includes(na)) { adj[nc].push(na); adj[na].push(nc); }
+  }
+
+  for (let p = 0; p < passes; p++) {
+    const nextCoords = nodeCoords.map((c) => [c[0], c[1], c[2]]);
+    for (let n = 0; n < nCount; n++) {
+      const w = nodeWeight[n];
+      const nbrs = adj[n];
+      if (w <= 0.001 || nbrs.length === 0) continue;
+      let sx = 0, sy = 0, sz = 0;
+      for (let k = 0; k < nbrs.length; k++) {
+        const nc = nodeCoords[nbrs[k]];
+        sx += nc[0]; sy += nc[1]; sz += nc[2];
+      }
+      const inv = 1.0 / nbrs.length;
+      nextCoords[n][0] = nodeCoords[n][0] * (1.0 - w) + (sx * inv) * w;
+      nextCoords[n][1] = nodeCoords[n][1] * (1.0 - w) + (sy * inv) * w;
+      nextCoords[n][2] = nodeCoords[n][2] * (1.0 - w) + (sz * inv) * w;
+    }
+    for (let n = 0; n < nCount; n++) {
+      nodeCoords[n][0] = nextCoords[n][0];
+      nodeCoords[n][1] = nextCoords[n][1];
+      nodeCoords[n][2] = nextCoords[n][2];
+    }
+  }
+
+  for (let i = 0; i < vCount; i++) {
+    const nc = nodeCoords[vertToNode[i]];
+    posAttr.setXYZ(i, nc[0], nc[1], nc[2]);
+  }
+  posAttr.needsUpdate = true;
+}
+
+/**
+ * Appends two smooth, watertight Helical Ivory Tusks (Group 3: Ivory, skinIndex=7 Mammoth Head_07)
+ * emerging cleanly from the maxillary sockets so zero fur around the tusks is colored white.
+ */
+function appendFittedBalloonMammothTusks(geom, vZones, ivoryBucket) {
+  const lSeg = 10;
+  const rSeg = 8;
+  const vertsPerTusk = (lSeg + 1) * rSeg;
+  const extraVerts = 2 * vertsPerTusk;
+  const origCount = geom.attributes.position.count;
+  const totalCount = origCount + extraVerts;
+
+  const newVZones = new Uint8Array(totalCount);
+  newVZones.set(vZones, 0);
+  for (let i = origCount; i < totalCount; i++) newVZones[i] = 3;
+
+  Object.keys(geom.attributes).forEach((attrName) => {
+    const oldAttr = geom.attributes[attrName];
+    const itemSize = oldAttr.itemSize;
+    const Ctor = oldAttr.array.constructor;
+    const nextArr = new Ctor(totalCount * itemSize);
+    nextArr.set(oldAttr.array, 0);
+    if (attrName === 'skinIndex') {
+      for (let v = origCount; v < totalCount; v++) nextArr[v * itemSize] = 7; // Mammoth Head_07
+    } else if (attrName === 'skinWeight') {
+      for (let v = origCount; v < totalCount; v++) nextArr[v * itemSize] = 1.0;
+    }
+    geom.setAttribute(attrName, new THREE.BufferAttribute(nextArr, itemSize));
+  });
+
+  const posArr = geom.attributes.position.array;
+  [-1, 1].forEach((side, sIdx) => {
+    const baseV = origCount + sIdx * vertsPerTusk;
+    for (let i = 0; i <= lSeg; i++) {
+      const u = i / lSeg;
+      const radius = Math.max(0.95, 6.2 * Math.pow(1.0 - u, 0.58));
+      const bx = side * (19.5 + 18.0 * Math.sin(u * Math.PI * 0.78) - 5.5 * u * u);
+      const by = -142.0 - 126.0 * Math.pow(u, 0.88);
+      const bz = 172.0 - 66.0 * Math.sin(u * Math.PI * 0.92) + 26.0 * Math.pow(u, 2.2);
+
+      for (let j = 0; j < rSeg; j++) {
+        const theta = (j / rSeg) * Math.PI * 2.0;
+        const vIdx = (baseV + i * rSeg + j) * 3;
+        posArr[vIdx] = bx + Math.cos(theta) * radius;
+        posArr[vIdx + 1] = by + Math.sin(theta) * radius * 0.65;
+        posArr[vIdx + 2] = bz + Math.sin(theta) * radius;
+      }
+    }
+    for (let i = 0; i < lSeg; i++) {
+      for (let j = 0; j < rSeg; j++) {
+        const jNext = (j + 1) % rSeg;
+        const a = baseV + i * rSeg + j;
+        const b = baseV + (i + 1) * rSeg + j;
+        const c = baseV + (i + 1) * rSeg + jNext;
+        const d = baseV + i * rSeg + jNext;
+        ivoryBucket.push(a, b, d);
+        ivoryBucket.push(b, c, d);
+      }
+    }
+  });
+  geom.attributes.position.needsUpdate = true;
+  return newVZones;
+}
+
+/**
+ * Appends 16 curved White Ivory Claws (Group 3: Ivory) across all 4 paws of the Smilodon
+ * at the exact measured front toe boundaries of the front and rear paws.
+ */
+function appendFittedBalloonSmilodonClaws(geom, vZones, ivoryBucket, fMinX, fMaxX, fMinY, rMinX, rMaxX, rMinY) {
+  const lSeg = 4;
+  const rSeg = 6;
+  const vertsPerClaw = (lSeg + 1) * rSeg;
+  const numClaws = 16;
+  const origCount = geom.attributes.position.count;
+  const totalCount = origCount + numClaws * vertsPerClaw;
+
+  const newVZones = new Uint8Array(totalCount);
+  newVZones.set(vZones, 0);
+  for (let i = origCount; i < totalCount; i++) newVZones[i] = 3;
+
+  const pawConfigs = [
+    { side: 1, minX: fMinX, maxX: fMaxX, toeY: fMinY, boneIdx: 28, lenY: 5.2, rad: 0.92 },
+    { side: -1, minX: fMinX, maxX: fMaxX, toeY: fMinY, boneIdx: 32, lenY: 5.2, rad: 0.92 },
+    { side: 1, minX: rMinX, maxX: rMaxX, toeY: rMinY, boneIdx: 36, lenY: 4.6, rad: 0.82 },
+    { side: -1, minX: rMinX, maxX: rMaxX, toeY: rMinY, boneIdx: 40, lenY: 4.6, rad: 0.82 }
+  ];
+
+  Object.keys(geom.attributes).forEach((attrName) => {
+    const oldAttr = geom.attributes[attrName];
+    const itemSize = oldAttr.itemSize;
+    const Ctor = oldAttr.array.constructor;
+    const nextArr = new Ctor(totalCount * itemSize);
+    nextArr.set(oldAttr.array, 0);
+    if (attrName === 'skinIndex') {
+      for (let pIdx = 0; pIdx < 4; pIdx++) {
+        const bId = pawConfigs[pIdx].boneIdx;
+        const startV = origCount + pIdx * 4 * vertsPerClaw;
+        for (let v = startV; v < startV + 4 * vertsPerClaw; v++) nextArr[v * itemSize] = bId;
+      }
+    } else if (attrName === 'skinWeight') {
+      for (let v = origCount; v < totalCount; v++) nextArr[v * itemSize] = 1.0;
+    }
+    geom.setAttribute(attrName, new THREE.BufferAttribute(nextArr, itemSize));
+  });
+
+  const posArr = geom.attributes.position.array;
+  let clawCounter = 0;
+  pawConfigs.forEach((pCfg) => {
+    for (let d = 0; d < 4; d++) {
+      const baseV = origCount + clawCounter * vertsPerClaw;
+      clawCounter += 1;
+      const frac = (d + 0.5) / 4.0;
+      const cx = pCfg.side * (pCfg.minX + frac * (pCfg.maxX - pCfg.minX));
+      for (let i = 0; i <= lSeg; i++) {
+        const u = i / lSeg;
+        const r = Math.max(0.12, pCfg.rad * Math.pow(1.0 - u, 0.65));
+        const by = (pCfg.toeY + 1.8) - u * pCfg.lenY;
+        const bz = 4.6 * (1.0 - u * u) + 0.5 * u;
+        for (let j = 0; j < rSeg; j++) {
+          const theta = (j / rSeg) * Math.PI * 2.0;
+          const vIdx = (baseV + i * rSeg + j) * 3;
+          posArr[vIdx] = cx + Math.cos(theta) * r * 0.72;
+          posArr[vIdx + 1] = by;
+          posArr[vIdx + 2] = bz + Math.sin(theta) * r;
+        }
+      }
+      for (let i = 0; i < lSeg; i++) {
+        for (let j = 0; j < rSeg; j++) {
+          const jNext = (j + 1) % rSeg;
+          const a = baseV + i * rSeg + j;
+          const b = baseV + (i + 1) * rSeg + j;
+          const c = baseV + (i + 1) * rSeg + jNext;
+          const dIdx = baseV + i * rSeg + jNext;
+          ivoryBucket.push(a, b, dIdx);
+          ivoryBucket.push(b, c, dIdx);
+        }
+      }
+    }
+  });
+  geom.attributes.position.needsUpdate = true;
+  return newVZones;
+}
+
 function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
   const extras = (gltf && gltf.parser && gltf.parser.json && gltf.parser.json.extras) || (gltf && gltf.userData) || {};
   const shadedSpec = extras.wildvr_simple_shaded;
@@ -3666,8 +3887,9 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
       const lut = (mSpec && mSpec.lut_grid) || null;
       const vCount = posAttr.count;
       let vZones = new Uint8Array(vCount);
-      const inIvoryBox = new Uint8Array(vCount);
       let saberSumX = 0, saberSumY = 0, saberCnt = 0, saberTopZ = 84.5, saberBotZ = 52.0;
+      let fPawMinX = 999, fPawMaxX = -999, fPawMinY = 999;
+      let rPawMinX = 999, rPawMaxX = -999, rPawMinY = 999;
 
       for (let i = 0; i < vCount; i++) {
         let px = posAttr.getX(i);
@@ -3687,48 +3909,56 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
 
         let zone = 1;
         if (assetId === 'woolly_mammoth') {
-          // Exclude trunk (bones 8..12) and ear/eye/hair (bones 16..29); tusks exit maxilla below z=184 near skull
+          // 100% of Mammoth head, cheek, trunk & body fur is Group 1 (brown coat); only eyes & nails are Group 0 (dark)
           const isTrunkOrUpperHeadBone = (b0 >= 8 && b0 <= 12) || (b0 >= 16 && b0 <= 29);
-          const maxTuskZ = py < -195 ? 218.0 : 184.0;
-          const isTuskBox = !isTrunkOrUpperHeadBone && py < -118 && pz > 50 && pz < maxTuskZ && Math.abs(px) > 15.0;
-          inIvoryBox[i] = isTuskBox ? 1 : 0;
-          const isTuskSeed = isTuskBox && (Math.abs(px) > 21.0 || py < -148 || uvZone === 3 || uvZone === 2);
-          const isEyeOrNail = !isTuskSeed && (b0 === 19 || b0 === 20 || pz < 3.8);
-          zone = isTuskSeed ? 3 : (isEyeOrNail ? 0 : 1);
+          const isWeldedTusk = !isTrunkOrUpperHeadBone && py < -142.0 && pz > 45.0 && pz < 220.0 && Math.abs(px) > 15.5
+            && (py < -158.0 || Math.abs(px) > 23.5 || uvZone === 3);
+          const isEyeOrNail = !isWeldedTusk && (b0 === 19 || b0 === 20 || pz < 3.8);
+          zone = isEyeOrNail ? 0 : 1;
 
-          // 1. Smooth C1 Cranial Dome above eyes (pz > 212 -> apex 248.5): zero !isTuskBox step cutouts so head NEVER caves in
-          if (pz > 212.0) {
-            const dh = pz - 212.0;
-            pz = 212.0 + dh * 0.36;
-            const domeTaper = Math.max(0.74, 1.0 - (dh / 105.0) * 0.24);
-            px *= domeTaper;
+          if (isWeldedTusk) {
+            // Tuck old welded .glb tusks cleanly inside the maxillary socket so fitted Ivory Tusks replace them with zero white fur bleed
+            px = Math.sign(px) * 18.0;
+            py = -140.0;
+            pz = 172.0;
+          } else {
+            // Flatten scraggly dorsal/neck hair-tuft bone (Mammoth Hair Back_028 = bone 29) into smooth neck/back contour
+            if (b0 === 29 && pz > 185.0) {
+              pz = 185.0 + (pz - 185.0) * 0.28;
+            }
+            // 1. Smooth C1 Cranial Dome above eyes (pz > 206 -> smooth rounded crown without spiky hair tufts)
+            if (pz > 206.0) {
+              const dh = pz - 206.0;
+              pz = 206.0 + dh * 0.30;
+              const domeTaper = Math.max(0.74, 1.0 - (dh / 108.0) * 0.24);
+              px *= domeTaper;
+            }
+            // 2. Smooth lateral cheek/ear streamlining
+            if (pz > 176.0 && py > -170.0 && py < -30.0) {
+              const wZ = Math.min(1.0, (pz - 176.0) / 36.0);
+              const wY = Math.sin(Math.min(1.0, Math.max(0.0, (py + 170.0) / 140.0)) * Math.PI);
+              px *= (1.0 - 0.18 * wZ * wY);
+            }
+            // 3. Broad, smooth, non-spiky thoracic shoulder contour (sigma^2 = 3400) & gentle slope to pelvis
+            if (py > -72.0 && pz > 12.0) {
+              const footFade = Math.min(1.0, (pz - 12.0) / 36.0);
+              const hump = 22.0 * Math.exp(-((py + 28.0) * (py + 28.0)) / 3400.0);
+              const uRear = Math.min(1.0, Math.max(0.0, (py + 25.0) / 95.0));
+              const rearLift = (pz * 0.22 + 10.0) * Math.pow(uRear, 0.88);
+              pz += (hump + rearLift) * footFade;
+            }
+            if (py > 54.0) {
+              py = 54.0 + (py - 54.0) * 0.45;
+            }
+            if (py > -18.0 && py <= 54.0) py = -18.0 + (py + 18.0) * 1.28;
+            if (py > -15.0 && pz > 50.0 && pz < 210.0) px *= 1.18;
           }
-          // 2. Smooth lateral cheek/ear streamlining (continuous bell curve over upper head)
-          if (pz > 176.0 && py > -170.0 && py < -30.0) {
-            const wZ = Math.min(1.0, (pz - 176.0) / 36.0);
-            const wY = Math.sin(Math.min(1.0, Math.max(0.0, (py + 170.0) / 140.0)) * Math.PI);
-            px *= (1.0 - 0.18 * wZ * wY);
-          }
-          // 3. Continuous Thoracic Shoulder Hump (~226) & Gentle Downward Spine Slope to Pelvis/Butt (~180, ~80% of shoulder)
-          if (py > -65.0 && pz > 12.0) {
-            const footFade = Math.min(1.0, (pz - 12.0) / 36.0);
-            const hump = 28.0 * Math.exp(-((py + 25.0) * (py + 25.0)) / 520.0);
-            const uRear = Math.min(1.0, Math.max(0.0, (py + 25.0) / 95.0));
-            const rearLift = (pz * 0.24 + 12.0) * Math.pow(uRear, 0.85);
-            pz += (hump + rearLift) * footFade;
-          }
-          if (py > 54.0) {
-            py = 54.0 + (py - 54.0) * 0.45;
-          }
-          if (py > -18.0 && py <= 54.0) py = -18.0 + (py + 18.0) * 1.28;
-          if (py > -15.0 && pz > 50.0 && pz < 210.0) px *= 1.18;
         } else {
-          // Smilodon: 100% uniform golden-tawny coat on torso, legs & paws (zero ragged leg/paw patches!)
+          // Smilodon: 100% uniform golden-tawny coat on torso, legs & paws (with separate sculpted Ivory Saber Blades & 16 Ivory Claws!)
           const isEyeOrNose = (b0 === 15 || b0 === 16 || (py < -138 && pz > 91 && pz < 106 && Math.abs(px) < 5.5));
           zone = isEyeOrNose ? 0 : 1;
 
           if (py < -38 && pz > 48) px *= 0.68;
-          // Measure & tuck ragged welded .glb saber tooth vertices up into the upper maxilla so fitted Balloon Saber Blades replace them cleanly
           const isWeldedSaber = py < -106 && pz > 42 && pz < 84.5 && Math.abs(px) > 4.2 && (uvZone === 3 || pz < 77.5);
           if (isWeldedSaber) {
             saberSumX += Math.abs(px);
@@ -3748,25 +3978,26 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
             px *= 1.18;
             if (pz > 72) pz += 6.5 * Math.exp(-((py + 6.0) * (py + 6.0)) / 180.0);
           }
+          // Measure front & rear paw toe bounds after warps for exact 16-claw placement
+          if (pz < 8.5 && py < -35.0 && px > 14.0) {
+            if (px < fPawMinX) fPawMinX = px;
+            if (px > fPawMaxX) fPawMaxX = px;
+            if (py < fPawMinY) fPawMinY = py;
+          } else if (pz < 8.5 && py > 25.0 && px > 8.0) {
+            if (px < rPawMinX) rPawMinX = px;
+            if (px > rPawMaxX) rPawMaxX = px;
+            if (py < rPawMinY) rPawMinY = py;
+          }
         }
         vZones[i] = zone;
         posAttr.setXYZ(i, px, py, pz);
       }
       posAttr.needsUpdate = true;
 
-      // 8-pass topological triangle flood-fill on Mammoth tusks so 100% of both tusks are pure Ivory (Group 3)
       const oldIdx = geom.index.array;
       if (assetId === 'woolly_mammoth') {
-        for (let pass = 0; pass < 8; pass++) {
-          for (let t = 0; t < oldIdx.length; t += 3) {
-            const a = oldIdx[t], b = oldIdx[t + 1], c = oldIdx[t + 2];
-            if (vZones[a] === 3 || vZones[b] === 3 || vZones[c] === 3) {
-              if (inIvoryBox[a]) vZones[a] = 3;
-              if (inIvoryBox[b]) vZones[b] = 3;
-              if (inIvoryBox[c]) vZones[c] = 3;
-            }
-          }
-        }
+        // 10-pass seam-welded Laplacian smoothing melts scraggly back/body hair spikes into a smooth sculpted body
+        smoothMammothBodyMesh(posAttr, skinAttr, oldIdx, 10);
       }
 
       const buckets = [[], [], [], []];
@@ -3780,11 +4011,19 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
         buckets[triZone].push(a, b, c);
       }
 
-      // Fit & append clean Variable-Poly "Balloon" Saber Canine Blades (Group 3: Ivory, skinIndex=7) onto Smilodon maxilla
-      if (assetId === 'smilodon') {
+      if (assetId === 'woolly_mammoth') {
+        vZones = appendFittedBalloonMammothTusks(geom, vZones, buckets[3]);
+      } else if (assetId === 'smilodon') {
         const cx = saberCnt > 0 ? (saberSumX / saberCnt) : 9.6;
         const cy = saberCnt > 0 ? (saberSumY / saberCnt) : -128.5;
         vZones = appendFittedBalloonSaberBlades(geom, vZones, buckets[3], cx, cy, saberTopZ + 1.5, Math.min(51.0, saberBotZ - 3.5));
+        const fmMinX = fPawMinX < 900 ? fPawMinX + 0.8 : 25.5;
+        const fmMaxX = fPawMaxX > -900 ? fPawMaxX - 0.8 : 34.0;
+        const fmMinY = fPawMinY < 900 ? fPawMinY : -55.5;
+        const rmMinX = rPawMinX < 900 ? rPawMinX + 0.8 : 14.5;
+        const rmMaxX = rPawMaxX > -900 ? rPawMaxX - 0.8 : 22.5;
+        const rmMinY = rPawMinY < 900 ? rPawMinY : 61.5;
+        vZones = appendFittedBalloonSmilodonClaws(geom, vZones, buckets[3], fmMinX, fmMaxX, fmMinY, rmMinX, rmMaxX, rmMinY);
       }
 
       geom.userData.vertexGroupZones = vZones;
