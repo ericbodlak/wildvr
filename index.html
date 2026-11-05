@@ -3161,22 +3161,14 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/WoollyMammoth.glb?v=6',
+    url: './assets/models/WoollyMammoth.glb?v=7',
     matKey: 'mammothFur',
     rootScale: 1.48,
     preserveMaterials: true,
     preferredClip: /Mammoth_Idle/i,
     secondaryClip: /Mammoth_Look_Side/i,
     timeScale: 0.85,
-    boneScales: {
-      'Mammoth Head_07': [0.76, 0.78, 0.76],
-      'Mammoth Hair Top_017': [0.26, 0.26, 0.22],
-      'Mammoth L Hair_026': [0.38, 0.38, 0.38],
-      'Mammoth R Hair_027': [0.38, 0.38, 0.38],
-      'Mammoth Hair Back_028': [0.42, 0.42, 0.42],
-      'Mammoth L Eyebrow_024': [0.48, 0.48, 0.48],
-      'Mammoth R Eyebrow_025': [0.48, 0.48, 0.48]
-    }
+    boneScales: {}
   },
   {
     assetId: 'megaloceros',
@@ -3343,42 +3335,41 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
 
         let zone = 1;
         if (assetId === 'woolly_mammoth') {
-          // Exclude trunk (bones 8..12) and ear/eye/hair (bones 16..29) so 100% of maxillary tusks are isolated as Ivory (Group 3)
+          // Exclude trunk (bones 8..12) and ear/eye/hair (bones 16..29); tusks exit maxilla below z=184 near skull
           const isTrunkOrUpperHeadBone = (b0 >= 8 && b0 <= 12) || (b0 >= 16 && b0 <= 29);
-          const isTuskBox = !isTrunkOrUpperHeadBone && py < -102 && pz > 50 && pz < 228 && Math.abs(px) > 13.0;
+          const maxTuskZ = py < -195 ? 218.0 : 184.0;
+          const isTuskBox = !isTrunkOrUpperHeadBone && py < -118 && pz > 50 && pz < maxTuskZ && Math.abs(px) > 15.0;
           inIvoryBox[i] = isTuskBox ? 1 : 0;
-          const isTuskSeed = isTuskBox && (Math.abs(px) > 19.5 || py < -136 || uvZone === 3 || uvZone === 2);
+          const isTuskSeed = isTuskBox && (Math.abs(px) > 21.0 || py < -148 || uvZone === 3 || uvZone === 2);
           const isEyeOrNail = !isTuskSeed && (b0 === 19 || b0 === 20 || pz < 3.8);
           zone = isTuskSeed ? 3 : (isEyeOrNail ? 0 : 1);
 
-          // Fit Mammoth Spine Balloon Envelope: compact head dome, shoulder hump (z~184), gentle downward slope to pelvis/butt (z~152)
-          if (py < -22 && pz > 82 && !isTuskBox) px *= 0.72;
-          if (py < -20 && pz > 130 && !isTuskBox) {
-            const uFront = Math.min(1.0, (-20.0 - py) / 68.0);
-            pz = 130.0 + (pz - 130.0) * (1.0 - 0.58 * uFront);
+          // 1. Smooth C1 Cranial Dome above eyes (pz > 212 -> apex 248.5): zero !isTuskBox step cutouts so head NEVER caves in
+          if (pz > 212.0) {
+            const dh = pz - 212.0;
+            pz = 212.0 + dh * 0.36;
+            const domeTaper = Math.max(0.74, 1.0 - (dh / 105.0) * 0.24);
+            px *= domeTaper;
           }
-          if (py > -36 && py < 18 && pz > 105 && !isTuskBox) {
-            pz += 18.0 * Math.exp(-((py + 24.0) * (py + 24.0)) / 340.0);
+          // 2. Smooth lateral cheek/ear streamlining (continuous bell curve over upper head)
+          if (pz > 176.0 && py > -170.0 && py < -30.0) {
+            const wZ = Math.min(1.0, (pz - 176.0) / 36.0);
+            const wY = Math.sin(Math.min(1.0, Math.max(0.0, (py + 170.0) / 140.0)) * Math.PI);
+            px *= (1.0 - 0.18 * wZ * wY);
           }
-          if (py > 0 && pz > 8.0 && !isTuskBox) {
-            const uRear = Math.min(1.0, py / 75.0);
-            const footFade = Math.min(1.0, (pz - 8.0) / 24.0);
-            pz = pz * (1.0 + 0.08 * uRear * footFade) + 5.0 * uRear * footFade;
+          // 3. Continuous Thoracic Shoulder Hump (~226) & Gentle Downward Spine Slope to Pelvis/Butt (~180, ~80% of shoulder)
+          if (py > -65.0 && pz > 12.0) {
+            const footFade = Math.min(1.0, (pz - 12.0) / 36.0);
+            const hump = 28.0 * Math.exp(-((py + 25.0) * (py + 25.0)) / 520.0);
+            const uRear = Math.min(1.0, Math.max(0.0, (py + 25.0) / 95.0));
+            const rearLift = (pz * 0.24 + 12.0) * Math.pow(uRear, 0.85);
+            pz += (hump + rearLift) * footFade;
           }
-          if (py > 54 && !isTuskBox) {
-            const uTail = Math.min(1.0, (py - 54.0) / 45.0);
-            if (pz < 95.0) pz += 24.0 * uTail;
-            py = 54.0 + (py - 54.0) * 0.42;
+          if (py > 54.0) {
+            py = 54.0 + (py - 54.0) * 0.45;
           }
-          if (py > -18 && py <= 54 && !isTuskBox) py = -18.0 + (py + 18.0) * 1.32;
-          if (py > -15 && pz > 50 && pz < 210 && !isTuskBox) px *= 1.20;
-          // Enforce downward-sloping Mammoth dorsal spine balloon ceiling so the butt is NEVER too high
-          if (py > -18 && !isTuskBox) {
-            const dorsalCeiling = 178.0 - 0.38 * Math.max(0.0, py + 18.0);
-            if (pz > dorsalCeiling - 14.0) {
-              pz = (dorsalCeiling - 14.0) + (pz - (dorsalCeiling - 14.0)) * 0.22;
-            }
-          }
+          if (py > -18.0 && py <= 54.0) py = -18.0 + (py + 18.0) * 1.28;
+          if (py > -15.0 && pz > 50.0 && pz < 210.0) px *= 1.18;
         } else {
           // Smilodon: 100% uniform golden-tawny coat on torso, legs & paws (zero ragged leg/paw patches!)
           const isEyeOrNose = (b0 === 15 || b0 === 16 || (py < -138 && pz > 91 && pz < 106 && Math.abs(px) < 5.5));
