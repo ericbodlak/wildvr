@@ -708,7 +708,8 @@ function updateEnvironmentalLightingEffects(dt, t) {
       tDir.applyQuaternion(activeController.getWorldQuaternion(tempQuat)).normalize();
     } else {
       camera.getWorldPosition(tOrig);
-      camera.getWorldDirection(tDir);
+      raycaster.setFromCamera(mouseNDC, camera);
+      tDir.copy(raycaster.ray.direction).normalize();
     }
     survivorTorch.position.copy(tOrig);
     survivorTorch.target.position.copy(tOrig).addScaledVector(tDir, 18.0);
@@ -2817,46 +2818,94 @@ arcLine.visible = false;
 scene.add(arcLine);
 
 const teleportRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.28, 0.44, 24),
+  new THREE.RingGeometry(0.28, 0.46, 28),
   new THREE.MeshBasicMaterial({ color: 0xffb703, side: THREE.DoubleSide })
 );
 teleportRing.rotation.x = -Math.PI / 2;
 teleportRing.visible = false;
+const teleportBullseye = new THREE.Mesh(
+  new THREE.RingGeometry(0.05, 0.13, 24),
+  new THREE.MeshBasicMaterial({ color: 0x00f5d4, side: THREE.DoubleSide })
+);
+teleportBullseye.position.z = 0.01;
+teleportRing.add(teleportBullseye);
+const teleportPin = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.025, 0.025, 1.35, 12),
+  new THREE.MeshBasicMaterial({ color: 0xffb703, transparent: true, opacity: 0.68 })
+);
+teleportPin.rotation.x = Math.PI / 2;
+teleportPin.position.z = 0.68;
+teleportRing.add(teleportPin);
 scene.add(teleportRing);
+
+const mouseNDC = new THREE.Vector2(0, 0);
+function updateMouseNDC(clientX, clientY) {
+  mouseNDC.x = (clientX / Math.max(1, window.innerWidth)) * 2 - 1;
+  mouseNDC.y = -(clientY / Math.max(1, window.innerHeight)) * 2 + 1;
+}
 
 const raycaster = new THREE.Raycaster();
 function updateParabolicTeleport(customOrigin = null, customDir = null) {
   const origin = new THREE.Vector3();
   const dir = new THREE.Vector3();
+  let isDesktopCursorAim = false;
+
   if (customOrigin && customDir) {
     origin.copy(customOrigin);
     dir.copy(customDir).normalize();
   } else {
+    isDesktopCursorAim = true;
+    const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     camera.getWorldPosition(origin);
-    camera.getWorldDirection(dir);
-    origin.addScaledVector(dir, 0.35);
+    origin.addScaledVector(camForward, 0.28).addScaledVector(camRight, 0.18).addScaledVector(camUp, -0.16);
+    raycaster.setFromCamera(mouseNDC, camera);
+    dir.copy(raycaster.ray.direction).normalize();
   }
 
-  const launchSpeed = isDollhouse ? TELEPORT_SPEED * 2.85 : TELEPORT_SPEED;
-  const vel = dir.clone().multiplyScalar(launchSpeed);
-  const totalT = isDollhouse ? 3.2 : 1.75;
   const pts = [];
   let hitPoint = null;
 
-  for (let i = 0; i < arcMaxPoints; i++) {
-    const t0 = (totalT * i) / (arcMaxPoints - 1);
-    const t1 = (totalT * (i + 1)) / (arcMaxPoints - 1);
-    const p0 = new THREE.Vector3(origin.x + vel.x * t0, origin.y + vel.y * t0 - 0.5 * GRAVITY * t0 * t0, origin.z + vel.z * t0);
-    pts.push(p0);
-    const p1 = new THREE.Vector3(origin.x + vel.x * t1, origin.y + vel.y * t1 - 0.5 * GRAVITY * t1 * t1, origin.z + vel.z * t1);
-    const seg = p1.clone().sub(p0);
-    const len = seg.length();
-    if (len > 0.001 && !hitPoint) {
-      raycaster.set(p0, seg.clone().normalize());
-      raycaster.far = len;
-      const hits = raycaster.intersectObjects(teleportableMeshes, false);
-      if (hits.length > 0 && hits[0].face && hits[0].face.normal.y > 0.7) {
-        hitPoint = hits[0].point.clone();
+  if (isDesktopCursorAim) {
+    raycaster.setFromCamera(mouseNDC, camera);
+    raycaster.far = isDollhouse ? 450.0 : 120.0;
+    const directHits = raycaster.intersectObjects(teleportableMeshes, false);
+    const walkableHit = directHits.find((h) => h.face && h.face.normal.y > 0.65);
+    if (walkableHit) {
+      hitPoint = walkableHit.point.clone();
+      const horizDist = Math.hypot(hitPoint.x - origin.x, hitPoint.z - origin.z);
+      const arcLift = Math.min(4.2, Math.max(0.42, horizDist * 0.20)) * (isDollhouse ? 2.0 : 1.0);
+      for (let i = 0; i < arcMaxPoints; i++) {
+        const u = i / (arcMaxPoints - 1);
+        const px = THREE.MathUtils.lerp(origin.x, hitPoint.x, u);
+        const pz = THREE.MathUtils.lerp(origin.z, hitPoint.z, u);
+        const py = THREE.MathUtils.lerp(origin.y, hitPoint.y + 0.04, u) + 4.0 * u * (1.0 - u) * arcLift;
+        pts.push(new THREE.Vector3(px, py, pz));
+      }
+    }
+  }
+
+  if (!hitPoint) {
+    const launchSpeed = isDollhouse ? TELEPORT_SPEED * 2.85 : TELEPORT_SPEED;
+    const vel = dir.clone().multiplyScalar(launchSpeed);
+    const totalT = isDollhouse ? 3.2 : 1.75;
+
+    for (let i = 0; i < arcMaxPoints; i++) {
+      const t0 = (totalT * i) / (arcMaxPoints - 1);
+      const t1 = (totalT * (i + 1)) / (arcMaxPoints - 1);
+      const p0 = new THREE.Vector3(origin.x + vel.x * t0, origin.y + vel.y * t0 - 0.5 * GRAVITY * t0 * t0, origin.z + vel.z * t0);
+      pts.push(p0);
+      const p1 = new THREE.Vector3(origin.x + vel.x * t1, origin.y + vel.y * t1 - 0.5 * GRAVITY * t1 * t1, origin.z + vel.z * t1);
+      const seg = p1.clone().sub(p0);
+      const len = seg.length();
+      if (len > 0.001 && !hitPoint) {
+        raycaster.set(p0, seg.clone().normalize());
+        raycaster.far = len;
+        const hits = raycaster.intersectObjects(teleportableMeshes, false);
+        if (hits.length > 0 && hits[0].face && hits[0].face.normal.y > 0.65) {
+          hitPoint = hits[0].point.clone();
+        }
       }
     }
   }
@@ -2918,28 +2967,41 @@ window.addEventListener('keyup', (e) => {
 });
 
 renderer.domElement.addEventListener('mousedown', (e) => {
+  updateMouseNDC(e.clientX, e.clientY);
   if (e.button === 0) {
     isDraggingLook = true;
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
   } else if (e.button === 2) {
     isAimingTeleport = true;
+    camera.updateMatrixWorld();
+    updateParabolicTeleport();
   }
 });
 
 window.addEventListener('mousemove', (e) => {
+  updateMouseNDC(e.clientX, e.clientY);
   if (isDraggingLook) {
     yaw -= (e.clientX - lastMouseX) * 0.0045;
     pitch = THREE.MathUtils.clamp(pitch - (e.clientY - lastMouseY) * 0.0045, -Math.PI / 2.1, Math.PI / 2.1);
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
   }
+  if (isAimingTeleport && !desktopSkyFlightLatched) {
+    camera.updateMatrixWorld();
+    updateParabolicTeleport();
+  }
 });
 
 window.addEventListener('mouseup', (e) => {
+  updateMouseNDC(e.clientX, e.clientY);
   if (e.button === 0) isDraggingLook = false;
   if (e.button === 2) {
-    if (!desktopSkyFlightLatched) executeTeleport();
+    if (!desktopSkyFlightLatched) {
+      camera.updateMatrixWorld();
+      updateParabolicTeleport();
+      executeTeleport();
+    }
     isAimingTeleport = false;
     desktopSkyFlightLatched = false;
     desktopFlyHoldSec = 0.0;
@@ -3644,16 +3706,19 @@ renderer.setAnimationLoop(() => {
   const isVrFlying = renderer.xr.isPresenting ? pollXRControllers(dt, camFwd) : false;
 
   if (isAimingTeleport) {
+    updateParabolicTeleport();
+    raycaster.setFromCamera(mouseNDC, camera);
+    const cursorDir = raycaster.ray.direction;
+    const cursorPitchDeg = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(cursorDir.y, -1, 1)));
     if (desktopSkyFlightLatched) {
       arcLine.visible = false; teleportRing.visible = false;
-      xrOrigin.position.addScaledVector(camFwd, FLY_SPEED * dt);
-    } else if (pitchDeg >= FLY_PITCH_THRESHOLD_DEG) {
+      xrOrigin.position.addScaledVector(cursorDir, FLY_SPEED * dt);
+    } else if (!validTeleportTarget && Math.max(pitchDeg, cursorPitchDeg) >= FLY_PITCH_THRESHOLD_DEG) {
       arcLine.visible = false; teleportRing.visible = false;
       desktopFlyHoldSec += dt;
       if (desktopFlyHoldSec >= FLY_LAUNCH_DELAY_SEC) desktopSkyFlightLatched = true;
     } else {
       desktopFlyHoldSec = 0.0;
-      updateParabolicTeleport();
     }
   }
 
