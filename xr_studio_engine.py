@@ -107,6 +107,40 @@ class WalkaboutStudioController:
             "default_palette": bp.get("default_palette"),
         }
 
+    @staticmethod
+    def verify_lod_and_shader_matrix(studio_dir: str) -> Dict[str, Any]:
+        """
+        Audits the Multi-LOD geometry tiers (LOD 0..3 + 4-Pedestal Lineups) and
+        10 Shader/Texture rendering pipelines in the studio bundle.
+        @premise(P5_PIXPAL_DIORAMA_BUDGET)
+        @premise(P7_STUDIO_CONVERGENCE)
+        """
+        html_path = Path(studio_dir) / "index.html"
+        if not html_path.is_file():
+            return {"status": "MISSING", "lod_tiers": 0, "shader_pipelines": 0}
+        text = html_path.read_text(encoding="utf-8")
+        has_lod_tiers = all(f"LOD {i}" in text for i in range(4))
+        has_lineups = "compare_lods" in text and "compare_styles" in text
+        pipelines = [
+            "textured_pbr",
+            "wet_realism",
+            "toon_cel",
+            "ink_hatch",
+            "clay_sculpt",
+            "golden_velvet",
+            "voxel_craft",
+            "papercraft",
+            "wireframe_inspector",
+            "biolum_shader",
+        ]
+        found_pipelines = [p for p in pipelines if p in text]
+        return {
+            "status": "VALID" if (has_lod_tiers and has_lineups and len(found_pipelines) == 10) else "PARTIAL",
+            "lod_tiers": 4 if has_lod_tiers else 1,
+            "has_side_by_side_lineups": has_lineups,
+            "shader_pipelines": len(found_pipelines),
+        }
+
     @classmethod
     def run_full_studio_convergence(cls, studio_dir: str) -> Dict[str, Any]:
         """
@@ -122,4 +156,6 @@ class WalkaboutStudioController:
             "flight": cls.verify_skyward_flight(),
             "wristwatch": cls.verify_wristwatch_glance(),
             "scene": cls.audit_studio_blueprint(bp_path),
+            "lod_shader_matrix": cls.verify_lod_and_shader_matrix(studio_dir),
         }
+

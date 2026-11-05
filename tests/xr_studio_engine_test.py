@@ -39,6 +39,15 @@ class TestWalkaboutStudioController(unittest.TestCase):
             self.assertEqual(report["scene"]["palette_count"], 4)
             self.assertTrue((Path(tmp) / "index.html").is_file())
 
+    def test_verify_lod_and_shader_matrix_live_studio(self):
+        studio_dir = str(Path(__file__).resolve().parent.parent)
+        matrix = WalkaboutStudioController.verify_lod_and_shader_matrix(studio_dir)
+        self.assertEqual(matrix["status"], "VALID")
+        self.assertEqual(matrix["lod_tiers"], 4)
+        self.assertTrue(matrix["has_side_by_side_lineups"])
+        self.assertEqual(matrix["shader_pipelines"], 10)
+
+
 
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWalkaboutStudioController)
