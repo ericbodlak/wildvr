@@ -237,6 +237,7 @@
   <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // ============================================================================
@@ -595,8 +596,58 @@ const materials = {
 
 let outlineMeshes = [];
 let wireframeMeshes = [];
+let activeGLBMaterials = [];
 const outlineMat = new THREE.LineBasicMaterial({ color: 0x111827, transparent: true, opacity: 0.82 });
 const wireframeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.58 });
+
+function applyStyleToGLBMaterialRecord(rec, s) {
+  if (!rec || !rec.mat || !s) return;
+  const m = rec.mat;
+  m.flatShading = Boolean(s.flat || rec.forceFlat);
+  m.wireframe = Boolean(s.wireframe);
+  if (s.pipeline === 'clay_sculpt') {
+    m.map = PROC_TEXTURES.clayRake;
+    m.bumpMap = PROC_TEXTURES.clayRake;
+    m.bumpScale = s.bumpScale;
+    m.color.set(s[rec.matKey] || '#c88d74');
+    m.roughness = s.roughness;
+    m.metalness = s.metalness;
+  } else if (s.pipeline === 'papercraft') {
+    m.map = rec.baseMap || PROC_TEXTURES.paperGrain;
+    m.bumpMap = PROC_TEXTURES.paperGrain;
+    m.bumpScale = s.bumpScale;
+    m.color.copy(rec.baseColor);
+    m.roughness = 0.88;
+    m.metalness = 0.0;
+  } else if (s.pipeline === 'voxel_craft') {
+    m.map = rec.baseMap || PROC_TEXTURES.voxelPixel;
+    m.bumpMap = rec.baseBumpMap;
+    m.color.copy(rec.baseColor);
+    m.roughness = 0.85;
+    m.metalness = 0.0;
+  } else {
+    m.map = rec.baseMap;
+    m.normalMap = rec.baseNormalMap;
+    m.bumpMap = rec.baseBumpMap;
+    m.bumpScale = rec.baseBumpScale;
+    m.color.copy(rec.baseColor);
+    m.roughness = s.pipeline === 'wet_realism'
+      ? Math.min(rec.baseRoughness, 0.34)
+      : (s.pipeline === 'golden_velvet' ? 0.46 : rec.baseRoughness);
+    m.metalness = s.pipeline === 'wet_realism' ? Math.max(rec.baseMetalness, 0.10) : rec.baseMetalness;
+  }
+  if (s.emissiveStrength > 0) {
+    m.emissive.set(s.emissiveFauna || '#000000');
+    m.emissiveIntensity = s.emissiveStrength * 0.45;
+  } else if (rec.baseEmissive) {
+    m.emissive.copy(rec.baseEmissive);
+    m.emissiveIntensity = rec.baseEmissiveIntensity;
+  } else {
+    m.emissive.set('#000000');
+    m.emissiveIntensity = 0.0;
+  }
+  m.needsUpdate = true;
+}
 
 function getTexturesForPipeline(pipeline, key) {
   if (pipeline === 'toon_cel' || pipeline === 'wireframe_inspector') {
@@ -657,6 +708,7 @@ function applyStyle(idx) {
   outlineMat.color.setHex(s.outlineColor !== undefined ? s.outlineColor : 0x111827);
   outlineMeshes.forEach((line) => { line.visible = Boolean(s.outlines); });
   wireframeMeshes.forEach((wf) => { wf.visible = Boolean(s.wireframe); });
+  activeGLBMaterials.forEach((rec) => applyStyleToGLBMaterialRecord(rec, s));
 
   scene.background = new THREE.Color(s.sky);
   scene.fog = new THREE.FogExp2(s.sky, s.fogDensity);
@@ -839,6 +891,9 @@ let activeAnimatedCreatures = [];
 let activeSwayFoliage = [];
 let activeGLBMixers = [];
 const gltfLoader = new GLTFLoader();
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+gltfLoader.setDRACOLoader(dracoLoader);
 const glbHeroCache = {};
 
 /**
@@ -1088,18 +1143,57 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
     if ((node.isMesh || node.isSkinnedMesh) && !node.userData.isHelperOverlay) {
       const matName = (node.userData && node.userData.origMatName) || (node.material && node.material.name) || '';
       const nodeName = (node.userData && node.userData.origNodeName) || node.name || '';
-      if (assetId === 'woolly_mammoth' && /horn/i.test(matName)) {
-        node.visible = false;
-        return;
-      }
-      if (/eye_black|eyes_black|material\.011/i.test(matName)) {
+      if (entry.preserveMaterials && node.material) {
+        const srcMat = Array.isArray(node.material) ? node.material[0] : node.material;
+        const clonedMat = srcMat.clone();
+        if (assetId === 'megaloceros') {
+          if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
+            clonedMat.color.setHex(0xd8ccb8);
+            clonedMat.roughness = 0.40;
+            clonedMat.bumpMap = PROC_TEXTURES.barkFurrow;
+            clonedMat.bumpScale = 0.035;
+          } else if (/material\.011|eye/i.test(matName)) {
+            clonedMat.color.setHex(0x0b0f19);
+            clonedMat.roughness = 0.08;
+            clonedMat.metalness = 0.22;
+          } else if (/material\.003/i.test(matName)) {
+            clonedMat.bumpMap = PROC_TEXTURES.furWeave;
+            clonedMat.bumpScale = 0.04;
+            clonedMat.roughness = 0.62;
+          } else if (/^material$/i.test(matName)) {
+            clonedMat.bumpMap = PROC_TEXTURES.furWeave;
+            clonedMat.bumpScale = 0.05;
+            clonedMat.roughness = 0.62;
+          }
+        } else {
+          clonedMat.roughness = Math.max(0.45, clonedMat.roughness !== undefined ? clonedMat.roughness : 0.65);
+          clonedMat.metalness = Math.min(0.10, clonedMat.metalness !== undefined ? clonedMat.metalness : 0.04);
+        }
+        const rec = {
+          mat: clonedMat,
+          baseColor: clonedMat.color ? clonedMat.color.clone() : new THREE.Color(0xffffff),
+          baseMap: clonedMat.map || null,
+          baseNormalMap: clonedMat.normalMap || null,
+          baseBumpMap: clonedMat.bumpMap || null,
+          baseBumpScale: clonedMat.bumpScale || 0.04,
+          baseRoughness: clonedMat.roughness !== undefined ? clonedMat.roughness : 0.62,
+          baseMetalness: clonedMat.metalness !== undefined ? clonedMat.metalness : 0.04,
+          baseEmissive: clonedMat.emissive ? clonedMat.emissive.clone() : new THREE.Color(0x000000),
+          baseEmissiveIntensity: clonedMat.emissiveIntensity !== undefined ? clonedMat.emissiveIntensity : 1.0,
+          matKey: entry.matKey || 'mammothFur',
+          forceFlat: lodIdx === 0 && comparisonMode === 'compare_lods'
+        };
+        applyStyleToGLBMaterialRecord(rec, (customMats && customMats._styleObj) || STYLES[currentStyleIdx]);
+        if (!customMats) activeGLBMaterials.push(rec);
+        node.material = clonedMat;
+      } else if (/eye_black|eyes_black|material\.011/i.test(matName)) {
         node.material = materials.eyeGloss;
       } else if (/eye_white/i.test(matName)) {
         node.material = mTusk;
       } else if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
         node.material = mTusk;
       } else if (/hooves|nose|muzzle|material\.010|material\.001/i.test(matName)) {
-        node.material = assetId === 'woolly_mammoth' ? mTusk : mRock;
+        node.material = mRock;
       } else if (/wood/i.test(matName)) {
         node.material = mTrunk;
       } else if (/green/i.test(matName)) {
@@ -1171,41 +1265,7 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
   const segL = cfg.id === 0 ? 11 : Math.round(24 * cfg.segMul);
   const disp = 0.024 * cfg.displace;
 
-  const glbClone = instantiatePreRiggedGLBIfCached('woolly_mammoth', lodIdx, customMats, (headAnchor, clonedRoot) => {
-    const domeGeom = buildLoftedAnatomicalBody(
-      [[0, -0.08, -0.36, 0.56, 0.62, 0.12, 0.0], [0, 0.64, 0.06, 0.68, 0.84, 0.34, 0.0], [0, 0.16, 0.52, 0.52, 0.58, 0.08, 0.04]],
-      Math.max(8, Math.round(segR * 0.8)), Math.max(8, Math.round(segL * 0.5)), disp * 0.5, 5.5, { capStart: true, capEnd: true }
-    );
-    addMeshWithOutline(domeGeom, mFur, headAnchor);
-
-    const trunkPiv = new THREE.Group();
-    trunkPiv.position.set(0, -0.32, 0.78);
-    const trunkGeom = buildTaperedCurveGeometry(
-      [[0, 0.08, -0.04], [0, -0.68, 0.28], [0, -1.52, 0.24], [0, -2.18, 0.08], [0, -2.52, 0.36]],
-      0.34, 0.115, cfg.id === 0 ? 7 : Math.round(11 * cfg.segMul), cfg.id === 0 ? 9 : Math.round(18 * cfg.segMul), 1.0, disp * 0.35, 9.1
-    );
-    addMeshWithOutline(trunkGeom, mFur, trunkPiv);
-    headAnchor.add(trunkPiv);
-    activeTrunkPivots.push(trunkPiv);
-
-    [-1, 1].forEach((side) => {
-      const tuskGeom = buildTaperedCurveGeometry(
-        [[side * 0.44, -0.44, 0.68], [side * 0.78, -1.08, 1.42], [side * 1.12, -1.36, 2.15], [side * 1.14, -0.96, 2.78], [side * 0.72, -0.18, 3.06], [side * 0.36, 0.28, 2.90]],
-        0.145, 0.020, cfg.id === 0 ? 7 : Math.round(10 * cfg.segMul), cfg.id === 0 ? 10 : Math.round(22 * cfg.segMul), 1.0, 0.0, side + 15
-      );
-      addMeshWithOutline(tuskGeom, mTusk, headAnchor);
-    });
-
-    for (let f = 0; f < cfg.furShells; f++) {
-      const side = f % 2 === 0 ? -1 : 1;
-      const frac = Math.floor(f / 2) / Math.max(1, Math.floor(cfg.furShells / 2) - 1);
-      const fz = -2.1 + frac * 4.2;
-      const fx = side * (1.05 + Math.sin(frac * Math.PI) * 0.22);
-      const fy = 2.05 + Math.sin(frac * Math.PI * 0.85) * 0.45;
-      const lockG = buildTaperedCurveGeometry([[fx * 0.85, fy + 0.2, fz], [fx * 1.02, fy - 0.35, fz - 0.04], [fx * 0.96, fy - 0.85, fz - 0.08]], 0.24, 0.04, 6, 6, 0.65, disp * 0.3, f * 1.7);
-      addMeshWithOutline(lockG, mFur, clonedRoot);
-    }
-  });
+  const glbClone = instantiatePreRiggedGLBIfCached('woolly_mammoth', lodIdx, customMats);
   if (glbClone) {
     group.add(glbClone);
     tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
@@ -1385,34 +1445,7 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
   const segL = cfg.id === 0 ? 9 : Math.round(20 * cfg.segMul);
   const disp = 0.020 * cfg.displace;
 
-  const glbClone = instantiatePreRiggedGLBIfCached('megaloceros', lodIdx, customMats, (headAnchor) => {
-    [-1, 1].forEach((side) => {
-      const palmSlices = [
-        [side * 0.45, 0.36, 0.04, 0.12, 0.04, 0.0, 0.0],
-        [side * 0.96, 0.62, -0.10, 0.32, 0.05, 0.0, 0.0],
-        [side * 1.44, 0.88, -0.22, 0.36, 0.045, 0.0, 0.0],
-        [side * 1.72, 1.04, -0.30, 0.16, 0.03, 0.0, 0.0]
-      ];
-      const palmG = buildLoftedAnatomicalBody(
-        palmSlices, Math.max(8, segR), Math.max(8, Math.round(10 * cfg.segMul)), disp * 0.25, side + 9,
-        { capStart: true, capEnd: true, rollRad: side * 0.38 }
-      );
-      addMeshWithOutline(palmG, mTusk, headAnchor);
-
-      const tinesPerSide = Math.max(2, Math.round(cfg.antlerTines / 2));
-      for (let t = 0; t < tinesPerSide; t++) {
-        const frac = t / Math.max(1, tinesPerSide - 1);
-        const bx = side * (0.48 + frac * 1.18);
-        const by = 0.38 + frac * 0.62;
-        const bz = 0.02 - frac * 0.28;
-        const tineG = buildTaperedCurveGeometry(
-          [[bx, by, bz], [bx + side * 0.08, by + 0.22, bz + (t === 0 ? 0.26 : 0.10)], [bx + side * 0.12, by + 0.46, bz + (t === 0 ? 0.38 : 0.04)]],
-          0.036, 0.007, 6, 7, 1.0, 0.0, t + 19
-        );
-        addMeshWithOutline(tineG, mTusk, headAnchor);
-      }
-    });
-  });
+  const glbClone = instantiatePreRiggedGLBIfCached('megaloceros', lodIdx, customMats);
   if (glbClone) {
     group.add(glbClone);
     tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
@@ -1579,15 +1612,7 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
   const segL = cfg.id === 0 ? 9 : Math.round(20 * cfg.segMul);
   const disp = 0.016 * cfg.displace;
 
-  const glbClone = instantiatePreRiggedGLBIfCached('smilodon', lodIdx, customMats, (headAnchor) => {
-    [-1, 1].forEach((side) => {
-      const saberG = buildTaperedCurveGeometry(
-        [[side * 0.155, -0.04, 0.44], [side * 0.162, -0.32, 0.49], [side * 0.148, -0.60, 0.41]],
-        0.048, 0.007, cfg.id === 0 ? 6 : 9, cfg.id === 0 ? 7 : Math.round(12 * cfg.segMul), 0.50, 0.0, side + 21
-      );
-      addMeshWithOutline(saberG, mTusk, headAnchor);
-    });
-  });
+  const glbClone = instantiatePreRiggedGLBIfCached('smilodon', lodIdx, customMats);
   if (glbClone) {
     group.add(glbClone);
     tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
@@ -2089,6 +2114,7 @@ function rebuildFullValleyScene(lodIdx = currentLodIdx) {
   activeAnimatedCreatures = [];
   activeSwayFoliage = [];
   activeGLBMixers = [];
+  activeGLBMaterials = [];
   activeSceneTriangles = 0;
 
   // 1. Mountain Lake, Displaced Valley Meadows & Stepped Cliff Waterfall
@@ -2259,7 +2285,7 @@ function buildSpecimenById(assetId, lodIdx = currentLodIdx, customMats = null) {
 
 function makeDedicatedStyleMatSet(styleIdx) {
   const s = STYLES[styleIdx];
-  const set = {};
+  const set = { _styleObj: s };
   ['terrain', 'cliff', 'trail', 'water', 'trunk', 'foliage1', 'foliage2', 'rock', 'mammothFur', 'tusk', 'elkCoat', 'smilodonCoat'].forEach((k) => {
     const texPair = getTexturesForPipeline(s.pipeline, k);
     set[k] = new THREE.MeshStandardMaterial({
@@ -2289,6 +2315,7 @@ function enterComparisonLineup(mode = 'compare_lods') {
   activeAnimatedCreatures = [];
   activeSwayFoliage = [];
   activeGLBMixers = [];
+  activeGLBMaterials = [];
   activeSceneTriangles = 0;
 
   // Walkable Studio Floor for teleporting right up to any of the 4 pedestals!
@@ -2413,6 +2440,7 @@ function isolateAsset(assetId, keepComparison = false) {
   activeAnimatedCreatures = [];
   activeSwayFoliage = [];
   activeGLBMixers = [];
+  activeGLBMaterials = [];
   activeSceneTriangles = 0;
   const specimen = buildSpecimenById(isolatedAssetId, currentLodIdx, null);
   specimen.position.set(meta.offset[0], meta.offset[1], meta.offset[2]);
@@ -2980,49 +3008,46 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/Bull.glb',
+    url: './assets/models/WoollyMammoth.glb',
     matKey: 'mammothFur',
-    rootScale: 0.85,
-    graftBoneName: 'Head',
-    preferredClip: /Walk/i,
-    secondaryClip: /Idle_2/i,
-    timeScale: 0.72,
-    boneScales: { Neck1: [1.22, 1.36, 1.20], Neck2: [1.18, 1.28, 1.16] }
+    rootScale: 1.48,
+    preserveMaterials: true,
+    preferredClip: /Mammoth_Idle/i,
+    secondaryClip: /Mammoth_Look_Side/i,
+    timeScale: 0.85,
+    boneScales: {}
   },
   {
     assetId: 'megaloceros',
     url: './assets/models/Stag.glb',
     matKey: 'elkCoat',
-    rootScale: 0.78,
-    graftBoneName: 'Head',
-    preferredClip: /Walk/i,
-    secondaryClip: /Idle_2/i,
-    timeScale: 0.82,
-    boneScales: { Stag_Horns: [1.85, 1.32, 1.45], Neck1: [1.14, 1.20, 1.12] }
+    rootScale: 0.80,
+    preserveMaterials: true,
+    preferredClip: /Idle_2/i,
+    secondaryClip: /Idle_Headlow/i,
+    timeScale: 0.85,
+    boneScales: { Stag_Horns: [1.65, 1.30, 1.40], Neck1: [1.10, 1.14, 1.08] }
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/Wolf.glb',
+    url: './assets/models/Smilodon.glb',
     matKey: 'smilodonCoat',
-    rootScale: 0.58,
-    graftBoneName: 'Head',
-    preferredClip: /Walk/i,
-    secondaryClip: /Idle_2_HeadLow/i,
+    rootScale: 1.05,
+    preserveMaterials: true,
+    preferredClip: /Sabertooth_Idle/i,
+    secondaryClip: /Sabertooth_Look_Side/i,
     timeScale: 0.88,
-    boneScales: {
-      Neck1: [1.34, 1.30, 1.15],
-      Head: [1.22, 1.10, 0.86],
-      Tail3: [0.04, 0.04, 0.04],
-      Tail4: [0.02, 0.02, 0.02]
-    }
+    boneScales: {}
   },
   {
     assetId: 'teratorn_vulture',
-    url: './assets/models/Stork.glb',
+    url: './assets/models/Pterodactyl.glb',
     matKey: 'cliff',
-    rootScale: 0.0178,
-    preferredClip: /storkFly/i,
-    timeScale: 0.62,
+    rootScale: 1.0,
+    preserveMaterials: true,
+    preferredClip: /^Flap$/i,
+    secondaryClip: /^Glide$/i,
+    timeScale: 0.78,
     boneScales: {}
   },
   {
