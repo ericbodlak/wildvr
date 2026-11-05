@@ -1613,119 +1613,142 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   const mMantle = (customMats && customMats.trunk) || materials.trunk;
   const mPinion = (customMats && customMats.cliff) || materials.cliff;
   const mBuff = (customMats && customMats.tusk) || materials.tusk;
-  const mOchre = (customMats && customMats.smilodonCoat) || materials.smilodonCoat;
+  const mGoldenNape = (customMats && customMats.smilodonCoat) || materials.smilodonCoat;
   const group = new THREE.Group();
 
   const segR = cfg.id === 0 ? 7 : Math.max(9, Math.round(11 * cfg.segMul));
   const segL = cfg.id === 0 ? 8 : Math.max(10, Math.round(14 * cfg.segMul));
-  const disp = 0.010 * cfg.displace;
+  const disp = 0.008 * cfg.displace;
 
-  // 1. Haast's Eagle (Hieraaetus moorei) Muscular Torso & Dorsal Mantle
+  // 1. Haast's Eagle (Hieraaetus moorei) Broad Muscular Torso & Thick Feathered Neck/Head
+  // Eagles have a compact, muscular neck that blends smoothly into a wide, flat-crowned head (never a skinny vulture neck!)
   const bodySlices = [
-    [0, 0.03, -0.54, 0.15, 0.12, 0.02, 0.04],
-    [0, 0.02, -0.10, 0.31, 0.24, 0.06, 0.08],
-    [0, 0.04, 0.32, 0.28, 0.22, 0.05, 0.06],
-    [0, 0.10, 0.62, 0.18, 0.16, 0.03, 0.04],
-    [0, 0.09, 0.80, 0.11, 0.11, 0.01, 0.03]
+    [0, 0.03, -0.48, 0.16, 0.13, 0.02, 0.04],
+    [0, 0.02, -0.08, 0.34, 0.25, 0.06, 0.08],
+    [0, 0.04, 0.28, 0.31, 0.23, 0.05, 0.06],
+    [0, 0.07, 0.50, 0.23, 0.19, 0.04, 0.04],
+    [0, 0.08, 0.64, 0.19, 0.16, 0.03, 0.03]
   ];
   const bodyGeom = buildLoftedAnatomicalBody(bodySlices, segR, segL, disp, 4.4, { capStart: true, capEnd: true });
   addMeshWithOutline(bodyGeom, mMantle, group);
 
-  // 2. Countershaded Pale Buff Breast, Throat & Eagle Crown Crest
-  const breastSlices = [
-    [0, -0.06, -0.26, 0.22, 0.14, 0.0, 0.04],
-    [0, -0.07, 0.16, 0.25, 0.16, 0.0, 0.06],
-    [0, -0.01, 0.50, 0.17, 0.12, 0.0, 0.04]
+  // 2. Golden-Tawny Eagle Crown, Nape Hackles & Supraorbital Brow Ridge (Aquiline Silhouette)
+  // Eliminates any pale collar around the neck base (which looked like a vulture ruff)
+  const napeSlices = [
+    [0, 0.14, 0.26, 0.22, 0.12, 0.03, 0.02],
+    [0, 0.16, 0.46, 0.21, 0.13, 0.04, 0.02],
+    [0, 0.15, 0.64, 0.18, 0.11, 0.03, 0.02]
   ];
-  const breastG = buildLoftedAnatomicalBody(breastSlices, Math.max(6, segR - 2), 6, disp * 0.4, 5.8, { capStart: true, capEnd: true });
-  addMeshWithOutline(breastG, mBuff, group);
+  const napeG = buildLoftedAnatomicalBody(napeSlices, Math.max(6, segR - 2), 6, disp * 0.35, 5.8, { capStart: true, capEnd: true });
+  addMeshWithOutline(napeG, mGoldenNape, group);
 
+  // Posterior Eagle Crown Hackle Crest
   const crestG = buildTaperedCurveGeometry(
-    [[0, 0.16, 0.72], [0, 0.22, 0.56], [0, 0.20, 0.42]],
-    0.095, 0.024, 6, 5, 0.65, 0.0, 6.1
+    [[0, 0.21, 0.60], [0, 0.25, 0.44], [0, 0.22, 0.30]],
+    0.11, 0.032, 6, 5, 0.55, 0.0, 6.1
   );
-  addMeshWithOutline(crestG, mMantle, group);
+  addMeshWithOutline(crestG, mGoldenNape, group);
 
-  // 3. Golden-Ochre Cere, Massive Hooked Eagle Beak & Fierce Eyes
-  const cere = addMeshWithOutline(new THREE.SphereGeometry(0.068, 7, 6), mOchre, group);
-  cere.scale.set(0.95, 0.82, 1.15);
-  cere.position.set(0, 0.08, 0.80);
+  // 3. Deep Chisel-Shaped Aquiline Eagle Bill, Golden Cere & Fierce Supraorbital Brow
+  const cere = addMeshWithOutline(new THREE.SphereGeometry(0.082, 7, 6), mGoldenNape, group);
+  cere.scale.set(1.10, 0.92, 1.15);
+  cere.position.set(0, 0.08, 0.67);
 
   const beakG = buildTaperedCurveGeometry(
-    [[0, 0.08, 0.82], [0, 0.06, 0.99], [0, -0.04, 1.10]],
-    0.066, 0.007, 8, 8, 0.68, 0.0, 5.2
+    [[0, 0.09, 0.68], [0, 0.08, 0.86], [0, -0.05, 0.96]],
+    0.082, 0.010, 8, 8, 0.62, 0.0, 5.2
   );
-  addMeshWithOutline(beakG, mPinion, group);
+  addMeshWithOutline(beakG, materials.eyeGloss, group);
 
   [-1, 1].forEach((side) => {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.024, 7, 7), materials.eyeGloss);
-    eye.position.set(side * 0.088, 0.11, 0.74);
+    // Fierce overhanging eagle brow ridge
+    const brow = addMeshWithOutline(new THREE.BoxGeometry(0.06, 0.026, 0.12), mGoldenNape, group);
+    brow.position.set(side * 0.12, 0.15, 0.60);
+    brow.rotation.z = side * -0.22;
+
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.026, 7, 7), materials.eyeGloss);
+    eye.position.set(side * 0.125, 0.115, 0.60);
     group.add(eye);
 
-    // Tucked Feathered Tarsus & Golden-Ochre Raptorial Talons
+    // Feathered Eagle Trousers (Crural Feathers) & Massive Golden Raptorial Talons
+    const trouserG = addMeshWithOutline(new THREE.ConeGeometry(0.085, 0.22, 6), mMantle, group);
+    trouserG.position.set(side * 0.14, -0.14, -0.16);
+    trouserG.rotation.x = -0.55;
+
     const talonG = buildTaperedCurveGeometry(
-      [[side * 0.13, -0.16, -0.18], [side * 0.14, -0.26, -0.32], [side * 0.13, -0.22, -0.42]],
-      0.045, 0.014, 6, 5, 0.85, 0.0, side + 8.3
+      [[side * 0.14, -0.20, -0.22], [side * 0.15, -0.28, -0.34], [side * 0.14, -0.24, -0.44]],
+      0.048, 0.015, 6, 5, 0.85, 0.0, side + 8.3
     );
-    addMeshWithOutline(talonG, mOchre, group);
+    addMeshWithOutline(talonG, mGoldenNape, group);
   });
 
-  // 4. Broad, Cambered Forest-Eagle Wings (3.0m Span) with Distinct Coverts & Slotted Primaries
+  // 4. Broad, Rectangular Eagle Wings (3.0m Span) with Forward Carpal Wrist & Deep Splayed Finger Primaries
   const wingRigs = [];
   [-1, 1].forEach((side) => {
     const innerPivot = new THREE.Group();
-    innerPivot.position.set(side * 0.21, 0.05, 0.08);
+    innerPivot.position.set(side * 0.24, 0.06, 0.08);
     group.add(innerPivot);
 
+    // Inner wing sweeps slightly forward to a prominent carpal wrist
     const innerSlices = [
-      [0, 0, 0.03, 0.32, 0.058, 0.01, 0.0],
-      [side * 0.44, 0.02, 0.01, 0.30, 0.048, 0.01, 0.0],
-      [side * 0.86, 0.03, -0.02, 0.25, 0.038, 0.0, 0.0]
+      [0, 0, 0.04, 0.36, 0.064, 0.01, 0.0],
+      [side * 0.44, 0.02, 0.10, 0.35, 0.052, 0.01, 0.0],
+      [side * 0.84, 0.03, 0.14, 0.32, 0.042, 0.0, 0.0]
     ];
     const innerG = buildLoftedAnatomicalBody(innerSlices, Math.max(7, segR), 7, disp * 0.35, side + 5.1, { capStart: false, capEnd: false });
     addMeshWithOutline(innerG, mMantle, innerPivot);
 
+    // Golden-tawny lesser/median upper wing coverts bar
+    const covertBarG = buildLoftedAnatomicalBody(
+      [[side * 0.06, 0.036, 0.12, 0.16, 0.032, 0.0, 0.0], [side * 0.78, 0.045, 0.20, 0.14, 0.026, 0.0, 0.0]],
+      Math.max(6, segR - 2), 4, 0.0, side + 6.4, { capStart: true, capEnd: true }
+    );
+    addMeshWithOutline(covertBarG, mGoldenNape, innerPivot);
+
     const outerPivot = new THREE.Group();
-    outerPivot.position.set(side * 0.84, 0.03, -0.02);
+    outerPivot.position.set(side * 0.82, 0.03, 0.14);
     innerPivot.add(outerPivot);
 
     const outerSlices = [
-      [0, 0, 0.0, 0.24, 0.036, 0.0, 0.0],
-      [side * 0.36, 0.02, -0.04, 0.18, 0.026, 0.0, 0.0],
-      [side * 0.68, 0.03, -0.08, 0.10, 0.016, 0.0, 0.0]
+      [0, 0, 0.0, 0.31, 0.040, 0.0, 0.0],
+      [side * 0.34, 0.02, -0.03, 0.27, 0.030, 0.0, 0.0],
+      [side * 0.62, 0.04, -0.06, 0.20, 0.020, 0.0, 0.0]
     ];
     const outerG = buildLoftedAnatomicalBody(outerSlices, Math.max(7, segR), 7, disp * 0.3, side + 7.2, { capStart: false, capEnd: true });
-    addMeshWithOutline(outerG, mPinion, outerPivot);
+    addMeshWithOutline(outerG, mMantle, outerPivot);
 
-    const primaries = cfg.id === 0 ? 4 : Math.max(5, Math.round(6 * cfg.segMul));
+    // Distinct splayed primary "fingers" at the eagle wingtip (hallmark of soaring eagles)
+    const primaries = 5;
     for (let p = 0; p < primaries; p++) {
-      const pf = p / Math.max(1, primaries - 1);
-      const featherG = buildTaperedCurveGeometry(
+      const pf = p / (primaries - 1); // 0 (leading primary) -> 1 (trailing primary)
+      const sweepZ = 0.10 - pf * 0.32;
+      const tipLiftY = 0.05 + (1.0 - pf) * 0.06;
+      const fingerG = buildTaperedCurveGeometry(
         [
-          [side * (0.28 + pf * 0.36), 0.01, -0.03 - pf * 0.05],
-          [side * (0.50 + pf * 0.38), 0.02, -0.14 - pf * 0.09],
-          [side * (0.68 + pf * 0.40), 0.03, -0.26 - pf * 0.12]
+          [side * (0.48 + pf * 0.06), 0.02, sweepZ * 0.35],
+          [side * (0.72 + (1.0 - pf * 0.35) * 0.14), tipLiftY * 0.6, sweepZ * 0.75],
+          [side * (0.94 + Math.sin(pf * Math.PI) * 0.08), tipLiftY, sweepZ]
         ],
-        0.054, 0.009, 6, 6, 0.24, 0.0, p + 14
+        0.058, 0.012, 6, 6, 0.22, 0.0, p + 14
       );
-      addMeshWithOutline(featherG, p % 2 === 0 ? mPinion : mBuff, outerPivot);
+      addMeshWithOutline(fingerG, mPinion, outerPivot);
     }
     wingRigs.push({ side, innerPivot, outerPivot });
   });
 
-  // 5. Rounded Wedge-Shaped Eagle Tail Fan with Pale Subterminal Band
+  // 5. Broad Fan-Shaped Eagle Tail with Crisp Pale Subterminal Band
   const tailPivot = new THREE.Group();
-  tailPivot.position.set(0, 0.03, -0.50);
+  tailPivot.position.set(0, 0.03, -0.44);
   const tailSlices = [
-    [0, 0.0, 0.0, 0.16, 0.032, 0.0, 0.0],
-    [0, -0.01, -0.28, 0.32, 0.024, 0.0, 0.0],
-    [0, -0.02, -0.58, 0.42, 0.016, 0.0, 0.0]
+    [0, 0.0, 0.0, 0.18, 0.034, 0.0, 0.0],
+    [0, -0.01, -0.28, 0.36, 0.026, 0.0, 0.0],
+    [0, -0.02, -0.58, 0.48, 0.018, 0.0, 0.0]
   ];
   const tailFanG = buildLoftedAnatomicalBody(tailSlices, Math.max(7, segR), 7, disp * 0.25, 9.4, { capStart: false, capEnd: true });
   addMeshWithOutline(tailFanG, mPinion, tailPivot);
 
   const tailBandG = buildLoftedAnatomicalBody(
-    [[0, 0.008, -0.18, 0.24, 0.026, 0.0, 0.0], [0, 0.002, -0.42, 0.36, 0.020, 0.0, 0.0]],
+    [[0, 0.010, -0.22, 0.28, 0.028, 0.0, 0.0], [0, 0.004, -0.44, 0.41, 0.022, 0.0, 0.0]],
     Math.max(6, segR - 2), 4, 0.0, 9.8, { capStart: false, capEnd: false }
   );
   addMeshWithOutline(tailBandG, mBuff, tailPivot);
@@ -2899,7 +2922,7 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/WoollyMammoth.glb?v=4',
+    url: './assets/models/WoollyMammoth.glb?v=5',
     matKey: 'mammothFur',
     rootScale: 1.48,
     preserveMaterials: true,
@@ -2907,18 +2930,18 @@ const STUDIO_GLB_MANIFEST = [
     secondaryClip: /Mammoth_Look_Side/i,
     timeScale: 0.85,
     boneScales: {
-      'Mammoth Head_07': [0.80, 0.82, 0.82],
-      'Mammoth Hair Top_017': [0.42, 0.42, 0.42],
-      'Mammoth L Hair_026': [0.50, 0.50, 0.50],
-      'Mammoth R Hair_027': [0.50, 0.50, 0.50],
-      'Mammoth Hair Back_028': [0.55, 0.55, 0.55],
-      'Mammoth L Eyebrow_024': [0.55, 0.55, 0.55],
-      'Mammoth R Eyebrow_025': [0.55, 0.55, 0.55]
+      'Mammoth Head_07': [0.78, 0.80, 0.78],
+      'Mammoth Hair Top_017': [0.32, 0.32, 0.28],
+      'Mammoth L Hair_026': [0.42, 0.42, 0.42],
+      'Mammoth R Hair_027': [0.42, 0.42, 0.42],
+      'Mammoth Hair Back_028': [0.48, 0.48, 0.48],
+      'Mammoth L Eyebrow_024': [0.52, 0.52, 0.52],
+      'Mammoth R Eyebrow_025': [0.52, 0.52, 0.52]
     }
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/Stag.glb?v=4',
+    url: './assets/models/Stag.glb?v=5',
     matKey: 'elkCoat',
     rootScale: 0.80,
     preserveMaterials: true,
@@ -2933,7 +2956,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/Smilodon.glb?v=4',
+    url: './assets/models/Smilodon.glb?v=5',
     matKey: 'smilodonCoat',
     rootScale: 1.05,
     preserveMaterials: true,
@@ -2942,21 +2965,20 @@ const STUDIO_GLB_MANIFEST = [
     timeScale: 0.88,
     boneScales: {
       'Sabertooth Head_07': [0.84, 0.86, 0.86],
-      'Sabertooth zL Cheek_022': [0.64, 0.70, 0.70],
-      'Sabertooth zR Cheek_023': [0.64, 0.70, 0.70],
-      'Sabertooth Tail 1_046': [0.52, 0.72, 0.72]
+      'Sabertooth zL Cheek_022': [0.62, 0.68, 0.68],
+      'Sabertooth zR Cheek_023': [0.62, 0.68, 0.68]
     }
   },
   {
     assetId: 'giant_sequoia',
-    url: './assets/models/PineTree_1.glb?v=4',
+    url: './assets/models/PineTree_1.glb?v=5',
     matKey: 'foliage1',
     rootScale: 1.0,
     boneScales: {}
   },
   {
     assetId: 'araucaria_conifer',
-    url: './assets/models/CommonTree_1.glb?v=4',
+    url: './assets/models/CommonTree_1.glb?v=5',
     matKey: 'foliage1',
     rootScale: 1.0,
     boneScales: {}
@@ -2978,6 +3000,7 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
 
     const posAttr = geom.attributes.position;
     const uvAttr = geom.attributes.uv;
+    const skinAttr = geom.attributes.skinIndex;
     const mSpec = matSpecs[Math.min(primCounter, matSpecs.length - 1)] || matSpecs[0];
     primCounter += 1;
 
@@ -2986,11 +3009,13 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
       const lut = (mSpec && mSpec.lut_grid) || null;
       const vCount = posAttr.count;
       const vZones = new Uint8Array(vCount);
+      const inIvoryBox = new Uint8Array(vCount);
 
       for (let i = 0; i < vCount; i++) {
         let px = posAttr.getX(i);
         let py = posAttr.getY(i);
         let pz = posAttr.getZ(i);
+        const b0 = skinAttr ? skinAttr.getX(i) : -1;
         let uvZone = 1;
         if (uvAttr && lut) {
           let u = uvAttr.getX(i) % 1.0;
@@ -3002,36 +3027,55 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
           uvZone = lut[gy * gridSz + gx] ?? 1;
         }
 
+        // Strictly non-patchy ANATOMICAL_BONE_AND_PLANE_ONLY material zoning (tools/paleo_morphology_researcher.py)
         let zone = 1;
         if (assetId === 'woolly_mammoth') {
-          const isTusk = py < -88 && pz > 42 && pz < 188 && (uvZone === 3 || Math.abs(px) > 13.5);
-          const isDark = !isTusk && (uvZone === 0 || pz < 7.5);
-          const isSecondary = !isTusk && !isDark && (uvZone === 2 || (pz > 38 && pz < 92 && py > -62));
-          zone = isTusk ? 3 : (isDark ? 0 : (isSecondary ? 2 : 1));
+          const isTuskBox = py < -84 && pz > 58 && pz < 194 && Math.abs(px) > 14.0;
+          inIvoryBox[i] = isTuskBox ? 1 : 0;
+          const isTusk = isTuskBox && (uvZone === 3 || py < -142);
+          const isEyeOrNail = !isTusk && (b0 === 19 || b0 === 20 || pz < 4.2);
+          zone = isTusk ? 3 : (isEyeOrNail ? 0 : 1);
 
-          // Fix cartoony proportions: streamline wide cartoon head/cheeks & hair tuft, lengthen/broaden torso & hump
-          if (py < -22 && pz > 82 && zone !== 3) px *= 0.72;
-          if (pz > 216) pz = 216 + (pz - 216) * 0.36;
-          if (py > -18) py = -18 + (py + 18) * 1.48;
-          if (py > -15 && pz > 55 && pz < 205) px *= 1.26;
-          if (pz > 150 && py > -36 && py < 22) {
-            pz += 22.0 * Math.exp(-((py + 6) * (py + 6)) / 320.0) * Math.min(1.0, (pz - 150) / 45.0);
-          } else if (pz > 145 && py >= 22) {
-            pz -= Math.min(14.0, (py - 22) * 0.18) * Math.min(1.0, (pz - 145) / 50.0);
+          // Paleo osteology warp: lift low cartoon pelvis/butt (1.89x Z lift), compress tall head crown (0.57x)
+          if (py < -22 && pz > 82 && zone !== 3) px *= 0.71;
+          if (py < -22 && pz > 136 && zone !== 3) {
+            const uFront = Math.min(1.0, (-22.0 - py) / 68.0);
+            pz = 136.0 + (pz - 136.0) * (1.0 - 0.52 * uFront);
           }
+          if (py > -38 && pz > 5.0) {
+            const uRear = Math.min(1.0, (py + 38.0) / 112.0);
+            const footFade = Math.min(1.0, (pz - 5.0) / 22.0);
+            pz = pz * (1.0 + 0.78 * Math.pow(uRear, 0.80) * footFade) + 34.0 * Math.pow(uRear, 0.85) * footFade;
+          }
+          if (py > -36 && py < 18 && pz > 115) {
+            pz += 16.0 * Math.exp(-((py + 10.0) * (py + 10.0)) / 260.0);
+          }
+          if (py > 52) {
+            pz += 26.0 * Math.min(1.0, (py - 52.0) / 42.0);
+            py = 52.0 + (py - 52.0) * 0.45;
+          }
+          if (py > -18 && py <= 52) py = -18.0 + (py + 18.0) * 1.38;
+          if (py > -15 && pz > 50 && pz < 215) px *= 1.24;
         } else {
-          const isSaber = py < -50 && pz > 45 && pz < 84 && (uvZone === 3 || (Math.abs(px) > 3.4 && Math.abs(px) < 11.5 && pz < 69));
-          const isDark = !isSaber && (uvZone === 0 || (py < -69 && pz > 68 && pz < 82 && Math.abs(px) < 5.5));
-          const isSecondary = !isSaber && !isDark && (uvZone === 2 || (pz < 46 && py > -58 && py < 56));
-          zone = isSaber ? 3 : (isDark ? 0 : (isSecondary ? 2 : 1));
+          const isSaberBox = py < -100 && pz > 50 && pz < 96 && Math.abs(px) > 4.2 && Math.abs(px) < 16.8;
+          inIvoryBox[i] = isSaberBox ? 1 : 0;
+          const isSaber = isSaberBox && (uvZone === 3 || pz < 74);
+          const isEyeOrNose = !isSaber && (b0 === 15 || b0 === 16 || (py < -136 && pz > 90 && pz < 106 && Math.abs(px) < 6.0));
+          const isCleanVentral = !isSaber && !isEyeOrNose && (pz < 40 && Math.abs(px) < 9.5 && py > -62 && py < 32);
+          zone = isSaber ? 3 : (isEyeOrNose ? 0 : (isCleanVentral ? 2 : 1));
 
-          // Fix cartoony proportions: narrow puffy cheeks, lengthen muscular torso, bob lynx tail
-          if (py < -38 && pz > 52 && zone !== 3) px *= 0.75;
-          if (py > -18 && py <= 68) py = -18 + (py + 18) * 1.25;
-          else if (py > 68) py = -18 + 86 * 1.25 + (py - 68) * 0.38;
+          // Paleo osteology warp: lift pelvis (1.23x), narrow cheeks (0.65x), lengthen torso (1.28x), bob lynx tail (0.37x)
+          if (py < -38 && pz > 52 && zone !== 3) px *= 0.68;
+          if (py > -18 && pz > 6.0) {
+            const uRear = Math.min(1.0, (py + 18.0) / 85.0);
+            const footFade = Math.min(1.0, (pz - 6.0) / 18.0);
+            pz *= (1.0 + 0.22 * uRear * footFade);
+          }
+          if (py > -18 && py <= 64) py = -18.0 + (py + 18.0) * 1.28;
+          else if (py > 64) py = -18.0 + 82.0 * 1.28 + (py - 64.0) * 0.37;
           if (py > -28 && py < 24 && pz > 42) {
             px *= 1.18;
-            if (pz > 72) pz += 6.5 * Math.exp(-((py + 6) * (py + 6)) / 180.0);
+            if (pz > 72) pz += 6.5 * Math.exp(-((py + 6.0) * (py + 6.0)) / 180.0);
           }
         }
         vZones[i] = zone;
@@ -3039,17 +3083,27 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
       }
       posAttr.needsUpdate = true;
 
-      // Partition triangles into 4 clean simple-shaded material groups (0: Dark, 1: Primary, 2: Secondary, 3: Ivory)
+      // Flood-fill ivory tusks/sabers inside their anterior bounding box so whole tooth is 100% solid ivory
       const oldIdx = geom.index.array;
+      for (let pass = 0; pass < 3; pass++) {
+        for (let t = 0; t < oldIdx.length; t += 3) {
+          const a = oldIdx[t], b = oldIdx[t + 1], c = oldIdx[t + 2];
+          if (vZones[a] === 3 || vZones[b] === 3 || vZones[c] === 3) {
+            if (inIvoryBox[a]) vZones[a] = 3;
+            if (inIvoryBox[b]) vZones[b] = 3;
+            if (inIvoryBox[c]) vZones[c] = 3;
+          }
+        }
+      }
+
       const buckets = [[], [], [], []];
       for (let t = 0; t < oldIdx.length; t += 3) {
         const a = oldIdx[t], b = oldIdx[t + 1], c = oldIdx[t + 2];
         const za = vZones[a], zb = vZones[b], zc = vZones[c];
-        let triZone = za;
-        if (za === 3 || zb === 3 || zc === 3) triZone = 3;
-        else if (za === 0 && zb === 0 && zc === 0) triZone = 0;
-        else if ((za === 2 && zb === 2) || (za === 2 && zc === 2) || (zb === 2 && zc === 2)) triZone = 2;
-        else triZone = 1;
+        let triZone = 1;
+        if (za === 3 && zb === 3 && zc === 3) triZone = 3;
+        else if (za === 0 || zb === 0 || zc === 0) triZone = 0;
+        else if (za === 2 && zb === 2 && zc === 2) triZone = 2;
         buckets[triZone].push(a, b, c);
       }
 
