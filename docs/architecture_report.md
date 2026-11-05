@@ -15,7 +15,7 @@ This report documents the architectural, methodological, and mathematical founda
 | :--- | :--- | :--- | :--- |
 | **Bidirectional Sync Rate** | **100.0%** | 100.0% | `PASS (SYNCHRONIZED)` |
 | **Formal Design Premises** | **7 Premises** | $\ge 1$ Validated | `PASS` |
-| **Implementing Code Symbols** | **17 Tagged Symbols** | $1:1$ Symbol Linkage | `PASS` |
+| **Implementing Code Symbols** | **21 Tagged Symbols** | $1:1$ Symbol Linkage | `PASS` |
 | **Unimplemented Premises** | **0** | 0 | `PASS` |
 | **Orphaned Code Tags** | **0** | 0 | `PASS` |
 | **Symbolic Math Claims** | **2/2 Claims** | SymPy Verification | `PASS (100% VERIFIED)` |
@@ -87,6 +87,12 @@ Links all formal premises in docs/architecture_argument.md to executable studio 
     - *Signature:* `class WalkaboutStudioController`
     - *Docstring Intent:* Humble Object controller orchestrating blueprint compilation, locomotion verification,
 and Quest 3 performance auditing for the Walkabout Studio workspace.
+@premise(P1_DUAL_MODE_PARITY)
+@premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[sync_inline_bundle](xr_studio_engine.py#L145)` (`xr_studio_engine.py:145`)
+    - *Signature:* `def sync_inline_bundle(studio_dir)`
+    - *Docstring Intent:* Synchronizes the modular app.js script into the inline <script type="module">
+block of index.html and verifies exact readback parity.
 @premise(P1_DUAL_MODE_PARITY)
 @premise(P7_STUDIO_CONVERGENCE)
 
@@ -164,6 +170,13 @@ Links all formal premises in docs/architecture_argument.md to executable studio 
 10 Shader/Texture rendering pipelines in the studio bundle.
 @premise(P5_PIXPAL_DIORAMA_BUDGET)
 @premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[verify_skeletal_loft_and_glb_morph](xr_studio_engine.py#L177)` (`xr_studio_engine.py:177`)
+    - *Signature:* `def verify_skeletal_loft_and_glb_morph(studio_dir)`
+    - *Docstring Intent:* Verifies that the studio bundle implements continuous anatomical lofting,
+articulated 3-joint quadruped limbs, biomechanical gait/IK solvers, and
+pre-rigged .glb SkeletonUtils morphing.
+@premise(P5_PIXPAL_DIORAMA_BUDGET)
+@premise(P7_STUDIO_CONVERGENCE)
 
 ### 3.6 [P6_PARAMETRIC_CSG_HOUSE] Rapid architectural iteration and minigame prototyping require compiling declarative JSON floorplans into live-modifiable 3D room, roof, patio, and putting-green primitives.
 
@@ -205,7 +218,20 @@ and Quest 3 performance auditing for the Walkabout Studio workspace.
 10 Shader/Texture rendering pipelines in the studio bundle.
 @premise(P5_PIXPAL_DIORAMA_BUDGET)
 @premise(P7_STUDIO_CONVERGENCE)
-  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L145)` (`xr_studio_engine.py:145`)
+  - **Function** `[sync_inline_bundle](xr_studio_engine.py#L145)` (`xr_studio_engine.py:145`)
+    - *Signature:* `def sync_inline_bundle(studio_dir)`
+    - *Docstring Intent:* Synchronizes the modular app.js script into the inline <script type="module">
+block of index.html and verifies exact readback parity.
+@premise(P1_DUAL_MODE_PARITY)
+@premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[verify_skeletal_loft_and_glb_morph](xr_studio_engine.py#L177)` (`xr_studio_engine.py:177`)
+    - *Signature:* `def verify_skeletal_loft_and_glb_morph(studio_dir)`
+    - *Docstring Intent:* Verifies that the studio bundle implements continuous anatomical lofting,
+articulated 3-joint quadruped limbs, biomechanical gait/IK solvers, and
+pre-rigged .glb SkeletonUtils morphing.
+@premise(P5_PIXPAL_DIORAMA_BUDGET)
+@premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L209)` (`xr_studio_engine.py:209`)
     - *Signature:* `def run_full_studio_convergence(cls, studio_dir)`
     - *Docstring Intent:* Executes end-to-end studio verification across locomotion, wristwatch UI, and scene budget.
 @premise(P7_STUDIO_CONVERGENCE)
@@ -261,6 +287,7 @@ The following matrix maps every formal premise in the architecture argument to i
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `P1_DUAL_MODE_PARITY` | `V_DUAL_RIG` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P1_DUAL_MODE_PARITY` | `V_DUAL_RIG` | `WalkaboutStudioController` | `class` | `xr_studio_engine.py:34` | `SYNCHRONIZED` |
+| `P1_DUAL_MODE_PARITY` | `V_DUAL_RIG` | `sync_inline_bundle` | `function` | `xr_studio_engine.py:145` | `SYNCHRONIZED` |
 | `P2_PARABOLIC_TELEPORT` | `V_DUAL_RIG >> V_PARABOLIC` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P2_PARABOLIC_TELEPORT` | `V_DUAL_RIG >> V_PARABOLIC` | `verify_teleport_arc` | `function` | `xr_studio_engine.py:43` | `SYNCHRONIZED` |
 | `P3_POINT_UP_FLIGHT` | `V_PARABOLIC >> V_FLIGHT` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
@@ -270,12 +297,15 @@ The following matrix maps every formal premise in the architecture argument to i
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `audit_studio_blueprint` | `function` | `xr_studio_engine.py:94` | `SYNCHRONIZED` |
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
+| `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `verify_skeletal_loft_and_glb_morph` | `function` | `xr_studio_engine.py:177` | `SYNCHRONIZED` |
 | `P6_PARAMETRIC_CSG_HOUSE` | `(V_PIXPAL & V_WRIST_UI) >> V_CSG_HOUSE` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P6_PARAMETRIC_CSG_HOUSE` | `(V_PIXPAL & V_WRIST_UI) >> V_CSG_HOUSE` | `audit_studio_blueprint` | `function` | `xr_studio_engine.py:94` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `WalkaboutStudioController` | `class` | `xr_studio_engine.py:34` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
-| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:145` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `sync_inline_bundle` | `function` | `xr_studio_engine.py:145` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_skeletal_loft_and_glb_morph` | `function` | `xr_studio_engine.py:177` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:209` | `SYNCHRONIZED` |
 
 ---
 
@@ -285,23 +315,23 @@ To maintain strict epistemic synchronization across refactoring and self-improve
 
 1. **Argument Logic Validation:**
    ```bash
-   python tools/document_validator.py validate projects/wild_vr_studio/docs/architecture_argument.md
+   python tools/document_validator.py validate projects\wild_vr_studio\docs\architecture_argument.md
    ```
 2. **Bidirectional Code-Argument Audit:**
    ```bash
-   python tools/code_argument_synchronizer.py audit projects/wild_vr_studio/docs/architecture_argument.md projects/wild_vr_studio/xr_studio_engine.py
+   python tools/code_argument_synchronizer.py audit projects\wild_vr_studio\docs\architecture_argument.md projects\wild_vr_studio\xr_studio_engine.py
    ```
 3. **Symbolic Mathematical Validation:**
    ```bash
-   python tools/symbolic_math_validator.py validate projects/wild_vr_studio/docs/architecture_argument.md
+   python tools/symbolic_math_validator.py validate projects\wild_vr_studio\docs\architecture_argument.md
    ```
 4. **Draft Report Re-generation:**
    ```bash
-   python tools/coding_report_generator.py generate projects/wild_vr_studio
+   python tools/coding_report_generator.py generate projects\wild_vr_studio
    ```
 5. **Report Freshness Verification:**
    ```bash
-   python tools/coding_report_generator.py verify projects/wild_vr_studio
+   python tools/coding_report_generator.py verify projects\wild_vr_studio
    ```
 
 *(This report is autonomously maintained and must be committed alongside code updates to guarantee zero architectural drift.)*

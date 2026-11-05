@@ -41,11 +41,19 @@ class TestWalkaboutStudioController(unittest.TestCase):
 
     def test_verify_lod_and_shader_matrix_live_studio(self):
         studio_dir = str(Path(__file__).resolve().parent.parent)
+        sync_res = WalkaboutStudioController.sync_inline_bundle(studio_dir)
+        self.assertEqual(sync_res["status"], "VALID")
+        self.assertTrue(sync_res["synced"])
+
         matrix = WalkaboutStudioController.verify_lod_and_shader_matrix(studio_dir)
         self.assertEqual(matrix["status"], "VALID")
         self.assertEqual(matrix["lod_tiers"], 4)
         self.assertTrue(matrix["has_side_by_side_lineups"])
         self.assertEqual(matrix["shader_pipelines"], 10)
+
+        skeletal = WalkaboutStudioController.verify_skeletal_loft_and_glb_morph(studio_dir)
+        self.assertEqual(skeletal["status"], "VALID")
+        self.assertEqual(skeletal["features_found"], skeletal["required_count"])
 
 
 

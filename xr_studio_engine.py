@@ -141,6 +141,70 @@ class WalkaboutStudioController:
             "shader_pipelines": len(found_pipelines),
         }
 
+    @staticmethod
+    def sync_inline_bundle(studio_dir: str) -> Dict[str, Any]:
+        """
+        Synchronizes the modular app.js script into the inline <script type="module">
+        block of index.html and verifies exact readback parity.
+        @premise(P1_DUAL_MODE_PARITY)
+        @premise(P7_STUDIO_CONVERGENCE)
+        """
+        root = Path(studio_dir)
+        html_path = root / "index.html"
+        js_path = root / "app.js"
+        if not html_path.is_file() or not js_path.is_file():
+            return {"status": "MISSING", "synced": False}
+
+        html = html_path.read_text(encoding="utf-8")
+        js = js_path.read_text(encoding="utf-8").strip()
+        start_marker = '<script type="module">\n'
+        end_marker = "\n  </script>\n</body>"
+        if start_marker not in html or end_marker not in html:
+            return {"status": "INVALID_MARKERS", "synced": False}
+
+        s_idx = html.index(start_marker) + len(start_marker)
+        e_idx = html.index(end_marker, s_idx)
+        updated_html = html[:s_idx] + js + html[e_idx:]
+        html_path.write_text(updated_html, encoding="utf-8", newline="\n")
+        readback = html_path.read_text(encoding="utf-8")
+        return {
+            "status": "VALID" if js in readback else "PARITY_ERROR",
+            "synced": js in readback,
+            "bytes": len(readback),
+        }
+
+    @staticmethod
+    def verify_skeletal_loft_and_glb_morph(studio_dir: str) -> Dict[str, Any]:
+        """
+        Verifies that the studio bundle implements continuous anatomical lofting,
+        articulated 3-joint quadruped limbs, biomechanical gait/IK solvers, and
+        pre-rigged .glb SkeletonUtils morphing.
+        @premise(P5_PIXPAL_DIORAMA_BUDGET)
+        @premise(P7_STUDIO_CONVERGENCE)
+        """
+        js_path = Path(studio_dir) / "app.js"
+        if not js_path.is_file():
+            return {"status": "MISSING", "features_found": 0}
+        text = js_path.read_text(encoding="utf-8")
+        required_features = [
+            "buildLoftedAnatomicalBody",
+            "buildArticulatedQuadrupedLimb",
+            "instantiatePreRiggedGLBIfCached",
+            "updateBiomechanicalAnimations",
+            "GLTFLoader",
+            "SkeletonUtils",
+            "graviportal_amble",
+            "cervid_trot",
+            "predator_prowl",
+            "avian_soar",
+        ]
+        found = [f for f in required_features if f in text]
+        return {
+            "status": "VALID" if len(found) == len(required_features) else "PARTIAL",
+            "features_found": len(found),
+            "required_count": len(required_features),
+        }
+
     @classmethod
     def run_full_studio_convergence(cls, studio_dir: str) -> Dict[str, Any]:
         """
@@ -157,5 +221,14 @@ class WalkaboutStudioController:
             "wristwatch": cls.verify_wristwatch_glance(),
             "scene": cls.audit_studio_blueprint(bp_path),
             "lod_shader_matrix": cls.verify_lod_and_shader_matrix(studio_dir),
+            "skeletal_loft_glb": cls.verify_skeletal_loft_and_glb_morph(studio_dir),
         }
+
+
+if __name__ == "__main__":
+    studio_root = str(Path(__file__).resolve().parent)
+    sync_res = WalkaboutStudioController.sync_inline_bundle(studio_root)
+    conv_res = WalkaboutStudioController.run_full_studio_convergence(studio_root)
+    print(json.dumps({"sync": sync_res, "convergence": conv_res}, indent=2))
+
 

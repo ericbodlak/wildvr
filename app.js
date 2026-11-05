@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // ============================================================================
 // 1. PROCEDURAL TEXTURE, BUMP MAP & SHADER RAMP SYNTHESIZER (Zero External Deps)
@@ -591,10 +593,199 @@ function make3DLabelSprite(titleText, subText, borderHex = '#52b788') {
 }
 
 // ============================================================================
-// 5. MULTI-LOD PARAMETRIC MEGAFAUNA BUILDERS (MAMMOTH & MEGALOCEROS)
+// 5. CONTINUOUS ANATOMICAL LOFTING, SKELETAL IK RIGS & PRE-RIGGED .GLB MORPHER
 // ============================================================================
 let activeTrunkPivots = [];
 let activeVultureFlocks = [];
+let activeAnimatedCreatures = [];
+let activeSwayFoliage = [];
+let activeGLBMixers = [];
+const gltfLoader = new GLTFLoader();
+const glbHeroCache = {};
+
+/**
+ * Generates a single continuous, watertight anatomical skin mesh lofted across
+ * spine cross-sections [x, y, z, rx, ry, dorsalRidge, ventralFlattening] with zero seams.
+ */
+function buildLoftedAnatomicalBody(slices, radialSegs = 16, lengthSegs = 24, dispAmp = 0.02, seed = 1.0) {
+  const rSeg = Math.max(6, radialSegs);
+  const lSeg = Math.max(slices.length, lengthSegs);
+  const centerPts = slices.map((s) => new THREE.Vector3(s[0], s[1], s[2]));
+  const radiusPts = slices.map((s) => new THREE.Vector3(s[3], s[4], s[5] || 0.0));
+  const ventralPts = slices.map((s) => new THREE.Vector3(s[6] || 0.0, 0, 0));
+
+  const spineCurve = new THREE.CatmullRomCurve3(centerPts);
+  const radiusCurve = new THREE.CatmullRomCurve3(radiusPts);
+  const ventralCurve = new THREE.CatmullRomCurve3(ventralPts);
+
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+  const ringStride = rSeg + 1;
+
+  for (let i = 0; i <= lSeg; i++) {
+    const u = i / lSeg;
+    const c = spineCurve.getPointAt(u);
+    const tangent = spineCurve.getTangentAt(u).normalize();
+    const up = new THREE.Vector3(0, 1, 0);
+    const right = new THREE.Vector3().crossVectors(up, tangent).normalize();
+    if (right.lengthSq() < 0.001) right.set(1, 0, 0);
+    const orthoUp = new THREE.Vector3().crossVectors(tangent, right).normalize();
+
+    const rSpec = radiusCurve.getPointAt(u);
+    const endTaper = u < 0.06 ? Math.sin((u / 0.06) * (Math.PI / 2)) : (u > 0.94 ? Math.sin(((1.0 - u) / 0.06) * (Math.PI / 2)) : 1.0);
+    const rx = Math.max(0.015, rSpec.x * endTaper);
+    const ry = Math.max(0.015, rSpec.y * endTaper);
+    const dorsal = rSpec.z * endTaper;
+    const ventral = ventralCurve.getPointAt(u).x * endTaper;
+
+    for (let j = 0; j <= rSeg; j++) {
+      const v = j / rSeg;
+      const theta = v * Math.PI * 2;
+      const cosT = Math.cos(theta);
+      const sinT = Math.sin(theta);
+
+      let localX = cosT * rx * (1.0 + 0.08 * Math.sin(theta * 2.0));
+      let localY = sinT * ry;
+      if (sinT > 0) {
+        localY += dorsal * Math.pow(sinT, 3);
+      } else {
+        localY *= (1.0 - ventral * 0.28 * Math.abs(sinT));
+      }
+
+      const n1 = Math.sin(u * 14.0 + theta * 2.0 + seed) * Math.cos(u * 9.0 - theta + seed);
+      const disp = n1 * dispAmp * endTaper;
+      localX += cosT * disp;
+      localY += sinT * disp;
+
+      const wx = c.x + right.x * localX + orthoUp.x * localY;
+      const wy = c.y + right.y * localX + orthoUp.y * localY;
+      const wz = c.z + right.z * localX + orthoUp.z * localY;
+      positions.push(wx, wy, wz);
+      uvs.push(u * 2.5, v);
+    }
+  }
+
+  for (let i = 0; i < lSeg; i++) {
+    for (let j = 0; j < rSeg; j++) {
+      const a = i * ringStride + j;
+      const b = (i + 1) * ringStride + j;
+      const c = (i + 1) * ringStride + (j + 1);
+      const d = i * ringStride + (j + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+/**
+ * Builds an articulated 3-joint quadruped limb (Hip/Shoulder -> Knee/Elbow -> Ankle/Fetlock -> Foot/Hoof/Paw)
+ * with continuous lofted muscle bellies so leg swings never show cylinder gaps.
+ */
+function buildArticulatedQuadrupedLimb(cfg, rUpper, rKnee, rAnkle, upperLen, lowerLen, footSpec, mCoat, mNail, seed = 1.0) {
+  const segR = cfg.id === 0 ? 6 : Math.max(8, Math.round(11 * cfg.segMul));
+  const segL = cfg.id === 0 ? 5 : Math.max(7, Math.round(9 * cfg.segMul));
+  const disp = 0.015 * cfg.displace;
+
+  const hipPivot = new THREE.Group();
+  const upperSlices = [
+    [0, 0.14, 0, rUpper * 1.22, rUpper * 1.18, 0.02, 0.0],
+    [0, -upperLen * 0.45, 0.02, rUpper * 0.96, rUpper * 1.06, 0.01, 0.0],
+    [0, -upperLen * 0.92, 0, rKnee * 1.04, rKnee * 1.04, 0.0, 0.0],
+    [0, -upperLen * 1.05, 0, rKnee * 0.85, rKnee * 0.85, 0.0, 0.0]
+  ];
+  const upperGeom = buildLoftedAnatomicalBody(upperSlices, segR, segL, disp, seed);
+  addMeshWithOutline(upperGeom, mCoat, hipPivot);
+
+  const kneePivot = new THREE.Group();
+  kneePivot.position.set(0, -upperLen, 0);
+  hipPivot.add(kneePivot);
+
+  const lowerSlices = [
+    [0, 0.06, 0, rKnee * 0.98, rKnee * 1.02, 0.01, 0.0],
+    [0, -lowerLen * 0.5, -0.01, rAnkle * 1.05, rAnkle * 1.08, 0.0, 0.0],
+    [0, -lowerLen * 0.95, 0.01, rAnkle * 0.96, rAnkle * 0.96, 0.0, 0.0],
+    [0, -lowerLen * 1.06, 0.02, rAnkle * 0.82, rAnkle * 0.82, 0.0, 0.0]
+  ];
+  const lowerGeom = buildLoftedAnatomicalBody(lowerSlices, segR, segL, disp * 0.7, seed + 3.1);
+  addMeshWithOutline(lowerGeom, mCoat, kneePivot);
+
+  const anklePivot = new THREE.Group();
+  anklePivot.position.set(0, -lowerLen, 0);
+  kneePivot.add(anklePivot);
+
+  if (footSpec.kind === 'pillar_toes') {
+    const padG = new THREE.CylinderGeometry(rAnkle * 1.05, rAnkle * 1.18, 0.22, segR);
+    const pad = addMeshWithOutline(padG, mCoat, anklePivot);
+    pad.position.set(0, -0.08, 0.02);
+    if (cfg.id >= 1) {
+      for (let toe = -1.5; toe <= 1.5; toe += 1.0) {
+        const nail = addMeshWithOutline(new THREE.SphereGeometry(rAnkle * 0.24, 7, 6), mNail, anklePivot);
+        nail.scale.set(0.85, 0.65, 1.25);
+        nail.position.set(toe * rAnkle * 0.3, -0.14, rAnkle * 0.98);
+      }
+    }
+  } else if (footSpec.kind === 'cloven_hoof') {
+    const hoofG = new THREE.CylinderGeometry(rAnkle * 0.88, rAnkle * 1.15, 0.16, Math.max(6, segR));
+    const hoof = addMeshWithOutline(hoofG, mNail, anklePivot);
+    hoof.position.set(0, -0.07, 0.03);
+  } else if (footSpec.kind === 'clawed_paw') {
+    const pawG = new THREE.SphereGeometry(rAnkle * 1.25, Math.max(7, segR), 7);
+    pawG.scale(1.05, 0.55, 1.42);
+    const paw = addMeshWithOutline(pawG, mCoat, anklePivot);
+    paw.position.set(0, -0.05, 0.07);
+    if (cfg.id >= 1) {
+      for (let c = -1.5; c <= 1.5; c += 1.0) {
+        const claw = addMeshWithOutline(new THREE.ConeGeometry(0.018, 0.065, 5), mNail, anklePivot);
+        claw.rotation.x = Math.PI * 0.62;
+        claw.position.set(c * 0.032, -0.06, 0.19);
+      }
+    }
+  }
+
+  return { root: hipPivot, knee: kneePivot, ankle: anklePivot };
+}
+
+/**
+ * Loads, clones, and morphs a pre-rigged .glb base animal (via SkeletonUtils + bone scaling + Head bone grafts).
+ */
+function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, graftBuilderFn = null) {
+  const entry = glbHeroCache[assetId];
+  if (!entry || !entry.scene) return null;
+  const cloned = SkeletonUtils.clone(entry.scene);
+  const mPrimary = (customMats && customMats[entry.matKey]) || materials[entry.matKey] || materials.mammothFur;
+
+  cloned.traverse((node) => {
+    if (node.isBone && entry.boneScales && entry.boneScales[node.name]) {
+      const s = entry.boneScales[node.name];
+      node.scale.set(s[0], s[1], s[2]);
+    }
+    if (node.isMesh || node.isSkinnedMesh) {
+      node.material = mPrimary;
+      node.castShadow = true;
+      node.receiveShadow = true;
+      activeSceneTriangles += countGeomTriangles(node.geometry);
+    }
+    if (node.isBone && graftBuilderFn && /head|skull/i.test(node.name) && !node.userData.grafted) {
+      node.userData.grafted = true;
+      graftBuilderFn(node);
+    }
+  });
+
+  if (entry.animations && entry.animations.length > 0) {
+    const mixer = new THREE.AnimationMixer(cloned);
+    mixer.clipAction(entry.animations[0]).play();
+    activeGLBMixers.push(mixer);
+  }
+  return cloned;
+}
 
 function buildMammothAtLOD(lodIdx = 2, customMats = null) {
   const cfg = LOD_TIERS[Math.max(0, Math.min(3, lodIdx))];
@@ -602,140 +793,149 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
   const mTusk = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
 
-  if (cfg.id === 0) {
-    // LOD 0: Original Walkabout Low-Poly Blockout (~140 tris)
-    const mBody = addMeshWithOutline(new THREE.BoxGeometry(2.3, 2.2, 3.6), mFur, group);
-    mBody.position.set(0, 2.2, 0);
-    const mShoulder = addMeshWithOutline(new THREE.DodecahedronGeometry(1.35, 0), mFur, group);
-    mShoulder.position.set(0, 3.05, 1.0);
-    const mHead = addMeshWithOutline(new THREE.DodecahedronGeometry(0.95, 0), mFur, group);
-    mHead.position.set(0, 2.95, 2.15);
-    const trunkPiv = new THREE.Group();
-    trunkPiv.position.set(0, 2.6, 2.75);
-    const mTrunk = addMeshWithOutline(new THREE.CylinderGeometry(0.18, 0.28, 1.85, 7), mFur, trunkPiv);
-    mTrunk.position.set(0, -0.8, 0.15);
-    group.add(trunkPiv);
-    activeTrunkPivots.push(trunkPiv);
-    [-0.55, 0.55].forEach((sx) => {
-      const tusk = addMeshWithOutline(new THREE.TorusGeometry(1.15, 0.11, 6, 10, Math.PI * 0.72), mTusk, group);
-      tusk.position.set(sx, 2.35, 2.55);
-      tusk.rotation.y = Math.PI / 2 + (sx > 0 ? -0.18 : 0.18);
-      tusk.rotation.z = -0.35;
-    });
-    [[-0.7, 1.1], [0.7, 1.1], [-0.7, -1.2], [0.7, -1.2]].forEach(([lx, lz]) => {
-      const leg = addMeshWithOutline(new THREE.CylinderGeometry(0.36, 0.32, 1.8, 6), mFur, group);
-      leg.position.set(lx, 0.9, lz);
-    });
+  const glbClone = instantiatePreRiggedGLBIfCached('woolly_mammoth', lodIdx, customMats);
+  if (glbClone) {
+    group.add(glbClone);
     tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
     return group;
   }
 
-  // LOD 1, 2, 3: Sculpted Anatomical Multi-Lobe Torso, Helical Tusks, S-Curve Trunk & Shaggy Fur Mantle
-  const segW = Math.round(14 * cfg.segMul);
-  const segH = Math.round(11 * cfg.segMul);
-  const disp = 0.045 * cfg.displace;
+  const segR = cfg.id === 0 ? 8 : Math.round(16 * cfg.segMul);
+  const segL = cfg.id === 0 ? 10 : Math.round(24 * cfg.segMul);
+  const disp = 0.042 * cfg.displace;
 
-  // Anatomical body lobes: [x, y, z, rx, ry, rz, seed]
-  [
-    [0, 2.35, 0.85, 1.28, 1.38, 1.45, 1.1],   // Massive Pleistocene ribcage & forequarters
-    [0, 3.18, 1.05, 1.05, 0.98, 1.12, 2.3],   // Prominent shoulder hump
-    [0, 2.22, -0.45, 1.18, 1.22, 1.35, 3.7],  // Mid-barrel abdomen
-    [0, 1.98, -1.55, 1.02, 1.08, 1.05, 4.9],  // Sloped mammoth hindquarters
-    [0, 3.12, 2.15, 0.86, 1.04, 0.88, 5.5],   // High domed cranium
-    [0, 2.68, 2.48, 0.68, 0.65, 0.72, 6.2]    // Facial snout & tusk sockets
-  ].forEach(([x, y, z, rx, ry, rz, seed]) => {
-    const g = displaceGeometryOrganic(new THREE.SphereGeometry(1.0, segW, segH), disp, 3.5, seed);
-    g.scale(rx, ry, rz);
-    const m = addMeshWithOutline(g, mFur, group);
-    m.position.set(x, y, z);
-  });
+  const spineRoot = new THREE.Group();
+  group.add(spineRoot);
 
-  // Pleistocene Small Furry Ears & Glossy Eyes
+  // Continuous watertight lofted Pleistocene torso (Sloped hindquarters -> deep barrel abdomen -> towering shoulder hump -> neck base)
+  const torsoSlices = [
+    [0, 1.92, -1.92, 0.42, 0.46, 0.05, 0.15],
+    [0, 2.08, -1.35, 0.96, 1.05, 0.14, 0.18],
+    [0, 2.26, -0.35, 1.18, 1.28, 0.22, 0.22],
+    [0, 2.48, 0.78, 1.28, 1.42, 0.56, 0.18],
+    [0, 2.68, 1.48, 1.08, 1.24, 0.48, 0.12],
+    [0, 2.75, 1.88, 0.72, 0.82, 0.18, 0.08]
+  ];
+  const torsoGeom = buildLoftedAnatomicalBody(torsoSlices, segR, segL, disp, 1.1);
+  addMeshWithOutline(torsoGeom, mFur, spineRoot);
+
+  // Articulated Neck & High-Domed Cranium Group (Drives Head-Look IK & Breathing Pitch)
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, 2.82, 1.78);
+  spineRoot.add(headPivot);
+
+  const headSlices = [
+    [0, -0.08, -0.18, 0.68, 0.78, 0.15, 0.1],
+    [0, 0.22, 0.28, 0.82, 0.98, 0.38, 0.08],
+    [0, -0.05, 0.68, 0.64, 0.68, 0.12, 0.15],
+    [0, -0.22, 0.96, 0.44, 0.46, 0.04, 0.1]
+  ];
+  const headGeom = buildLoftedAnatomicalBody(headSlices, Math.max(7, Math.round(segR * 0.85)), Math.max(8, Math.round(segL * 0.6)), disp * 0.75, 5.5);
+  addMeshWithOutline(headGeom, mFur, headPivot);
+
+  const earPivots = [];
   [-1, 1].forEach((side) => {
-    const earG = displaceGeometryOrganic(new THREE.SphereGeometry(0.28, Math.max(8, Math.round(8 * cfg.segMul)), 8), disp * 0.6, 4.0, side + 8);
-    earG.scale(0.38, 1.15, 0.75);
-    const ear = addMeshWithOutline(earG, mFur, group);
-    ear.position.set(side * 0.86, 3.02, 1.88);
-    ear.rotation.y = side * 0.35;
+    const earPiv = new THREE.Group();
+    earPiv.position.set(side * 0.76, 0.18, 0.12);
+    const earG = displaceGeometryOrganic(new THREE.SphereGeometry(0.26, Math.max(6, Math.round(8 * cfg.segMul)), 8), disp * 0.5, 4.0, side + 8);
+    earG.scale(0.32, 1.15, 0.78);
+    const ear = addMeshWithOutline(earG, mFur, earPiv);
+    ear.position.set(side * 0.08, -0.06, 0);
+    earPiv.rotation.y = side * 0.38;
+    headPivot.add(earPiv);
+    earPivots.push(earPiv);
 
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 8), materials.eyeGloss);
-    eye.position.set(side * 0.66, 3.04, 2.52);
-    group.add(eye);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.062, 10, 8), materials.eyeGloss);
+    eye.position.set(side * 0.62, 0.18, 0.62);
+    headPivot.add(eye);
   });
 
-  // Articulated 3D S-Curve Prehensile Trunk
+  // Articulated S-Curve Prehensile Trunk attached to Head Pivot
   const trunkPiv = new THREE.Group();
-  trunkPiv.position.set(0, 2.62, 2.68);
+  trunkPiv.position.set(0, -0.18, 0.86);
   const trunkCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0.05, 0.0),
-    new THREE.Vector3(0, -0.55, 0.32),
-    new THREE.Vector3(0, -1.18, 0.24),
-    new THREE.Vector3(0, -1.68, 0.04),
+    new THREE.Vector3(0, 0.06, 0.0),
+    new THREE.Vector3(0, -0.52, 0.28),
+    new THREE.Vector3(0, -1.15, 0.22),
+    new THREE.Vector3(0, -1.65, 0.04),
     new THREE.Vector3(0, -1.82, 0.28)
   ]);
+  const trunkSegs = cfg.id === 0 ? 8 : Math.round(18 * cfg.segMul);
+  const trunkRadSegs = cfg.id === 0 ? 6 : Math.round(10 * cfg.segMul);
   const trunkTube = displaceGeometryOrganic(
-    new THREE.TubeGeometry(trunkCurve, Math.round(18 * cfg.segMul), 0.21, Math.round(10 * cfg.segMul), false),
+    new THREE.TubeGeometry(trunkCurve, trunkSegs, 0.20, trunkRadSegs, false),
     disp * 0.45, 7.5, 9.1
   );
   addMeshWithOutline(trunkTube, mFur, trunkPiv);
-  group.add(trunkPiv);
+  headPivot.add(trunkPiv);
   activeTrunkPivots.push(trunkPiv);
 
-  // Doubly-Curved 3D Helical Ivory Tusks (Sweeping Down, Outward, Upward & Inward)
+  // Doubly-Curved 3D Helical Ivory Tusks parented to Head Pivot
   [-1, 1].forEach((side) => {
     const tuskCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(side * 0.42, 2.42, 2.58),
-      new THREE.Vector3(side * 0.72, 1.85, 3.25),
-      new THREE.Vector3(side * 1.12, 1.52, 3.95),
-      new THREE.Vector3(side * 1.18, 1.82, 4.65),
-      new THREE.Vector3(side * 0.78, 2.58, 4.92),
-      new THREE.Vector3(side * 0.36, 3.05, 4.72)
+      new THREE.Vector3(side * 0.38, -0.32, 0.74),
+      new THREE.Vector3(side * 0.70, -0.88, 1.42),
+      new THREE.Vector3(side * 1.10, -1.22, 2.12),
+      new THREE.Vector3(side * 1.16, -0.92, 2.82),
+      new THREE.Vector3(side * 0.76, -0.16, 3.10),
+      new THREE.Vector3(side * 0.34, 0.32, 2.90)
     ]);
-    const tuskGeom = new THREE.TubeGeometry(tuskCurve, Math.round(22 * cfg.segMul), 0.115, Math.round(10 * cfg.segMul), false);
-    // Taper tusk radius toward tip
+    const tuskGeom = new THREE.TubeGeometry(tuskCurve, cfg.id === 0 ? 9 : Math.round(22 * cfg.segMul), 0.115, cfg.id === 0 ? 6 : Math.round(10 * cfg.segMul), false);
     const pos = tuskGeom.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const zVal = pos.getZ(i);
-      if (zVal > 4.4) {
-        const shrink = Math.max(0.25, 1.0 - (zVal - 4.4) * 0.9);
+      if (zVal > 2.5) {
+        const shrink = Math.max(0.25, 1.0 - (zVal - 2.5) * 0.9);
         pos.setY(i, pos.getY(i) + (1.0 - shrink) * 0.05);
       }
     }
     tuskGeom.computeVertexNormals();
-    addMeshWithOutline(tuskGeom, mTusk, group);
+    addMeshWithOutline(tuskGeom, mTusk, headPivot);
   });
 
-  // 4 Articulated Legs (Upper Limb, Knee Joint, Lower Pillar & 4 Ivory Toenails)
-  [[-0.68, 1.05, 0.42], [0.68, 1.05, 0.42], [-0.62, -1.25, 0.38], [0.62, -1.25, 0.38]].forEach(([lx, lz, r], idx) => {
-    const upper = displaceGeometryOrganic(new THREE.CylinderGeometry(r * 1.12, r * 0.92, 1.15, Math.round(10 * cfg.segMul)), disp * 0.5, 4.0, idx + 12);
-    const uMesh = addMeshWithOutline(upper, mFur, group);
-    uMesh.position.set(lx, 1.42, lz);
-    const lower = displaceGeometryOrganic(new THREE.CylinderGeometry(r * 0.9, r * 1.02, 0.95, Math.round(10 * cfg.segMul)), disp * 0.4, 4.5, idx + 20);
-    const lMesh = addMeshWithOutline(lower, mFur, group);
-    lMesh.position.set(lx, 0.48, lz);
-    for (let toe = -1.5; toe <= 1.5; toe += 1.0) {
-      const nail = addMeshWithOutline(new THREE.SphereGeometry(0.085, 6, 6), mTusk, group);
-      nail.scale.set(0.85, 0.65, 1.2);
-      nail.position.set(lx + toe * 0.11, 0.08, lz + r * 0.92);
-    }
+  // 4 Articulated 3-Joint Quadruped Limbs (Hip/Shoulder -> Knee -> Ankle -> Foot with Ivory Toenails)
+  const limbSpecs = [
+    [-0.68, 2.05, 1.02, 0.40, 0.33, 0.31, 1.05, 0.88, 0.0],
+    [0.68, 2.05, 1.02, 0.40, 0.33, 0.31, 1.05, 0.88, Math.PI],
+    [-0.60, 1.88, -1.22, 0.37, 0.30, 0.28, 0.96, 0.80, Math.PI * 0.5],
+    [0.60, 1.88, -1.22, 0.37, 0.30, 0.28, 0.96, 0.80, Math.PI * 1.5]
+  ];
+  const limbs = limbSpecs.map(([lx, ly, lz, rU, rK, rA, uLen, lLen, phase], idx) => {
+    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'pillar_toes' }, mFur, mTusk, idx + 12);
+    limb.root.position.set(lx, ly, lz);
+    spineRoot.add(limb.root);
+    return { ...limb, phase };
   });
 
   // Shaggy Layered Fur Mantle & Belly Fringe Shells (Scales with LOD 1 -> 2 -> 3!)
   for (let f = 0; f < cfg.furShells; f++) {
     const ang = (f / cfg.furShells) * Math.PI * 2;
     const isMantle = f % 2 === 0;
-    const fx = Math.sin(ang) * (isMantle ? 1.18 : 1.12);
-    const fz = Math.cos(ang) * 1.55 - 0.15;
-    const fy = isMantle ? 2.15 + Math.cos(ang * 2) * 0.25 : 1.32;
+    const fx = Math.sin(ang) * (isMantle ? 1.15 : 1.08);
+    const fz = Math.cos(ang) * 1.48 - 0.12;
+    const fy = isMantle ? 2.12 + Math.cos(ang * 2) * 0.22 : 1.35;
     const tuftGeom = displaceGeometryOrganic(
-      new THREE.ConeGeometry(0.36, isMantle ? 1.15 : 0.95, Math.max(6, Math.round(7 * cfg.segMul))),
+      new THREE.ConeGeometry(0.34, isMantle ? 1.12 : 0.92, Math.max(6, Math.round(7 * cfg.segMul))),
       disp * 0.7, 5.0, f * 1.7
     );
-    const tuft = addMeshWithOutline(tuftGeom, mFur, group);
+    const tuft = addMeshWithOutline(tuftGeom, mFur, spineRoot);
     tuft.position.set(fx, fy, fz);
     tuft.rotation.x = Math.PI + (fz > 0 ? 0.18 : -0.15);
     tuft.rotation.z = -fx * 0.22;
   }
+
+  activeAnimatedCreatures.push({
+    kind: 'graviportal_amble',
+    group,
+    spineRoot,
+    headPivot,
+    trunkPiv,
+    earPivots,
+    limbs,
+    speed: 1.85,
+    strideAmp: 0.24,
+    seed: 0.4
+  });
 
   tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
   return group;
@@ -747,115 +947,122 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
   const mTusk = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
 
-  if (cfg.id === 0) {
-    const eBody = addMeshWithOutline(new THREE.BoxGeometry(0.95, 1.05, 2.1), mCoat, group);
-    eBody.position.set(0, 1.65, 0);
-    const eNeck = addMeshWithOutline(new THREE.CylinderGeometry(0.24, 0.34, 1.1, 6), mCoat, group);
-    eNeck.position.set(0, 2.35, 0.85);
-    eNeck.rotation.x = 0.35;
-    const eHead = addMeshWithOutline(new THREE.BoxGeometry(0.38, 0.38, 0.75), mCoat, group);
-    eHead.position.set(0, 2.75, 1.15);
-    [-1, 1].forEach((side) => {
-      const antler = addMeshWithOutline(new THREE.ConeGeometry(0.55, 1.75, 5), mTusk, group);
-      antler.position.set(side * 0.95, 3.15, 1.05);
-      antler.rotation.z = -side * 1.08;
-      antler.scale.set(1.0, 1.0, 0.32);
-    });
-    [[-0.32, 0.75], [0.32, 0.75], [-0.32, -0.75], [0.32, -0.75]].forEach(([lx, lz]) => {
-      const leg = addMeshWithOutline(new THREE.CylinderGeometry(0.12, 0.09, 1.4, 6), mCoat, group);
-      leg.position.set(lx, 0.7, lz);
-    });
+  const glbClone = instantiatePreRiggedGLBIfCached('megaloceros', lodIdx, customMats);
+  if (glbClone) {
+    group.add(glbClone);
     tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
     return group;
   }
 
-  const seg = Math.round(13 * cfg.segMul);
-  const disp = 0.03 * cfg.displace;
+  const segR = cfg.id === 0 ? 8 : Math.round(14 * cfg.segMul);
+  const segL = cfg.id === 0 ? 9 : Math.round(20 * cfg.segMul);
+  const disp = 0.028 * cfg.displace;
 
-  // Sculpted Cervine Barrel Chest, Withers Hump, Lean Flank & Muscular Haunches
-  [
-    [0, 1.72, 0.58, 0.56, 0.68, 0.78, 1.2],   // Deep stag chest
-    [0, 2.15, 0.65, 0.44, 0.48, 0.55, 2.4],   // Prominent shoulder withers hump
-    [0, 1.68, -0.18, 0.48, 0.54, 0.72, 3.1],  // Mid torso
-    [0, 1.74, -0.85, 0.52, 0.62, 0.65, 4.5]   // Hindquarters
-  ].forEach(([x, y, z, rx, ry, rz, seed]) => {
-    const g = displaceGeometryOrganic(new THREE.SphereGeometry(1.0, seg, seg), disp, 4.0, seed);
-    g.scale(rx, ry, rz);
-    const m = addMeshWithOutline(g, mCoat, group);
-    m.position.set(x, y, z);
-  });
+  const spineRoot = new THREE.Group();
+  group.add(spineRoot);
 
-  // Arched Muscular Neck & Shaggy Throat Mane
-  const neckCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 1.88, 0.72),
-    new THREE.Vector3(0, 2.38, 1.02),
-    new THREE.Vector3(0, 2.82, 1.18)
-  ]);
-  const neckG = displaceGeometryOrganic(new THREE.TubeGeometry(neckCurve, Math.round(12 * cfg.segMul), 0.28, seg, false), disp, 5.0, 6.1);
-  addMeshWithOutline(neckG, mCoat, group);
+  // Continuous Cervine Torso (Muscular haunches -> lean flank -> deep stag barrel chest & prominent withers hump)
+  const torsoSlices = [
+    [0, 1.72, -1.08, 0.24, 0.28, 0.04, 0.1],
+    [0, 1.76, -0.78, 0.50, 0.60, 0.12, 0.15],
+    [0, 1.70, -0.12, 0.46, 0.54, 0.08, 0.28],
+    [0, 1.78, 0.56, 0.55, 0.68, 0.36, 0.14],
+    [0, 1.92, 0.88, 0.36, 0.44, 0.16, 0.10]
+  ];
+  const torsoGeom = buildLoftedAnatomicalBody(torsoSlices, segR, segL, disp, 2.2);
+  addMeshWithOutline(torsoGeom, mCoat, spineRoot);
 
-  // Sculpted Stag Skull, Tapered Snout, Alert Ears & Eyes
-  const skullG = displaceGeometryOrganic(new THREE.SphereGeometry(0.28, seg, seg), disp * 0.5, 5.0, 7.2);
-  skullG.scale(0.95, 0.92, 1.45);
-  const skull = addMeshWithOutline(skullG, mCoat, group);
-  skull.position.set(0, 2.88, 1.32);
+  // Articulated Neck & Stag Head Group (Drives Grazing Dip & Alert Antler Turn)
+  const neckPivot = new THREE.Group();
+  neckPivot.position.set(0, 1.88, 0.74);
+  spineRoot.add(neckPivot);
 
-  const snoutG = new THREE.CylinderGeometry(0.11, 0.19, 0.52, seg);
-  snoutG.rotateX(Math.PI / 2 + 0.18);
-  const snout = addMeshWithOutline(snoutG, mCoat, group);
-  snout.position.set(0, 2.78, 1.65);
+  const neckSlices = [
+    [0, -0.04, -0.05, 0.32, 0.38, 0.06, 0.12],
+    [0, 0.42, 0.24, 0.26, 0.32, 0.04, 0.18],
+    [0, 0.88, 0.42, 0.21, 0.24, 0.02, 0.08]
+  ];
+  const neckGeom = buildLoftedAnatomicalBody(neckSlices, Math.max(7, segR), Math.max(7, Math.round(segL * 0.55)), disp * 0.8, 6.1);
+  addMeshWithOutline(neckGeom, mCoat, neckPivot);
+
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, 0.92, 0.46);
+  neckPivot.add(headPivot);
+
+  const headSlices = [
+    [0, -0.02, -0.12, 0.21, 0.22, 0.04, 0.05],
+    [0, 0.04, 0.12, 0.24, 0.23, 0.06, 0.08],
+    [0, -0.04, 0.38, 0.15, 0.15, 0.02, 0.12],
+    [0, -0.09, 0.62, 0.10, 0.11, 0.0, 0.1]
+  ];
+  const skullGeom = buildLoftedAnatomicalBody(headSlices, Math.max(7, segR), Math.max(7, Math.round(segL * 0.5)), disp * 0.4, 7.2);
+  addMeshWithOutline(skullGeom, mCoat, headPivot);
 
   [-1, 1].forEach((side) => {
-    const ear = addMeshWithOutline(new THREE.ConeGeometry(0.09, 0.34, 8), mCoat, group);
-    ear.position.set(side * 0.28, 3.02, 1.18);
+    const ear = addMeshWithOutline(new THREE.ConeGeometry(0.085, 0.34, 8), mCoat, headPivot);
+    ear.position.set(side * 0.26, 0.16, -0.02);
     ear.rotation.z = -side * 0.85;
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.042, 8, 8), materials.eyeGloss);
-    eye.position.set(side * 0.21, 2.92, 1.42);
-    group.add(eye);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), materials.eyeGloss);
+    eye.position.set(side * 0.20, 0.08, 0.18);
+    headPivot.add(eye);
 
-    // 3D Branching Palmate Antler Beams (3.4m Span) + Radiating Bone Tines!
+    // 3D Branching Palmate Antler Beams (3.65m Span) + Radiating Bone Tines parented to Head Pivot!
     const beamCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(side * 0.14, 3.02, 1.24),
-      new THREE.Vector3(side * 0.65, 3.18, 1.12),
-      new THREE.Vector3(side * 1.25, 3.42, 0.95),
-      new THREE.Vector3(side * 1.68, 3.68, 0.82)
+      new THREE.Vector3(side * 0.12, 0.16, 0.04),
+      new THREE.Vector3(side * 0.65, 0.34, -0.08),
+      new THREE.Vector3(side * 1.25, 0.58, -0.25),
+      new THREE.Vector3(side * 1.72, 0.84, -0.38)
     ]);
-    const beamG = new THREE.TubeGeometry(beamCurve, Math.round(16 * cfg.segMul), 0.068, Math.max(6, Math.round(8 * cfg.segMul)), false);
-    addMeshWithOutline(beamG, mTusk, group);
+    const beamG = new THREE.TubeGeometry(beamCurve, cfg.id === 0 ? 7 : Math.round(16 * cfg.segMul), 0.065, Math.max(6, Math.round(8 * cfg.segMul)), false);
+    addMeshWithOutline(beamG, mTusk, headPivot);
 
-    // Broad Palmate Scoop Blade
-    const palmG = displaceGeometryOrganic(new THREE.SphereGeometry(0.58, seg, Math.max(6, Math.round(8 * cfg.segMul))), disp * 0.4, 4.0, side + 9);
-    palmG.scale(1.35, 0.14, 0.68);
-    const palm = addMeshWithOutline(palmG, mTusk, group);
-    palm.position.set(side * 1.28, 3.48, 0.94);
+    const palmG = displaceGeometryOrganic(new THREE.SphereGeometry(0.58, Math.max(6, segR), Math.max(6, Math.round(8 * cfg.segMul))), disp * 0.4, 4.0, side + 9);
+    palmG.scale(1.38, 0.13, 0.68);
+    const palm = addMeshWithOutline(palmG, mTusk, headPivot);
+    palm.position.set(side * 1.28, 0.64, -0.26);
     palm.rotation.z = side * 0.32;
     palm.rotation.y = -side * 0.18;
 
-    // Radiating Curved Antler Tines (Scales from 7 -> 14 -> 22 tines across LOD 1-3!)
-    const tinesPerSide = Math.max(3, Math.round(cfg.antlerTines / 2));
+    const tinesPerSide = Math.max(2, Math.round(cfg.antlerTines / 2));
     for (let t = 0; t < tinesPerSide; t++) {
       const frac = t / Math.max(1, tinesPerSide - 1);
-      const tx = side * (0.52 + frac * 1.22);
-      const ty = 3.22 + frac * 0.48;
-      const tz = 1.12 - frac * 0.28 + Math.sin(frac * Math.PI) * 0.22;
+      const tx = side * (0.50 + frac * 1.22);
+      const ty = 0.38 + frac * 0.48;
+      const tz = -0.08 - frac * 0.28 + Math.sin(frac * Math.PI) * 0.22;
       const tineCurve = new THREE.CatmullRomCurve3([
         new THREE.Vector3(tx, ty, tz),
         new THREE.Vector3(tx + side * 0.08, ty + 0.22, tz + (t === 0 ? 0.28 : 0.14)),
         new THREE.Vector3(tx + side * 0.12, ty + 0.44, tz + (t === 0 ? 0.38 : 0.06))
       ]);
-      const tineG = new THREE.TubeGeometry(tineCurve, 7, 0.026, 6, false);
-      addMeshWithOutline(tineG, mTusk, group);
+      const tineG = new THREE.TubeGeometry(tineCurve, 6, 0.025, 6, false);
+      addMeshWithOutline(tineG, mTusk, headPivot);
     }
   });
 
-  // 4 Articulated Cervine Legs with Fetlocks & Hooves
-  [[-0.32, 0.68], [0.32, 0.68], [-0.30, -0.78], [0.30, -0.78]].forEach(([lx, lz]) => {
-    const upper = addMeshWithOutline(new THREE.CylinderGeometry(0.14, 0.095, 0.82, Math.max(7, Math.round(8 * cfg.segMul))), mCoat, group);
-    upper.position.set(lx, 1.12, lz);
-    const lower = addMeshWithOutline(new THREE.CylinderGeometry(0.085, 0.065, 0.76, Math.max(7, Math.round(8 * cfg.segMul))), mCoat, group);
-    lower.position.set(lx, 0.42, lz);
-    const hoof = addMeshWithOutline(new THREE.CylinderGeometry(0.07, 0.09, 0.12, 7), materials.rock, group);
-    hoof.position.set(lx, 0.06, lz + 0.02);
+  // 4 Articulated 3-Joint Cervine Legs with Fetlocks & Cloven Hooves
+  const limbSpecs = [
+    [-0.31, 1.56, 0.66, 0.15, 0.10, 0.075, 0.78, 0.70, 0.0],
+    [0.31, 1.56, 0.66, 0.15, 0.10, 0.075, 0.78, 0.70, Math.PI],
+    [-0.29, 1.58, -0.78, 0.17, 0.11, 0.075, 0.80, 0.70, Math.PI],
+    [0.29, 1.58, -0.78, 0.17, 0.11, 0.075, 0.80, 0.70, 0.0]
+  ];
+  const limbs = limbSpecs.map(([lx, ly, lz, rU, rK, rA, uLen, lLen, phase], idx) => {
+    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'cloven_hoof' }, mCoat, materials.rock, idx + 24);
+    limb.root.position.set(lx, ly, lz);
+    spineRoot.add(limb.root);
+    return { ...limb, phase };
+  });
+
+  activeAnimatedCreatures.push({
+    kind: 'cervid_trot',
+    group,
+    spineRoot,
+    neckPivot,
+    headPivot,
+    limbs,
+    speed: 2.35,
+    strideAmp: 0.28,
+    seed: 1.9
   });
 
   tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
@@ -868,73 +1075,104 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
   const mTusk = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
 
-  if (cfg.id === 0) {
-    const sBody = addMeshWithOutline(new THREE.BoxGeometry(0.68, 0.65, 1.45), mCoat, group);
-    sBody.position.set(0, 0.82, 0);
-    const sHead = addMeshWithOutline(new THREE.DodecahedronGeometry(0.36, 0), mCoat, group);
-    sHead.position.set(0, 1.12, 0.78);
-    [-0.12, 0.12].forEach((sx) => {
-      const fang = addMeshWithOutline(new THREE.ConeGeometry(0.04, 0.26, 5), mTusk, group);
-      fang.position.set(sx, 0.92, 0.98);
-      fang.rotation.x = Math.PI;
-    });
-    [[-0.24, 0.5], [0.24, 0.5], [-0.24, -0.5], [0.24, -0.5]].forEach(([lx, lz]) => {
-      const leg = addMeshWithOutline(new THREE.CylinderGeometry(0.11, 0.09, 0.65, 6), mCoat, group);
-      leg.position.set(lx, 0.32, lz);
-    });
+  const glbClone = instantiatePreRiggedGLBIfCached('smilodon', lodIdx, customMats);
+  if (glbClone) {
+    group.add(glbClone);
     tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
     return group;
   }
 
-  const seg = Math.round(12 * cfg.segMul);
-  const disp = 0.022 * cfg.displace;
+  const segR = cfg.id === 0 ? 8 : Math.round(14 * cfg.segMul);
+  const segL = cfg.id === 0 ? 9 : Math.round(20 * cfg.segMul);
+  const disp = 0.020 * cfg.displace;
 
-  // Muscular Feline Scapula, Ribcage, Tucked Abdomen & Haunches
-  [
-    [0, 0.88, 0.42, 0.42, 0.46, 0.52, 1.5],
-    [0, 0.84, -0.08, 0.36, 0.38, 0.52, 2.7],
-    [0, 0.86, -0.55, 0.38, 0.42, 0.44, 3.9],
-    [0, 1.08, 0.75, 0.32, 0.34, 0.38, 5.1],
-    [0, 1.18, 0.96, 0.29, 0.28, 0.34, 6.4],
-    [0, 1.12, 1.18, 0.21, 0.19, 0.24, 7.8]
-  ].forEach(([x, y, z, rx, ry, rz, seed]) => {
-    const g = displaceGeometryOrganic(new THREE.SphereGeometry(1.0, seg, seg), disp, 5.0, seed);
-    g.scale(rx, ry, rz);
-    const m = addMeshWithOutline(g, mCoat, group);
-    m.position.set(x, y, z);
-  });
+  const spineRoot = new THREE.Group();
+  group.add(spineRoot);
 
-  // Curved 24cm Maxillary Saber Canines, Ears & Predator Eyes
+  // Continuous Feline Torso (Muscular haunches -> tucked abdomen -> hypertrophied bear-like scapula & ribcage)
+  const torsoSlices = [
+    [0, 0.85, -0.78, 0.18, 0.21, 0.03, 0.10],
+    [0, 0.88, -0.52, 0.36, 0.41, 0.09, 0.14],
+    [0, 0.84, -0.06, 0.33, 0.37, 0.05, 0.28],
+    [0, 0.92, 0.44, 0.43, 0.48, 0.18, 0.12],
+    [0, 1.02, 0.72, 0.33, 0.36, 0.10, 0.08]
+  ];
+  const torsoGeom = buildLoftedAnatomicalBody(torsoSlices, segR, segL, disp, 1.5);
+  addMeshWithOutline(torsoGeom, mCoat, spineRoot);
+
+  // Articulated Feline Neck, Skull & Snarling Lower Jaw Pivot
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, 1.06, 0.74);
+  spineRoot.add(headPivot);
+
+  const headSlices = [
+    [0, -0.02, -0.08, 0.27, 0.28, 0.05, 0.06],
+    [0, 0.08, 0.18, 0.29, 0.28, 0.06, 0.08],
+    [0, 0.04, 0.40, 0.21, 0.19, 0.02, 0.12],
+    [0, 0.02, 0.54, 0.14, 0.13, 0.0, 0.15]
+  ];
+  const headGeom = buildLoftedAnatomicalBody(headSlices, Math.max(7, segR), Math.max(7, Math.round(segL * 0.5)), disp * 0.5, 6.4);
+  addMeshWithOutline(headGeom, mCoat, headPivot);
+
+  const jawPivot = new THREE.Group();
+  jawPivot.position.set(0, -0.06, 0.16);
+  const jawGeom = new THREE.BoxGeometry(0.22, 0.09, 0.34);
+  const jawMesh = addMeshWithOutline(jawGeom, mCoat, jawPivot);
+  jawMesh.position.set(0, -0.03, 0.15);
+  headPivot.add(jawPivot);
+
+  // Curved 24cm Maxillary Saber Canines, Rounded Ears & Predator Eyes on Head Pivot
   [-1, 1].forEach((side) => {
     const saberCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(side * 0.12, 1.08, 1.24),
-      new THREE.Vector3(side * 0.12, 0.91, 1.28),
-      new THREE.Vector3(side * 0.11, 0.74, 1.22)
+      new THREE.Vector3(side * 0.115, 0.01, 0.46),
+      new THREE.Vector3(side * 0.118, -0.16, 0.50),
+      new THREE.Vector3(side * 0.108, -0.33, 0.44)
     ]);
-    const saberG = new THREE.TubeGeometry(saberCurve, Math.round(10 * cfg.segMul), 0.028, 8, false);
-    saberG.scale(0.65, 1.0, 1.25);
-    addMeshWithOutline(saberG, mTusk, group);
+    const saberG = new THREE.TubeGeometry(saberCurve, cfg.id === 0 ? 6 : Math.round(10 * cfg.segMul), 0.027, 8, false);
+    saberG.scale(0.62, 1.0, 1.25);
+    addMeshWithOutline(saberG, mTusk, headPivot);
 
-    const ear = addMeshWithOutline(new THREE.SphereGeometry(0.085, 8, 8), mCoat, group);
+    const ear = addMeshWithOutline(new THREE.SphereGeometry(0.082, 8, 8), mCoat, headPivot);
     ear.scale.set(0.8, 1.1, 0.5);
-    ear.position.set(side * 0.22, 1.38, 0.88);
+    ear.position.set(side * 0.21, 0.28, 0.12);
     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8), materials.eyeGloss);
-    eye.position.set(side * 0.14, 1.22, 1.15);
-    group.add(eye);
+    eye.position.set(side * 0.135, 0.12, 0.38);
+    headPivot.add(eye);
   });
 
-  // Bobbed Lynx-like Tail & 4 Muscular Limbs with Clawed Paws
-  const tail = addMeshWithOutline(new THREE.CylinderGeometry(0.055, 0.04, 0.36, 8), mCoat, group);
-  tail.position.set(0, 0.92, -0.92);
-  tail.rotation.x = -0.65;
+  // Articulated Bobbed Lynx-like Tail
+  const tailPivot = new THREE.Group();
+  tailPivot.position.set(0, 0.90, -0.76);
+  const tail = addMeshWithOutline(new THREE.CylinderGeometry(0.042, 0.058, 0.36, 8), mCoat, tailPivot);
+  tail.position.set(0, -0.12, -0.10);
+  tail.rotation.x = -0.68;
+  spineRoot.add(tailPivot);
 
-  [[-0.25, 0.48], [0.25, 0.48], [-0.23, -0.52], [0.23, -0.52]].forEach(([lx, lz]) => {
-    const limb = displaceGeometryOrganic(new THREE.CylinderGeometry(0.135, 0.095, 0.72, Math.max(8, Math.round(9 * cfg.segMul))), disp * 0.5, 5.0, lx * 10);
-    const lMesh = addMeshWithOutline(limb, mCoat, group);
-    lMesh.position.set(lx, 0.42, lz);
-    const paw = addMeshWithOutline(new THREE.SphereGeometry(0.115, 8, 8), mCoat, group);
-    paw.scale.set(1.0, 0.55, 1.35);
-    paw.position.set(lx, 0.06, lz + 0.06);
+  // 4 Articulated 3-Joint Muscular Limbs with Clawed Paws
+  const limbSpecs = [
+    [-0.25, 0.78, 0.46, 0.14, 0.105, 0.088, 0.38, 0.34, 0.0],
+    [0.25, 0.78, 0.46, 0.14, 0.105, 0.088, 0.38, 0.34, Math.PI],
+    [-0.22, 0.78, -0.52, 0.135, 0.098, 0.082, 0.38, 0.34, Math.PI * 0.5],
+    [0.22, 0.78, -0.52, 0.135, 0.098, 0.082, 0.38, 0.34, Math.PI * 1.5]
+  ];
+  const limbs = limbSpecs.map(([lx, ly, lz, rU, rK, rA, uLen, lLen, phase], idx) => {
+    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'clawed_paw' }, mCoat, mTusk, idx + 36);
+    limb.root.position.set(lx, ly, lz);
+    spineRoot.add(limb.root);
+    return { ...limb, phase };
+  });
+
+  activeAnimatedCreatures.push({
+    kind: 'predator_prowl',
+    group,
+    spineRoot,
+    headPivot,
+    jawPivot,
+    tailPivot,
+    limbs,
+    speed: 2.15,
+    strideAmp: 0.26,
+    seed: 3.1
   });
 
   tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
@@ -950,43 +1188,84 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   const mBeak = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
 
-  if (cfg.id === 0) {
-    const bird = addMeshWithOutline(new THREE.ConeGeometry(1.1, 0.35, 4), mFeather, group);
-    bird.scale.set(1.8, 0.25, 0.6);
-    tagAsset(group, 'teratorn_vulture', `Teratorn Vulture (${cfg.short})`);
+  const glbClone = instantiatePreRiggedGLBIfCached('teratorn_vulture', lodIdx, customMats);
+  if (glbClone) {
+    group.add(glbClone);
+    tagAsset(group, 'teratorn_vulture', `Teratorn Giant Vulture (${cfg.short})`);
     return group;
   }
 
-  const seg = Math.max(8, Math.round(10 * cfg.segMul));
-  const torso = addMeshWithOutline(new THREE.SphereGeometry(0.32, seg, seg), mFeather, group);
-  torso.scale.set(0.85, 0.72, 1.85);
-  const head = addMeshWithOutline(new THREE.SphereGeometry(0.16, seg, seg), mFeather, group);
-  head.position.set(0, 0.08, 0.68);
+  const segR = cfg.id === 0 ? 6 : Math.max(8, Math.round(10 * cfg.segMul));
+  const segL = cfg.id === 0 ? 7 : Math.max(10, Math.round(14 * cfg.segMul));
+  const disp = 0.015 * cfg.displace;
+
+  // Continuous Lofted Avian Fuselage -> Neck Ruff -> Raptorial Cranium
+  const bodySlices = [
+    [0, 0.02, -0.58, 0.14, 0.11, 0.01, 0.05],
+    [0, 0.0, -0.12, 0.29, 0.24, 0.04, 0.12],
+    [0, 0.02, 0.34, 0.26, 0.22, 0.03, 0.08],
+    [0, 0.08, 0.66, 0.15, 0.15, 0.02, 0.04],
+    [0, 0.07, 0.82, 0.09, 0.09, 0.0, 0.05]
+  ];
+  const bodyGeom = buildLoftedAnatomicalBody(bodySlices, segR, segL, disp, 4.4);
+  addMeshWithOutline(bodyGeom, mFeather, group);
+
   const beak = addMeshWithOutline(new THREE.ConeGeometry(0.065, 0.28, 7), mBeak, group);
   beak.rotation.x = Math.PI / 2 + 0.25;
-  beak.position.set(0, 0.04, 0.88);
+  beak.position.set(0, 0.04, 0.94);
 
+  const wingRigs = [];
   [-1, 1].forEach((side) => {
-    const innerWing = addMeshWithOutline(new THREE.BoxGeometry(1.05, 0.06, 0.52), mFeather, group);
-    innerWing.position.set(side * 0.62, 0.04, 0.05);
-    innerWing.rotation.z = side * 0.08;
-    const outerWing = addMeshWithOutline(new THREE.BoxGeometry(0.95, 0.045, 0.42), mFeather, group);
-    outerWing.position.set(side * 1.48, 0.09, -0.06);
-    outerWing.rotation.y = -side * 0.18;
+    const innerPivot = new THREE.Group();
+    innerPivot.position.set(side * 0.22, 0.04, 0.08);
+    group.add(innerPivot);
 
-    const primaries = Math.max(4, Math.round(5 * cfg.segMul));
+    const innerSlices = [
+      [0, 0, 0.04, 0.26, 0.055, 0.01, 0.0],
+      [side * 0.48, 0.02, 0.02, 0.24, 0.048, 0.01, 0.0],
+      [side * 0.96, 0.04, -0.02, 0.20, 0.038, 0.0, 0.0]
+    ];
+    const innerG = buildLoftedAnatomicalBody(innerSlices, Math.max(6, segR), 6, disp * 0.5, side + 5.1);
+    addMeshWithOutline(innerG, mFeather, innerPivot);
+
+    const outerPivot = new THREE.Group();
+    outerPivot.position.set(side * 0.92, 0.04, -0.02);
+    innerPivot.add(outerPivot);
+
+    const outerSlices = [
+      [0, 0, 0.0, 0.20, 0.038, 0.0, 0.0],
+      [side * 0.45, 0.02, -0.05, 0.16, 0.028, 0.0, 0.0],
+      [side * 0.88, 0.03, -0.10, 0.08, 0.018, 0.0, 0.0]
+    ];
+    const outerG = buildLoftedAnatomicalBody(outerSlices, Math.max(6, segR), 6, disp * 0.4, side + 7.2);
+    addMeshWithOutline(outerG, mFeather, outerPivot);
+
+    const primaries = cfg.id === 0 ? 3 : Math.max(5, Math.round(6 * cfg.segMul));
     for (let p = 0; p < primaries; p++) {
-      const feather = addMeshWithOutline(new THREE.ConeGeometry(0.055, 0.55, 5), mFeather, group);
-      feather.rotation.z = -side * (Math.PI / 2 - 0.12 + p * 0.08);
-      feather.rotation.y = -side * (0.1 + p * 0.09);
-      feather.position.set(side * (1.85 + p * 0.05), 0.1, -0.02 - p * 0.08);
+      const feather = addMeshWithOutline(new THREE.ConeGeometry(0.048, 0.56, 5), mFeather, outerPivot);
+      feather.rotation.z = -side * (Math.PI / 2 - 0.10 + p * 0.075);
+      feather.rotation.y = -side * (0.08 + p * 0.085);
+      feather.position.set(side * (0.78 + p * 0.055), 0.03, -0.04 - p * 0.075);
     }
+    wingRigs.push({ side, innerPivot, outerPivot });
   });
 
-  const tailFan = addMeshWithOutline(new THREE.ConeGeometry(0.38, 0.65, 6), mFeather, group);
+  const tailPivot = new THREE.Group();
+  tailPivot.position.set(0, 0.02, -0.54);
+  const tailFan = addMeshWithOutline(new THREE.ConeGeometry(0.38, 0.65, 6), mFeather, tailPivot);
   tailFan.rotation.x = -Math.PI / 2;
-  tailFan.scale.set(1.2, 1.0, 0.18);
-  tailFan.position.set(0, 0.02, -0.78);
+  tailFan.scale.set(1.25, 1.0, 0.16);
+  tailFan.position.set(0, 0, -0.26);
+  group.add(tailPivot);
+
+  activeAnimatedCreatures.push({
+    kind: 'avian_soar',
+    group,
+    wingRigs,
+    tailPivot,
+    speed: 2.6,
+    seed: Math.random() * 6.28
+  });
 
   tagAsset(group, 'teratorn_vulture', `Teratorn Giant Vulture (${cfg.short})`);
   return group;
@@ -999,70 +1278,71 @@ function buildTreeAtLOD(isSequoia = true, s = 1.5, lodIdx = 2, customMats = null
   const mFol2 = (customMats && customMats.foliage2) || materials.foliage2;
   const tree = new THREE.Group();
 
-  if (cfg.id === 0) {
-    const trunk = addMeshWithOutline(new THREE.CylinderGeometry(0.18 * s, 0.32 * s, 1.6 * s, 7), mTrunk, tree);
-    trunk.position.y = 0.8 * s;
-    for (let tier = 0; tier < 4; tier++) {
-      const cone = addMeshWithOutline(
-        new THREE.ConeGeometry((1.35 - tier * 0.24) * s, (1.5 - tier * 0.22) * s, 7),
-        tier % 2 === 0 ? mFol1 : mFol2,
-        tree
-      );
-      cone.position.y = (1.65 + tier * 0.82) * s;
-    }
-    tagAsset(tree, isSequoia ? 'giant_sequoia' : 'araucaria_conifer', isSequoia ? 'Giant Sequoia (LOD 0)' : 'Araucaria Conifer (LOD 0)');
-    return tree;
-  }
-
-  const rSeg = Math.max(8, Math.round(12 * cfg.segMul));
+  const rSeg = cfg.id === 0 ? 7 : Math.max(8, Math.round(12 * cfg.segMul));
   const disp = 0.035 * cfg.displace * s;
-  const trunkH = (isSequoia ? 3.8 : 3.2) * s;
+  const trunkH = (isSequoia ? 3.9 : 3.3) * s;
 
-  // Fluted Buttress Trunk with Organic Bark Displacement
-  const trunkG = displaceGeometryOrganic(
-    new THREE.CylinderGeometry(0.14 * s, 0.42 * s, trunkH, rSeg, Math.max(4, Math.round(6 * cfg.segMul))),
-    disp, 5.5, isSequoia ? 1.3 : 2.7
-  );
-  const trunk = addMeshWithOutline(trunkG, mTrunk, tree);
-  trunk.position.y = trunkH * 0.5;
+  // Continuous Lofted Buttress Trunk with Natural Taper & Organic Bark Furrows
+  const trunkSlices = [
+    [0, 0.0, 0, 0.48 * s, 0.48 * s, 0.04 * s, 0.0],
+    [0, trunkH * 0.18, 0.02 * s, 0.34 * s, 0.34 * s, 0.02 * s, 0.0],
+    [0, trunkH * 0.52, -0.02 * s, 0.24 * s, 0.24 * s, 0.01 * s, 0.0],
+    [0, trunkH * 0.85, 0.01 * s, 0.15 * s, 0.15 * s, 0.0, 0.0],
+    [0, trunkH * 1.02, 0, 0.06 * s, 0.06 * s, 0.0, 0.0]
+  ];
+  const trunkG = buildLoftedAnatomicalBody(trunkSlices, rSeg, cfg.id === 0 ? 6 : Math.max(8, Math.round(10 * cfg.segMul)), disp, isSequoia ? 1.3 : 2.7);
+  addMeshWithOutline(trunkG, mTrunk, tree);
 
-  // Sprawling Root Buttresses (4-6 roots)
-  const rootCount = cfg.id >= 2 ? 6 : 4;
-  for (let r = 0; r < rootCount; r++) {
-    const ang = (r / rootCount) * Math.PI * 2;
-    const rootG = new THREE.ConeGeometry(0.16 * s, 0.85 * s, 6);
-    const rootM = addMeshWithOutline(rootG, mTrunk, tree);
-    rootM.position.set(Math.cos(ang) * 0.34 * s, 0.28 * s, Math.sin(ang) * 0.34 * s);
-    rootM.rotation.z = -Math.cos(ang) * 0.58;
-    rootM.rotation.x = Math.sin(ang) * 0.58;
+  // Sprawling Root Buttresses (At LOD 1+)
+  if (cfg.id >= 1) {
+    const rootCount = cfg.id >= 2 ? 6 : 4;
+    for (let r = 0; r < rootCount; r++) {
+      const ang = (r / rootCount) * Math.PI * 2;
+      const rootCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(Math.cos(ang) * 0.18 * s, 0.65 * s, Math.sin(ang) * 0.18 * s),
+        new THREE.Vector3(Math.cos(ang) * 0.38 * s, 0.26 * s, Math.sin(ang) * 0.38 * s),
+        new THREE.Vector3(Math.cos(ang) * 0.58 * s, 0.02 * s, Math.sin(ang) * 0.58 * s)
+      ]);
+      const rootG = new THREE.TubeGeometry(rootCurve, 5, 0.095 * s, 6, false);
+      addMeshWithOutline(rootG, mTrunk, tree);
+    }
   }
 
-  // Organic Branching Boughs & Sculpted Foliage Clouds
-  const clusters = cfg.foliageClusters;
+  // EZ-Tree Style Curved Branching Boughs & Layered Wind-Swaying Foliage Pads
+  const canopyPivot = new THREE.Group();
+  tree.add(canopyPivot);
+
+  const clusters = cfg.id === 0 ? 5 : cfg.foliageClusters;
   for (let c = 0; c < clusters; c++) {
     const frac = c / Math.max(1, clusters - 1);
-    const ang = c * 2.39996; // Golden angle spiral
-    const yPos = (1.35 + frac * (isSequoia ? 2.85 : 2.35)) * s;
-    const radOut = (1.18 * (1.0 - frac * 0.62)) * s;
+    const ang = c * 2.39996; // Golden angle botanical phyllotaxis
+    const yBase = (1.35 + frac * (isSequoia ? 2.45 : 1.95)) * s;
+    const radOut = (isSequoia ? (1.25 * (1.0 - frac * 0.58)) : (1.35 * (0.45 + 0.55 * Math.sin(frac * Math.PI * 0.85)))) * s;
     const bx = Math.cos(ang) * radOut;
     const bz = Math.sin(ang) * radOut;
+    const archLift = (isSequoia ? 0.14 : 0.38) * s;
 
-    if (c < 8) {
-      const bough = addMeshWithOutline(new THREE.CylinderGeometry(0.04 * s, 0.08 * s, radOut * 1.05, 6), mTrunk, tree);
-      bough.position.set(bx * 0.5, yPos - 0.08 * s, bz * 0.5);
-      bough.rotation.z = -Math.cos(ang) * 1.15;
-      bough.rotation.x = Math.sin(ang) * 1.15;
+    if (cfg.id >= 1 && c < Math.min(clusters, 14)) {
+      const boughCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, yBase - 0.14 * s, 0),
+        new THREE.Vector3(bx * 0.48, yBase + archLift * 0.4, bz * 0.48),
+        new THREE.Vector3(bx * 0.86, yBase + archLift, bz * 0.86)
+      ]);
+      const boughG = new THREE.TubeGeometry(boughCurve, 6, Math.max(0.025, (0.068 - frac * 0.032)) * s, 6, false);
+      addMeshWithOutline(boughG, mTrunk, canopyPivot);
     }
 
-    const cloudR = (0.62 - frac * 0.24) * s;
+    const cloudR = (0.64 - frac * 0.22) * s;
     const cloudG = displaceGeometryOrganic(
-      new THREE.IcosahedronGeometry(cloudR, cfg.id >= 3 ? 2 : 1),
-      disp * 1.1, 4.2, c * 1.9
+      new THREE.IcosahedronGeometry(cloudR, cfg.id === 0 ? 0 : (cfg.id >= 3 ? 2 : 1)),
+      disp * 1.05, 4.2, c * 1.9
     );
-    cloudG.scale(1.35, isSequoia ? 0.68 : 0.45, 1.35);
-    const cloud = addMeshWithOutline(cloudG, c % 2 === 0 ? mFol1 : mFol2, tree);
-    cloud.position.set(bx * 0.78, yPos, bz * 0.78);
+    cloudG.scale(1.42, isSequoia ? 0.52 : 0.36, 1.42);
+    const cloud = addMeshWithOutline(cloudG, c % 2 === 0 ? mFol1 : mFol2, canopyPivot);
+    cloud.position.set(bx * 0.84, yBase + archLift, bz * 0.84);
   }
+
+  activeSwayFoliage.push({ pivot: canopyPivot, phase: (isSequoia ? 0.7 : 2.1) + s });
 
   tagAsset(
     tree,
@@ -1152,6 +1432,9 @@ function rebuildFullValleyScene(lodIdx = currentLodIdx) {
   outlineMeshes = [];
   wireframeMeshes = [];
   activeTrunkPivots = [];
+  activeAnimatedCreatures = [];
+  activeSwayFoliage = [];
+  activeGLBMixers = [];
   activeSceneTriangles = 0;
 
   // 1. Mountain Lake, Displaced Valley Meadows & Stepped Cliff Waterfall
@@ -1349,6 +1632,9 @@ function enterComparisonLineup(mode = 'compare_lods') {
   comparisonArenaGroup.visible = true;
   clearGroupChildren(comparisonArenaGroup);
   rotatingPedestalSlots = [];
+  activeAnimatedCreatures = [];
+  activeSwayFoliage = [];
+  activeGLBMixers = [];
   activeSceneTriangles = 0;
 
   // Walkable Studio Floor for teleporting right up to any of the 4 pedestals!
@@ -1470,6 +1756,9 @@ function isolateAsset(assetId, keepComparison = false) {
   yaw = 0;
   pitch = -0.04;
 
+  activeAnimatedCreatures = [];
+  activeSwayFoliage = [];
+  activeGLBMixers = [];
   activeSceneTriangles = 0;
   const specimen = buildSpecimenById(isolatedAssetId, currentLodIdx, null);
   specimen.position.set(meta.offset[0], meta.offset[1], meta.offset[2]);
@@ -2033,6 +2322,96 @@ function updateHandPose(dt) {
   }
 }
 
+// Drag-and-Drop Pre-Rigged .GLB / .GLTF Hero Model Override Support
+window.addEventListener('dragover', (e) => { e.preventDefault(); });
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!file || !/\.(glb|gltf)$/i.test(file.name)) return;
+  const targetId = isolatedAssetId !== 'all' ? isolatedAssetId : 'woolly_mammoth';
+  const url = URL.createObjectURL(file);
+  gltfLoader.load(url, (gltf) => {
+    const matMap = { woolly_mammoth: 'mammothFur', megaloceros: 'elkCoat', smilodon: 'smilodonCoat', teratorn_vulture: 'cliff' };
+    glbHeroCache[targetId] = {
+      scene: gltf.scene,
+      animations: gltf.animations || [],
+      matKey: matMap[targetId] || 'mammothFur',
+      boneScales: { Spine1: [1.08, 1.16, 1.08], Neck: [1.05, 1.12, 1.05] }
+    };
+    setActiveLODOrMode(comparisonMode !== 'none' ? comparisonMode : String(currentLodIdx));
+    URL.revokeObjectURL(url);
+  });
+});
+
+function updateBiomechanicalAnimations(dt, t) {
+  activeGLBMixers.forEach((mixer) => mixer.update(dt));
+
+  activeSwayFoliage.forEach((item) => {
+    item.pivot.rotation.z = Math.sin(t * 1.15 + item.phase) * 0.022;
+    item.pivot.rotation.x = Math.cos(t * 0.85 + item.phase) * 0.016;
+  });
+
+  activeAnimatedCreatures.forEach((c) => {
+    if (c.kind === 'avian_soar') {
+      const flapPhase = t * c.speed + c.seed;
+      c.wingRigs.forEach((w) => {
+        w.innerPivot.rotation.z = w.side * (0.08 + Math.sin(flapPhase) * 0.34);
+        w.outerPivot.rotation.z = w.side * Math.sin(flapPhase - 0.65) * 0.42;
+      });
+      if (c.tailPivot) c.tailPivot.rotation.x = Math.cos(flapPhase) * 0.12;
+      return;
+    }
+
+    // 4-Limb 3-Joint Quadruped Gait (Hip/Shoulder Swing + Knee Lift Flexion + Fetlock/Ankle Strike)
+    if (c.limbs) {
+      c.limbs.forEach((limb) => {
+        const p = t * c.speed + limb.phase + c.seed;
+        const swing = Math.sin(p);
+        const lift = Math.max(0, Math.cos(p));
+        limb.root.rotation.x = swing * c.strideAmp;
+        limb.knee.rotation.x = -lift * c.strideAmp * 1.65;
+        limb.ankle.rotation.x = lift * c.strideAmp * 0.95 - swing * 0.14;
+      });
+    }
+
+    if (c.spineRoot) {
+      c.spineRoot.position.y = Math.abs(Math.sin(t * c.speed + c.seed)) * 0.036;
+      c.spineRoot.rotation.z = Math.sin(t * c.speed + c.seed) * 0.026;
+      c.spineRoot.rotation.x = Math.cos(t * c.speed * 2.0 + c.seed) * 0.016;
+    }
+
+    if (c.kind === 'graviportal_amble') {
+      if (c.headPivot) {
+        c.headPivot.rotation.y = Math.sin(t * 0.55 + c.seed) * 0.16;
+        c.headPivot.rotation.x = Math.sin(t * 1.1 + c.seed) * 0.065;
+      }
+      if (c.earPivots) {
+        c.earPivots.forEach((ep, idx) => {
+          const side = idx === 0 ? -1 : 1;
+          ep.rotation.y = side * (0.38 + Math.sin(t * 2.2 + idx) * 0.14);
+        });
+      }
+    } else if (c.kind === 'cervid_trot') {
+      if (c.neckPivot) c.neckPivot.rotation.x = Math.sin(t * 0.65 + c.seed) * 0.16;
+      if (c.headPivot) {
+        c.headPivot.rotation.y = Math.sin(t * 0.82 + c.seed) * 0.24;
+        c.headPivot.rotation.z = Math.cos(t * 0.54 + c.seed) * 0.06;
+      }
+    } else if (c.kind === 'predator_prowl') {
+      if (c.headPivot) {
+        c.headPivot.rotation.y = Math.sin(t * 0.75 + c.seed) * 0.22;
+        c.headPivot.rotation.x = Math.cos(t * 0.95 + c.seed) * 0.08;
+      }
+      if (c.jawPivot) {
+        c.jawPivot.rotation.x = Math.max(0, Math.sin(t * 1.55 + c.seed) - 0.15) * 0.48;
+      }
+      if (c.tailPivot) {
+        c.tailPivot.rotation.z = Math.sin(t * 3.1 + c.seed) * 0.22;
+      }
+    }
+  });
+}
+
 // Initialize at LOD 2 (High-Poly Sculpted Organic) + Style 1 (Textured Organic PBR)
 rebuildFullValleyScene(2);
 const clock = new THREE.Clock();
@@ -2041,6 +2420,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   const t = clock.elapsedTime;
 
+  updateBiomechanicalAnimations(dt, t);
   activeTrunkPivots.forEach((piv) => {
     piv.rotation.z = Math.sin(t * 1.4) * 0.14;
     piv.rotation.x = Math.cos(t * 0.9) * 0.08;
