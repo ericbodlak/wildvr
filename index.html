@@ -148,19 +148,20 @@
 
   <div id="hud-top">
     <div class="glass-card">
-      <h1>Wild VR — Multi-LOD &amp; Shader Comparison Studio</h1>
-      <div class="subtitle">Compare 4 Geometric Detail Tiers (1.5k to 115k Tris) &amp; 10 Shader/Texture Pipelines</div>
+      <h1>Wild VR — Prehistoric Cel-Shaded Sanctuary &amp; Lighting Studio</h1>
+      <div class="subtitle">Locked LOD 1 Mid-Poly + Cel-Shaded Anime &bull; 16 Environmental Lighting Conditions (Peaceful &rarr; Terrifying)</div>
       <div class="status-row">
         <span class="badge" id="mode-badge">Mode: Desktop Wild VR</span>
-        <span class="badge cyan" id="lod-badge">LOD 2 (High-Poly)</span>
-        <span class="badge gold" id="style-badge">Style 1/10: Textured Organic PBR</span>
+        <span class="badge cyan" id="lod-badge">LOD 1 (Mid-Poly) &#128274;</span>
+        <span class="badge gold" id="style-badge">Style: Cel-Shaded Anime &#128274;</span>
+        <span class="badge" id="lighting-badge">Lighting 1/16 [Peaceful] Studio Ghibli Meadow Morning</span>
         <span class="badge" id="asset-badge">Scene: Full Prehistoric Valley</span>
         <span class="badge" id="mic-badge">Mic: Ready [Hold A / M]</span>
       </div>
     </div>
     <div class="glass-card" style="display:flex; gap:7px; align-items:center; flex-wrap:wrap;">
-      <button id="btn-compare-lods" class="cyan-btn" title="Place LOD 0, LOD 1, LOD 2, and LOD 3 side-by-side on 4 pedestals">&#128202; Compare 4 LODs</button>
-      <button id="btn-compare-styles" class="cyan-btn" title="Place 4 radically different Shader/Rendering Styles side-by-side">&#127912; Compare 4 Styles</button>
+      <button id="btn-prev-lighting" class="cyan-btn" title="Previous Environmental Lighting Condition (Tap A / Press N)">&#9664; Prev Light [N]</button>
+      <button id="btn-next-lighting" class="active" title="Next Environmental Lighting Condition (Tap B / Press B)">Next Light [B] &#9654;</button>
       <button id="btn-voice-req" title="Speak a spatial-aware request to Antigravity">&#127908; Voice [M]</button>
       <button id="btn-enter-vr" class="vr-btn">Enter Wild VR (Quest 3)</button>
     </div>
@@ -168,37 +169,32 @@
 
   <div id="style-panel" class="glass-card">
     <div class="watch-header" id="watch-header-toggle">
-      <span class="watch-title">&#9728; LOD, Shader &amp; Asset Studio</span>
-      <span style="font-size:0.72rem; color:#adb5bd;">[B] Style &bull; [A/L] LOD</span>
+      <span class="watch-title">&#9728; Environmental Lighting &amp; Sanctuary Watch</span>
+      <span style="font-size:0.72rem; color:#adb5bd;">[B/N] Lighting &bull; LOD 1 + Cel Anime &#128274;</span>
     </div>
-    <div style="margin-bottom:7px;">
-      <label style="font-size:0.72rem; color:#bae6fd; display:block; margin-bottom:3px;">1. Geometric Level of Detail / Mesh Complexity (Tap A / Press L)</label>
-      <select id="select-lod" style="width:100%;">
-        <option value="0">LOD 0: Low-Poly Blockout (~1.5k tris — Walkabout Baseline)</option>
-        <option value="1">LOD 1: Sculpted Mid-Poly (~12k tris — Smooth Anatomical Splines)</option>
-        <option value="2" selected>LOD 2: High-Poly Organic + Shaggy Fur/Bark (~48k tris — Default)</option>
-        <option value="3">LOD 3: Ultra-Dense Hero Spec (~115k tris — Max Tessellation)</option>
-        <option value="compare_lods">&#128202; Compare All 4 LODs Side-by-Side (1:1 4-Pedestal Lineup)</option>
-        <option value="compare_styles">&#127912; Compare 4 Shader Styles Side-by-Side (Low-Poly vs Toon vs Clay vs PBR)</option>
-      </select>
-    </div>
-    <div style="margin-bottom:7px;">
-      <label style="font-size:0.72rem; color:#ffe8a3; display:block; margin-bottom:3px;">2. Shader, Texture &amp; Rendering Architecture (Tap B)</label>
-      <select id="select-style" style="width:100%;">
-        <option value="0">1/10: Textured Organic PBR (Fur, Bark &amp; Strata Bump Maps)</option>
-        <option value="1">2/10: Wet Photorealistic Nature (Micro-Bump &amp; Clearcoat Luster)</option>
-        <option value="2">3/10: Cel-Shaded Anime / Ghibli (4-Band Toon + Ink Contours)</option>
-        <option value="3">4/10: Pen, Ink &amp; Cross-Hatch Botanical Illustration</option>
-        <option value="4">5/10: Sculptor's Clay &amp; Terracotta Maquette (ZBrush Form Study)</option>
-        <option value="5">6/10: Golden Hour Velvet &amp; Rim-Lit Subsurface Sheen</option>
-        <option value="6">7/10: Retro Voxel / Pixel-Craft (16x16 Nearest Block Texture)</option>
-        <option value="7">8/10: Folded Origami &amp; Cardstock Papercraft (Faceted Paper Grain)</option>
-        <option value="8">9/10: Tech-Art Topology &amp; Wireframe Mesh Inspector</option>
-        <option value="9">10/10: Bioluminescent Twilight Shader (Glow Veins &amp; Aurora)</option>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:0.72rem; color:#ffe8a3; display:block; margin-bottom:3px;">1. Environmental Lighting Condition: Peaceful &rarr; Terrifying (Tap B / A or Press B / N)</label>
+      <select id="select-lighting" style="width:100%;">
+        <option value="0" selected>1/16 [Peaceful] Studio Ghibli Meadow Morning</option>
+        <option value="1">2/16 [Peaceful] Sakura Spring Pastel Dawn</option>
+        <option value="2">3/16 [Peaceful] High-Alpine Crystal Zenith Noon</option>
+        <option value="3">4/16 [Peaceful] Golden Hour Amber Sanctuary</option>
+        <option value="4">5/16 [Serene] Alpenglow Rose-Gold Sunset</option>
+        <option value="5">6/16 [Serene] Velvet Blue-Hour Firefly Dusk</option>
+        <option value="6">7/16 [Serene] Silver Full-Moon Sanctuary</option>
+        <option value="7">8/16 [Mystical] Boreal Aurora Borealis Night (Dynamic Curtain)</option>
+        <option value="8">9/16 [Mystical] Bioluminescent Spirit Forest (Glowing Flora)</option>
+        <option value="9">10/16 [Uncanny] Pale Glacial Whiteout Blizzard Fog</option>
+        <option value="10">11/16 [Ominous] Gathering Supercell Thunderstorm (Lightning Bolts)</option>
+        <option value="11">12/16 [Dread] Toxic Sulfuric Tar-Pit Miasma</option>
+        <option value="12">13/16 [Terrifying] Cataclysmic Volcanic Ash &amp; Magma Eruption</option>
+        <option value="13">14/16 [Terrifying] Blood Moon Total Eclipse (Crimson Corona)</option>
+        <option value="14">15/16 [Terrifying] Abyssal Shadow-Stalker Fog (Silhouette Nightmare)</option>
+        <option value="15">16/16 [Terrifying] Pitch-Black Predator Night (Survivor Torch Only)</option>
       </select>
     </div>
     <div style="margin-bottom:8px;">
-      <label style="font-size:0.72rem; color:#ced4da; display:block; margin-bottom:3px;">3. Isolate Specimen or Lineup Target (1:1 Scale + 1.75m Reference)</label>
+      <label style="font-size:0.72rem; color:#ced4da; display:block; margin-bottom:3px;">2. Isolate Specimen or Lineup Target (1:1 Scale + 1.75m Reference)</label>
       <div style="display:flex; gap:6px;">
         <select id="select-asset" style="flex:1;">
           <option value="all">Full Prehistoric Wilderness Valley</option>
@@ -214,23 +210,54 @@
       </div>
     </div>
     <div class="control-grid">
-      <button id="btn-next-style" class="active">Next Shader Style [B]</button>
-      <button id="btn-next-lod" class="cyan-btn">Next LOD / Compare [A/L]</button>
       <button id="btn-tp-meadow">Valley Meadow</button>
       <button id="btn-tp-overlook">Smilodon Cliff Overlook</button>
       <button id="btn-tp-mammoth">By the Mammoth</button>
       <button id="btn-dollhouse">Giant Overview (1:14)</button>
     </div>
+    <details style="margin-bottom:6px; font-size:0.70rem; color:#94a3b8;">
+      <summary style="cursor:pointer; color:#bae6fd; margin-bottom:4px;">&#128274; Locked Baseline Overrides (LOD 1 Mid-Poly &amp; Cel-Shaded Anime Locked)</summary>
+      <div style="display:flex; gap:5px; margin-bottom:4px;">
+        <select id="select-lod" style="flex:1;">
+          <option value="0">LOD 0: Low-Poly Blockout (~1.5k tris)</option>
+          <option value="1" selected>LOD 1: Sculpted Mid-Poly (~12k tris &#128274; LOCKED)</option>
+          <option value="2">LOD 2: High-Poly Organic (~48k tris)</option>
+          <option value="3">LOD 3: Ultra-Dense Hero Spec (~115k tris)</option>
+          <option value="compare_lods">&#128202; Compare All 4 LODs (compare_lods)</option>
+          <option value="compare_styles">&#127912; Compare 4 Styles (compare_styles)</option>
+        </select>
+        <button id="btn-next-lod" class="cyan-btn">LOD</button>
+      </div>
+      <div style="display:flex; gap:5px; margin-bottom:4px;">
+        <select id="select-style" style="flex:1;">
+          <option value="0">1/10: Textured Organic PBR</option>
+          <option value="1">2/10: Wet Photorealistic Nature</option>
+          <option value="2" selected>3/10: Cel-Shaded Anime / Ghibli (&#128274; LOCKED)</option>
+          <option value="3">4/10: Pen, Ink &amp; Cross-Hatch</option>
+          <option value="4">5/10: Sculptor's Clay &amp; Terracotta</option>
+          <option value="5">6/10: Golden Hour Velvet</option>
+          <option value="6">7/10: Retro Voxel / Pixel-Craft</option>
+          <option value="7">8/10: Folded Origami &amp; Papercraft</option>
+          <option value="8">9/10: Tech-Art Wireframe Inspector</option>
+          <option value="9">10/10: Bioluminescent Twilight Shader</option>
+        </select>
+        <button id="btn-next-style">Style</button>
+      </div>
+      <div style="display:flex; gap:5px;">
+        <button id="btn-compare-lods" class="cyan-btn" style="flex:1;">Compare 4 LODs</button>
+        <button id="btn-compare-styles" class="cyan-btn" style="flex:1;">Compare 4 Styles</button>
+      </div>
+    </details>
     <div id="telemetry-readout" style="font-size:0.71rem; color:#adb5bd; border-top:1px solid rgba(255,255,255,0.12); padding-top:6px;">
-      Pos: (0.0, 1.7, 9.0) | LOD 2 (High-Poly) | [B] Style [A/L] LOD
+      Pos: (0.0, 1.7, 10.5) | LOD 1 (Mid-Poly) &#128274; | Cel-Shaded Anime &#128274; | 1/16 Studio Ghibli Morning [B/N]
     </div>
   </div>
 
   <div class="glass-card controls-help">
     <strong style="color:#b7e4c7; display:block; margin-bottom:4px;">Single-Controller Quest 3 &amp; Desktop Controls:</strong>
-    &bull; <b>Compare LODs &amp; Lineups:</b> Tap <kbd>A</kbd> (or press <kbd>L</kbd>) to cycle <b>LOD 0 &rarr; 1 &rarr; 2 &rarr; 3 &rarr; 4-LOD Lineup &rarr; 4-Style Lineup</b><br/>
-    &bull; <b>Cycle 10 Shader Styles:</b> Tap <kbd>B</kbd> (Textured PBR, Wet Realism, Toon, Cross-Hatch, Clay, Wireframe, etc.)<br/>
-    &bull; <b>Teleport &amp; 1.8s Sky Flight:</b> Push <kbd>Stick Up</kbd> to teleport; point &gt;55&deg; up + hold <b>1.8s</b> for haptic flight!<br/>
+    &bull; <b>16 Lighting Conditions (Peaceful &rarr; Terrifying):</b> Tap <kbd>B</kbd> (Next) or <kbd>A</kbd> / <kbd>N</kbd> (Prev) to cycle all 16 lighting presets!<br/>
+    &bull; <b>Locked Style &amp; Detail:</b> <b>LOD 1 (Sculpted Mid-Poly)</b> &amp; <b>Cel-Shaded Anime / Ghibli</b> are locked in &#128274;<br/>
+    &bull; <b>Teleport &amp; 1.8s Sky Flight:</b> Push <kbd>Stick Up</kbd> to teleport (Giant Mode drops you at 1:1 scale!); point &gt;55&deg; up + hold <b>1.8s</b> to fly!<br/>
     &bull; <b>Approve / Voice:</b> Hold <kbd>Side Grip</kbd> 1s to Approve &bull; Hold <kbd>A</kbd> (0.8s) or <kbd>M</kbd> for Voice Request
   </div>
 
@@ -434,12 +461,12 @@ const STYLES = [
   },
   {
     name: "3/10: Cel-Shaded Anime / Ghibli (4-Band Toon + Ink Lines)",
-    pipeline: "toon_cel", flat: false, outlines: true, outlineColor: 0x111827, wireframe: false, bumpScale: 0.0, fogDensity: 0.004,
-    sky: "#98f5e1", sunColor: "#ffffff", sunIntensity: 1.85, hemiSky: "#caf0f8", hemiGround: "#52b788",
-    terrain: "#52b788", cliff: "#94a3b8", trail: "#f4a261", water: "#00b4d8", waterRough: 0.2,
-    trunk: "#7f5539", foliage1: "#2a9d8f", foliage2: "#74c69d", rock: "#8d99ae",
-    mammothFur: "#8a5a44", tusk: "#ffffff", elkCoat: "#b07d62", smilodonCoat: "#ffb703",
-    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.85, metalness: 0.0
+    pipeline: "toon_cel", flat: true, outlines: true, outlineColor: 0x111827, wireframe: false, bumpScale: 0.0, fogDensity: 0.0038,
+    sky: "#8ecae6", sunColor: "#fff8d6", sunIntensity: 2.15, hemiSky: "#caf0f8", hemiGround: "#52b788",
+    terrain: "#52b788", cliff: "#8d99ae", trail: "#e09f67", water: "#00b4d8", waterRough: 0.16,
+    trunk: "#7f5539", foliage1: "#2a9d8f", foliage2: "#74c69d", rock: "#7f8c8d",
+    mammothFur: "#7f4f24", tusk: "#fffdf7", elkCoat: "#9c6644", smilodonCoat: "#f4a261",
+    emissiveFlora: "#000000", emissiveFauna: "#000000", emissiveStrength: 0.0, roughness: 0.76, metalness: 0.02
   },
   {
     name: "4/10: Pen, Ink & Cross-Hatch Botanical Illustration",
@@ -506,11 +533,151 @@ const STYLES = [
   }
 ];
 
+// 16 Environmental Lighting Conditions Ranging from Peaceful -> Mystical -> Ominous -> Terrifying
+const ENV_LIGHTING_PRESETS = [
+  {
+    id: "ghibli_morning", name: "1/16 [Peaceful] Studio Ghibli Meadow Morning", category: "Peaceful", badgeColor: "#52b788",
+    sky: "#8ecae6", fogColor: "#8ecae6", fogDensity: 0.0038, exposure: 1.12,
+    sunColor: "#fff8d6", sunIntensity: 2.15, sunPos: [20, 28, 15],
+    hemiSky: "#caf0f8", hemiGround: "#52b788", hemiIntensity: 1.05,
+    rimColor: "#90e0ef", rimIntensity: 0.75, rimPos: [-16, 14, -18],
+    waterTint: "#00b4d8", outlineColor: 0x111827, effect: "none"
+  },
+  {
+    id: "sakura_dawn", name: "2/16 [Peaceful] Sakura Spring Pastel Dawn", category: "Peaceful", badgeColor: "#52b788",
+    sky: "#ffd6e0", fogColor: "#ffd6e0", fogDensity: 0.0052, exposure: 1.14,
+    sunColor: "#ffcad4", sunIntensity: 1.95, sunPos: [28, 12, 18],
+    hemiSky: "#ffe5ec", hemiGround: "#74c69d", hemiIntensity: 1.05,
+    rimColor: "#ffb703", rimIntensity: 0.85, rimPos: [-20, 12, -16],
+    waterTint: "#48bfe3", outlineColor: 0x1e1b18, effect: "none"
+  },
+  {
+    id: "alpine_noon", name: "3/16 [Peaceful] High-Alpine Crystal Zenith Noon", category: "Peaceful", badgeColor: "#52b788",
+    sky: "#72efdd", fogColor: "#a8dadc", fogDensity: 0.0022, exposure: 1.16,
+    sunColor: "#ffffff", sunIntensity: 2.45, sunPos: [6, 36, 6],
+    hemiSky: "#caf0f8", hemiGround: "#40916c", hemiIntensity: 1.10,
+    rimColor: "#00f5d4", rimIntensity: 0.65, rimPos: [-14, 22, -14],
+    waterTint: "#0096c7", outlineColor: 0x0f172a, effect: "none"
+  },
+  {
+    id: "golden_sanctuary", name: "4/16 [Peaceful] Golden Hour Amber Sanctuary", category: "Peaceful", badgeColor: "#52b788",
+    sky: "#f4a261", fogColor: "#f4a261", fogDensity: 0.0065, exposure: 1.10,
+    sunColor: "#ff9f1c", sunIntensity: 2.50, sunPos: [32, 9, -14],
+    hemiSky: "#ffbf69", hemiGround: "#3d405b", hemiIntensity: 0.95,
+    rimColor: "#ffbe0b", rimIntensity: 1.35, rimPos: [-22, 10, 16],
+    waterTint: "#2a9d8f", outlineColor: 0x2b1810, effect: "none"
+  },
+  {
+    id: "alpenglow_sunset", name: "5/16 [Serene] Alpenglow Rose-Gold Sunset", category: "Serene", badgeColor: "#38bdf8",
+    sky: "#e07a5f", fogColor: "#e07a5f", fogDensity: 0.0075, exposure: 1.06,
+    sunColor: "#ff4d6d", sunIntensity: 2.15, sunPos: [34, 5.5, -20],
+    hemiSky: "#f28482", hemiGround: "#2b2d42", hemiIntensity: 0.90,
+    rimColor: "#ff758f", rimIntensity: 1.30, rimPos: [-24, 9, 18],
+    waterTint: "#457b9d", outlineColor: 0x22121d, effect: "none"
+  },
+  {
+    id: "velvet_dusk", name: "6/16 [Serene] Velvet Blue-Hour Firefly Dusk", category: "Serene", badgeColor: "#38bdf8",
+    sky: "#2b4162", fogColor: "#2b4162", fogDensity: 0.0085, exposure: 1.00,
+    sunColor: "#98c1d9", sunIntensity: 1.15, sunPos: [-22, 14, -18],
+    hemiSky: "#4ea8de", hemiGround: "#4a5759", hemiIntensity: 0.88,
+    rimColor: "#ffd166", rimIntensity: 1.05, rimPos: [18, 8, 16],
+    waterTint: "#1d3557", outlineColor: 0x0b132b, effect: "none"
+  },
+  {
+    id: "silver_moon", name: "7/16 [Serene] Silver Full-Moon Sanctuary", category: "Serene", badgeColor: "#38bdf8",
+    sky: "#14213d", fogColor: "#14213d", fogDensity: 0.0090, exposure: 0.96,
+    sunColor: "#e0fbfc", sunIntensity: 1.35, sunPos: [-18, 28, 14],
+    hemiSky: "#457b9d", hemiGround: "#0f172a", hemiIntensity: 0.72,
+    rimColor: "#90e0ef", rimIntensity: 1.10, rimPos: [18, 15, -18],
+    waterTint: "#1e3a8a", outlineColor: 0x090d16, effect: "none"
+  },
+  {
+    id: "aurora_borealis", name: "8/16 [Mystical] Boreal Aurora Borealis Night", category: "Mystical", badgeColor: "#c084fc",
+    sky: "#071a2c", fogColor: "#092338", fogDensity: 0.0095, exposure: 1.02,
+    sunColor: "#00f5d4", sunIntensity: 1.45, sunPos: [12, 26, -16],
+    hemiSky: "#06d6a0", hemiGround: "#3c096c", hemiIntensity: 0.88,
+    rimColor: "#b5179e", rimIntensity: 1.35, rimPos: [-18, 16, 16],
+    waterTint: "#00bbf9", outlineColor: 0x00f5d4, effect: "aurora"
+  },
+  {
+    id: "spirit_forest", name: "9/16 [Mystical] Bioluminescent Spirit Forest", category: "Mystical", badgeColor: "#c084fc",
+    sky: "#10002b", fogColor: "#150433", fogDensity: 0.0115, exposure: 1.04,
+    sunColor: "#c77dff", sunIntensity: 1.25, sunPos: [-14, 24, 10],
+    hemiSky: "#00bbf9", hemiGround: "#240046", hemiIntensity: 0.82,
+    rimColor: "#00f5d4", rimIntensity: 1.45, rimPos: [16, 12, -16],
+    waterTint: "#00f5d4", waterEmissive: "#00bbf9", waterEmissiveIntensity: 0.42,
+    floraEmissive: "#00f5d4", floraEmissiveIntensity: 0.36, outlineColor: 0x00f5d4, effect: "biolum"
+  },
+  {
+    id: "glacial_whiteout", name: "10/16 [Uncanny] Pale Glacial Whiteout Blizzard Fog", category: "Uncanny", badgeColor: "#94a3b8",
+    sky: "#cbd5e1", fogColor: "#cbd5e1", fogDensity: 0.025, exposure: 0.94,
+    sunColor: "#e2e8f0", sunIntensity: 1.05, sunPos: [8, 22, 4],
+    hemiSky: "#94a3b8", hemiGround: "#475569", hemiIntensity: 0.85,
+    rimColor: "#bae6fd", rimIntensity: 0.60, rimPos: [-16, 12, -14],
+    waterTint: "#64748b", outlineColor: 0x1e293b, effect: "none"
+  },
+  {
+    id: "supercell_storm", name: "11/16 [Ominous] Gathering Supercell Thunderstorm", category: "Ominous", badgeColor: "#f59e0b",
+    sky: "#1e293b", fogColor: "#1e293b", fogDensity: 0.0185, exposure: 0.88,
+    sunColor: "#64748b", sunIntensity: 0.72, sunPos: [-24, 18, -12],
+    hemiSky: "#334155", hemiGround: "#0f172a", hemiIntensity: 0.52,
+    rimColor: "#38bdf8", rimIntensity: 0.90, rimPos: [18, 16, -18],
+    waterTint: "#0f172a", outlineColor: 0x090d16, effect: "lightning"
+  },
+  {
+    id: "sulfuric_miasma", name: "12/16 [Dread] Toxic Sulfuric Tar-Pit Miasma", category: "Dread", badgeColor: "#f97316",
+    sky: "#3b4d1f", fogColor: "#425722", fogDensity: 0.026, exposure: 0.86,
+    sunColor: "#a3e635", sunIntensity: 0.95, sunPos: [18, 10, -16],
+    hemiSky: "#65a30d", hemiGround: "#1a1c16", hemiIntensity: 0.58,
+    rimColor: "#bef264", rimIntensity: 1.15, rimPos: [-18, 8, 14],
+    waterTint: "#4d7c0f", waterEmissive: "#65a30d", waterEmissiveIntensity: 0.25, outlineColor: 0x1a2e05, effect: "none"
+  },
+  {
+    id: "volcanic_eruption", name: "13/16 [Terrifying] Cataclysmic Volcanic Ash & Magma", category: "Terrifying", badgeColor: "#ef4444",
+    sky: "#240907", fogColor: "#2b0b08", fogDensity: 0.023, exposure: 0.92,
+    sunColor: "#ff4800", sunIntensity: 1.65, sunPos: [-26, 5.5, -14],
+    hemiSky: "#3d1308", hemiGround: "#ff5400", hemiIntensity: 1.05,
+    rimColor: "#ff9e00", rimIntensity: 1.60, rimPos: [20, 4, 16],
+    waterTint: "#ff3c00", waterEmissive: "#ff4800", waterEmissiveIntensity: 0.72,
+    eyeEmissive: "#ff7b00", eyeEmissiveIntensity: 1.6, outlineColor: 0xff4800, effect: "magma"
+  },
+  {
+    id: "blood_moon_eclipse", name: "14/16 [Terrifying] Blood Moon Total Eclipse", category: "Terrifying", badgeColor: "#ef4444",
+    sky: "#160003", fogColor: "#1a0004", fogDensity: 0.022, exposure: 0.84,
+    sunColor: "#e60026", sunIntensity: 1.25, sunPos: [0, 26, -22],
+    hemiSky: "#59000d", hemiGround: "#050001", hemiIntensity: 0.42,
+    rimColor: "#ff002b", rimIntensity: 1.75, rimPos: [0, 14, -24],
+    waterTint: "#4a000b", waterEmissive: "#800013", waterEmissiveIntensity: 0.35,
+    eyeEmissive: "#ff002b", eyeEmissiveIntensity: 2.2, outlineColor: 0x800016, effect: "eclipse"
+  },
+  {
+    id: "shadow_stalker_fog", name: "15/16 [Terrifying] Abyssal Shadow-Stalker Fog", category: "Terrifying", badgeColor: "#ef4444",
+    sky: "#05070e", fogColor: "#060913", fogDensity: 0.035, exposure: 0.78,
+    sunColor: "#4cc9f0", sunIntensity: 0.42, sunPos: [0, 8, -28],
+    hemiSky: "#0f172a", hemiGround: "#020408", hemiIntensity: 0.20,
+    rimColor: "#00f5d4", rimIntensity: 1.45, rimPos: [0, 10, -24],
+    waterTint: "#020617", eyeEmissive: "#00f5d4", eyeEmissiveIntensity: 2.4,
+    torchIntensity: 1.8, outlineColor: 0x00f5d4, effect: "stalker"
+  },
+  {
+    id: "predator_night_torch", name: "16/16 [Terrifying] Pitch-Black Predator Night (Torch Only)", category: "Terrifying", badgeColor: "#ef4444",
+    sky: "#010204", fogColor: "#020306", fogDensity: 0.032, exposure: 0.85,
+    sunColor: "#1e293b", sunIntensity: 0.08, sunPos: [0, 26, 0],
+    hemiSky: "#060911", hemiGround: "#010103", hemiIntensity: 0.10,
+    rimColor: "#334155", rimIntensity: 0.22, rimPos: [-14, 12, -16],
+    waterTint: "#010204", eyeEmissive: "#ff1e00", eyeEmissiveIntensity: 2.8,
+    torchIntensity: 4.8, outlineColor: 0x05070b, effect: "torch"
+  }
+];
+
 // ============================================================================
 // 3. SCENE, RENDERER, LIGHTS & MULTI-PIPELINE SHADER/MATERIAL ENGINE
 // ============================================================================
-let currentStyleIdx = 0;
-let currentLodIdx = 2; // Default to LOD 2: High-Poly Sculpted Organic + Fur/Bark Detail!
+const LOCKED_STYLE_IDX = 2; // Locked to 3/10: Cel-Shaded Anime / Ghibli (4-Band Toon + Ink Lines)
+const LOCKED_LOD_IDX = 1;   // Locked to LOD 1: Sculpted Mid-Poly (~12k tris)
+let currentStyleIdx = LOCKED_STYLE_IDX;
+let currentLodIdx = LOCKED_LOD_IDX;
+let currentLightingIdx = 0;
 let comparisonMode = 'none'; // 'none' | 'compare_lods' | 'compare_styles'
 let forceFlyMode = false;
 let isDollhouse = false;
@@ -575,6 +742,11 @@ scene.add(sunLight);
 const rimLight = new THREE.DirectionalLight(0x90e0ef, 0.65);
 rimLight.position.set(-16, 14, -18);
 scene.add(rimLight);
+
+const survivorTorch = new THREE.SpotLight(0xfff1d0, 0.0, 42.0, Math.PI / 5.2, 0.58, 1.35);
+survivorTorch.castShadow = false;
+scene.add(survivorTorch);
+scene.add(survivorTorch.target);
 
 const materials = {
   terrain: new THREE.MeshStandardMaterial({ roughness: 0.75 }),
@@ -726,18 +898,130 @@ function applyStyle(idx) {
   wireframeMeshes.forEach((wf) => { wf.visible = Boolean(s.wireframe); });
   activeGLBMaterials.forEach((rec) => applyStyleToGLBMaterialRecord(rec, s));
 
-  scene.background = new THREE.Color(s.sky);
-  scene.fog = new THREE.FogExp2(s.sky, s.fogDensity);
-  sunLight.color.set(s.sunColor);
-  sunLight.intensity = s.sunIntensity;
-  hemiLight.color.set(s.hemiSky);
-  hemiLight.groundColor.set(s.hemiGround);
-  rimLight.intensity = s.pipeline === 'golden_velvet' || s.pipeline === 'clay_sculpt' ? 1.25 : 0.65;
-
   const styleBadge = document.getElementById('style-badge');
-  if (styleBadge) styleBadge.textContent = `Style ${s.name}`;
+  if (styleBadge) styleBadge.textContent = `Style: Cel-Shaded Anime 🔒`;
   const selectStyle = document.getElementById('select-style');
   if (selectStyle) selectStyle.value = String(currentStyleIdx);
+
+  applyLighting(currentLightingIdx);
+}
+
+function applyLighting(idx) {
+  currentLightingIdx = (idx + ENV_LIGHTING_PRESETS.length) % ENV_LIGHTING_PRESETS.length;
+  const L = ENV_LIGHTING_PRESETS[currentLightingIdx];
+  const s = STYLES[currentStyleIdx];
+
+  scene.background = new THREE.Color(L.sky);
+  scene.fog = new THREE.FogExp2(L.fogColor || L.sky, L.fogDensity);
+  renderer.toneMappingExposure = L.exposure || 1.08;
+
+  sunLight.color.set(L.sunColor);
+  sunLight.intensity = L.sunIntensity;
+  if (L.sunPos) sunLight.position.set(L.sunPos[0], L.sunPos[1], L.sunPos[2]);
+
+  hemiLight.color.set(L.hemiSky);
+  hemiLight.groundColor.set(L.hemiGround);
+  hemiLight.intensity = L.hemiIntensity !== undefined ? L.hemiIntensity : 0.95;
+
+  rimLight.color.set(L.rimColor || L.hemiSky);
+  rimLight.intensity = L.rimIntensity !== undefined ? L.rimIntensity : 0.75;
+  if (L.rimPos) rimLight.position.set(L.rimPos[0], L.rimPos[1], L.rimPos[2]);
+
+  if (L.waterTint && materials.water) {
+    materials.water.color.set(L.waterTint);
+    materials.water.emissive.set(L.waterEmissive || '#000000');
+    materials.water.emissiveIntensity = L.waterEmissiveIntensity || 0.0;
+    materials.water.needsUpdate = true;
+  }
+  const floraEmCol = L.floraEmissive || s.emissiveFlora || '#000000';
+  const floraEmInt = L.floraEmissiveIntensity !== undefined ? L.floraEmissiveIntensity : (s.emissiveStrength || 0.0);
+  ['foliage1', 'foliage2'].forEach((fk) => {
+    if (materials[fk]) {
+      materials[fk].emissive.set(floraEmCol);
+      materials[fk].emissiveIntensity = floraEmInt;
+    }
+  });
+
+  if (materials.eyeGloss) {
+    materials.eyeGloss.emissive.set(L.eyeEmissive || '#000000');
+    materials.eyeGloss.emissiveIntensity = L.eyeEmissiveIntensity || 0.0;
+  }
+
+  outlineMat.color.setHex(L.outlineColor !== undefined ? L.outlineColor : (s.outlineColor || 0x111827));
+  survivorTorch.intensity = L.torchIntensity || 0.0;
+
+  const lightingBadge = document.getElementById('lighting-badge');
+  if (lightingBadge) {
+    lightingBadge.textContent = `Lighting ${L.name}`;
+    lightingBadge.style.borderColor = L.badgeColor || '#52b788';
+    lightingBadge.style.color = L.badgeColor || '#d8f3dc';
+  }
+  const selectLighting = document.getElementById('select-lighting');
+  if (selectLighting) selectLighting.value = String(currentLightingIdx);
+}
+
+function updateEnvironmentalLightingEffects(dt, t) {
+  const L = ENV_LIGHTING_PRESETS[currentLightingIdx];
+  if (!L) return;
+
+  if (L.torchIntensity && L.torchIntensity > 0) {
+    const tOrig = new THREE.Vector3();
+    const tDir = new THREE.Vector3(0, 0, -1);
+    if (renderer.xr.isPresenting && activeController) {
+      activeController.getWorldPosition(tOrig);
+      tDir.applyQuaternion(activeController.getWorldQuaternion(tempQuat)).normalize();
+    } else {
+      camera.getWorldPosition(tOrig);
+      camera.getWorldDirection(tDir);
+    }
+    survivorTorch.position.copy(tOrig);
+    survivorTorch.target.position.copy(tOrig).addScaledVector(tDir, 18.0);
+    survivorTorch.target.updateMatrixWorld();
+    const flicker = 0.94 + 0.06 * Math.sin(t * 23.0) * Math.cos(t * 37.0);
+    survivorTorch.intensity = L.torchIntensity * flicker;
+  } else if (survivorTorch.intensity !== 0) {
+    survivorTorch.intensity = 0;
+  }
+
+  if (L.effect === 'lightning') {
+    const cycle = t % 6.2;
+    const isBolt1 = cycle > 4.8 && cycle < 4.92;
+    const isBolt2 = cycle > 5.02 && cycle < 5.22;
+    if (isBolt1 || isBolt2) {
+      scene.background.set('#cbd5e1');
+      scene.fog.color.set('#94a3b8');
+      sunLight.color.set('#e0f2fe');
+      sunLight.intensity = isBolt2 ? 6.8 : 4.2;
+      hemiLight.intensity = 1.95;
+    } else {
+      scene.background.set(L.sky);
+      scene.fog.color.set(L.fogColor || L.sky);
+      sunLight.color.set(L.sunColor);
+      sunLight.intensity = L.sunIntensity;
+      hemiLight.intensity = L.hemiIntensity;
+    }
+  } else if (L.effect === 'aurora') {
+    const wave = 0.5 + 0.5 * Math.sin(t * 0.85);
+    hemiLight.color.set('#00f5d4').lerp(new THREE.Color('#9b5de5'), wave);
+    rimLight.color.set('#b5179e').lerp(new THREE.Color('#00bbf9'), 1.0 - wave);
+    rimLight.intensity = L.rimIntensity * (0.85 + 0.3 * Math.sin(t * 1.6));
+  } else if (L.effect === 'biolum') {
+    const pulse = 0.28 + 0.20 * (0.5 + 0.5 * Math.sin(t * 1.9));
+    materials.foliage1.emissiveIntensity = pulse;
+    materials.foliage2.emissiveIntensity = pulse * 1.15;
+    materials.water.emissiveIntensity = 0.32 + 0.22 * (0.5 + 0.5 * Math.cos(t * 1.5));
+  } else if (L.effect === 'magma') {
+    const lavaThrob = 0.82 + 0.36 * (0.5 + 0.5 * Math.sin(t * 2.4 + Math.cos(t * 1.1)));
+    hemiLight.intensity = L.hemiIntensity * lavaThrob;
+    rimLight.intensity = L.rimIntensity * lavaThrob;
+    materials.water.emissiveIntensity = 0.55 + 0.35 * lavaThrob;
+  } else if (L.effect === 'eclipse' || L.effect === 'stalker') {
+    const dreadPulse = 0.85 + 0.30 * Math.sin(t * 1.8);
+    rimLight.intensity = L.rimIntensity * dreadPulse;
+    if (materials.eyeGloss) {
+      materials.eyeGloss.emissiveIntensity = (L.eyeEmissiveIntensity || 2.0) * dreadPulse;
+    }
+  }
 }
 
 // ============================================================================
@@ -2227,7 +2511,7 @@ function clearGroupChildren(grp) {
 }
 
 function updateTriangleTelemetryBadge() {
-  const lodCfg = LOD_TIERS[currentLodIdx] || LOD_TIERS[2];
+  const lodCfg = LOD_TIERS[currentLodIdx] || LOD_TIERS[1];
   const lodBadge = document.getElementById('lod-badge');
   if (lodBadge) {
     if (comparisonMode === 'compare_lods') {
@@ -2235,7 +2519,7 @@ function updateTriangleTelemetryBadge() {
     } else if (comparisonMode === 'compare_styles') {
       lodBadge.textContent = `Compare: 4 Shader Styles Side-by-Side (${activeSceneTriangles.toLocaleString()} tris)`;
     } else {
-      lodBadge.textContent = `${lodCfg.short} (${activeSceneTriangles.toLocaleString()} tris)`;
+      lodBadge.textContent = `${lodCfg.short} 🔒 (${activeSceneTriangles.toLocaleString()} tris)`;
     }
   }
   const selectLod = document.getElementById('select-lod');
@@ -2874,9 +3158,9 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyT') isAimingTeleport = true;
   if (e.code === 'KeyG') desktopThumbsUp = true;
-  if (e.code === 'KeyB') applyStyle(currentStyleIdx + 1);
-  if (e.code === 'KeyN') applyStyle(currentStyleIdx - 1);
-  if (e.code === 'KeyL') cycleLODMode();
+  if (e.code === 'KeyB') applyLighting(currentLightingIdx + 1);
+  if (e.code === 'KeyN') applyLighting(currentLightingIdx - 1);
+  if (e.code === 'KeyL') applyLighting(currentLightingIdx + 1);
   if (e.code === 'KeyM') triggerVoiceRequest();
   if (e.code === 'Tab') {
     e.preventDefault();
@@ -2932,6 +3216,12 @@ window.addEventListener('contextmenu', (e) => e.preventDefault());
 document.getElementById('watch-header-toggle').addEventListener('click', () => {
   document.getElementById('style-panel').classList.toggle('minimized');
 });
+const selectLightingEl = document.getElementById('select-lighting');
+if (selectLightingEl) selectLightingEl.addEventListener('change', (e) => applyLighting(Number(e.target.value)));
+const btnPrevLightEl = document.getElementById('btn-prev-lighting');
+if (btnPrevLightEl) btnPrevLightEl.addEventListener('click', () => applyLighting(currentLightingIdx - 1));
+const btnNextLightEl = document.getElementById('btn-next-lighting');
+if (btnNextLightEl) btnNextLightEl.addEventListener('click', () => applyLighting(currentLightingIdx + 1));
 document.getElementById('select-style').addEventListener('change', (e) => applyStyle(Number(e.target.value)));
 document.getElementById('select-lod').addEventListener('change', (e) => setActiveLODOrMode(e.target.value));
 document.getElementById('btn-next-style').addEventListener('click', () => applyStyle(currentStyleIdx + 1));
@@ -3086,8 +3376,8 @@ function pollXRControllers(dt, camFwd) {
   prevThumbsUpState = anyGripThumbsUp;
   vrThumbsUpActive = anyGripThumbsUp;
 
-  // B Button -> Cycle 10 Shader/Rendering Styles; A Button Tap (<0.75s) -> Cycle LOD Tier & 4-Pedestal Lineups, Hold (>=0.75s) -> Voice Request!
-  if (anyBtnB && !prevBtnB) { applyStyle(currentStyleIdx + 1); pulseHaptics(activeInputSrc, 0.55, 60); }
+  // B Button -> Next Environmental Lighting (Peaceful -> Terrifying); A Button Tap (<0.75s) -> Prev Lighting, Hold (>=0.75s) -> Voice Request!
+  if (anyBtnB && !prevBtnB) { applyLighting(currentLightingIdx + 1); pulseHaptics(activeInputSrc, 0.55, 60); }
   if (anyBtnA) {
     btnAHoldSec += dt;
     if (btnAHoldSec >= 0.75 && !btnAVoiceTriggered) {
@@ -3096,7 +3386,7 @@ function pollXRControllers(dt, camFwd) {
     }
   } else {
     if (prevBtnA && !btnAVoiceTriggered) {
-      cycleLODMode();
+      applyLighting(currentLightingIdx - 1);
       pulseHaptics(activeInputSrc, 0.55, 60);
     }
     btnAHoldSec = 0.0;
@@ -3575,8 +3865,9 @@ function updateBiomechanicalAnimations(dt, t) {
   });
 }
 
-// Initialize at LOD 2 (High-Poly Sculpted Organic) + Style 1 (Textured Organic PBR) & Auto-Load Pre-Rigged .GLBs
-rebuildFullValleyScene(2);
+// Initialize Locked at LOD 1 (Sculpted Mid-Poly) + Style 3/10 (Cel-Shaded Anime / Ghibli) + 16 Environmental Lighting Presets
+rebuildFullValleyScene(LOCKED_LOD_IDX);
+applyLighting(0);
 preloadAllStudioGLBAssets();
 const clock = new THREE.Clock();
 
@@ -3585,6 +3876,7 @@ renderer.setAnimationLoop(() => {
   const t = clock.elapsedTime;
 
   updateBiomechanicalAnimations(dt, t);
+  updateEnvironmentalLightingEffects(dt, t);
   activeTrunkPivots.forEach((piv) => {
     piv.rotation.z = Math.sin(t * 1.4) * 0.14;
     piv.rotation.x = Math.cos(t * 0.9) * 0.08;
@@ -3654,7 +3946,8 @@ renderer.setAnimationLoop(() => {
   }
   const telemetry = document.getElementById('telemetry-readout');
   if (telemetry) {
-    telemetry.innerHTML = `Pos: (${xrOrigin.position.x.toFixed(1)}, ${(xrOrigin.position.y + eyeHeight).toFixed(1)}, ${xrOrigin.position.z.toFixed(1)}) | ${LOD_TIERS[currentLodIdx].short} (${activeSceneTriangles.toLocaleString()} tris) | [B] Style [L/A] LOD`;
+    const activeLight = ENV_LIGHTING_PRESETS[currentLightingIdx] || ENV_LIGHTING_PRESETS[0];
+    telemetry.innerHTML = `Pos: (${xrOrigin.position.x.toFixed(1)}, ${(xrOrigin.position.y + eyeHeight).toFixed(1)}, ${xrOrigin.position.z.toFixed(1)}) | ${LOD_TIERS[currentLodIdx].short} 🔒 | Cel-Shaded Anime 🔒 | ${activeLight.name} [B/N]`;
   }
 
   renderer.render(scene, camera);
