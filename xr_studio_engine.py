@@ -188,6 +188,7 @@ class WalkaboutStudioController:
         text = js_path.read_text(encoding="utf-8")
         required_features = [
             "buildLoftedAnatomicalBody",
+            "buildTaperedCurveGeometry",
             "buildArticulatedQuadrupedLimb",
             "instantiatePreRiggedGLBIfCached",
             "updateBiomechanicalAnimations",
@@ -197,12 +198,16 @@ class WalkaboutStudioController:
             "cervid_trot",
             "predator_prowl",
             "avian_soar",
+            "indices.push(a, d, b)",
+            "prevRight",
         ]
         found = [f for f in required_features if f in text]
+        has_inverted_winding = "indices.push(a, b, d)" in text
         return {
-            "status": "VALID" if len(found) == len(required_features) else "PARTIAL",
+            "status": "VALID" if (len(found) == len(required_features) and not has_inverted_winding) else "PARTIAL",
             "features_found": len(found),
             "required_count": len(required_features),
+            "outward_ccw_winding": not has_inverted_winding,
         }
 
     @classmethod

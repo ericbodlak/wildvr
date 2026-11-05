@@ -54,6 +54,7 @@ class TestWalkaboutStudioController(unittest.TestCase):
         skeletal = WalkaboutStudioController.verify_skeletal_loft_and_glb_morph(studio_dir)
         self.assertEqual(skeletal["status"], "VALID")
         self.assertEqual(skeletal["features_found"], skeletal["required_count"])
+        self.assertTrue(skeletal["outward_ccw_winding"])
 
 
 
