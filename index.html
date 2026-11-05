@@ -205,7 +205,7 @@
           <option value="woolly_mammoth">Fauna: Woolly Mammoth (3.8m)</option>
           <option value="megaloceros">Fauna: Giant Irish Elk / Megaloceros (3.1m)</option>
           <option value="smilodon">Fauna: Saber-Toothed Cat / Smilodon (1.2m)</option>
-          <option value="teratorn_vulture">Fauna: Teratorn Giant Vulture (3.5m span)</option>
+          <option value="teratorn_vulture">Fauna: Haast&#39;s Eagle / Hieraaetus (3.0m span)</option>
           <option value="giant_sequoia">Flora: Prehistoric Giant Sequoia (11.5m)</option>
           <option value="araucaria_conifer">Flora: Monkey-Puzzle Conifer (7.2m)</option>
           <option value="waterfall_cliff">Terrain: Cascading Waterfall &amp; Cliff (5.6m)</option>
@@ -605,33 +605,57 @@ function applyStyleToGLBMaterialRecord(rec, s) {
   const m = rec.mat;
   m.flatShading = s.pipeline === 'wireframe_inspector' ? false : true;
   m.wireframe = Boolean(s.wireframe);
-  m.vertexColors = Boolean(rec.hasVertexColors && s.pipeline !== 'clay_sculpt');
+  m.vertexColors = false;
   m.normalMap = null;
+
+  const baseHex = s[rec.matKey] || '#6f4518';
+  const tuskHex = s.tusk || '#f8f5e6';
+  if (rec.role === 'dark') {
+    m.color.set(s.pipeline === 'clay_sculpt' ? baseHex : '#161210');
+  } else if (rec.role === 'ivory') {
+    m.color.set(tuskHex);
+  } else if (rec.role === 'secondary') {
+    m.color.set(baseHex).lerp(new THREE.Color(tuskHex), rec.lerpAmt || 0.36);
+  } else if (rec.role === 'cape') {
+    m.color.set(baseHex).multiplyScalar(s.pipeline === 'clay_sculpt' ? 0.85 : 0.42);
+  } else {
+    m.color.set(baseHex);
+  }
+
   if (s.pipeline === 'clay_sculpt') {
     m.map = PROC_TEXTURES.clayRake;
     m.bumpMap = PROC_TEXTURES.clayRake;
     m.bumpScale = s.bumpScale;
-    m.color.set(s[rec.matKey] || '#c88d74');
     m.roughness = s.roughness;
     m.metalness = s.metalness;
+  } else if (s.pipeline === 'ink_hatch') {
+    m.map = PROC_TEXTURES.crossHatchInk;
+    m.bumpMap = PROC_TEXTURES.crossHatchInk;
+    m.bumpScale = s.bumpScale;
+    m.roughness = 0.90;
+    m.metalness = 0.0;
+  } else if (s.pipeline === 'voxel_craft') {
+    m.map = PROC_TEXTURES.voxelPixel;
+    m.bumpMap = PROC_TEXTURES.voxelPixel;
+    m.bumpScale = s.bumpScale;
+    m.roughness = 0.88;
+    m.metalness = 0.0;
   } else if (s.pipeline === 'papercraft') {
     m.map = null;
     m.bumpMap = PROC_TEXTURES.paperGrain;
     m.bumpScale = s.bumpScale * 0.5;
-    m.color.copy(rec.baseColor);
     m.roughness = 0.88;
     m.metalness = 0.0;
   } else {
     m.map = null;
     m.bumpMap = null;
     m.bumpScale = 0.0;
-    m.color.copy(rec.baseColor);
-    m.roughness = s.pipeline === 'wet_realism'
-      ? 0.38
-      : (s.pipeline === 'golden_velvet' ? 0.48 : 0.72);
+    m.roughness = rec.role === 'ivory'
+      ? 0.32
+      : (s.pipeline === 'wet_realism' ? 0.38 : (s.pipeline === 'golden_velvet' ? 0.48 : 0.68));
     m.metalness = s.pipeline === 'wet_realism' ? 0.08 : 0.02;
   }
-  if (s.emissiveStrength > 0) {
+  if (s.emissiveStrength > 0 && rec.role !== 'dark') {
     m.emissive.set(s.emissiveFauna || '#000000');
     m.emissiveIntensity = s.emissiveStrength * 0.45;
   } else {
@@ -1169,13 +1193,27 @@ function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
   }
 
   const oldIdx = baseGeom.index.array;
+  const srcGroups = (baseGeom.groups && baseGeom.groups.length > 0)
+    ? baseGeom.groups
+    : [{ start: 0, count: oldIdx.length, materialIndex: 0 }];
   const newIndices = [];
-  for (let t = 0; t < oldIdx.length; t += 3) {
-    const a = remap[oldIdx[t]];
-    const b = remap[oldIdx[t + 1]];
-    const c = remap[oldIdx[t + 2]];
-    if (a !== b && b !== c && a !== c) {
-      newIndices.push(a, b, c);
+  const newGroups = [];
+
+  for (let g = 0; g < srcGroups.length; g++) {
+    const grp = srcGroups[g];
+    const gStart = newIndices.length;
+    const end = Math.min(oldIdx.length, grp.start + grp.count);
+    for (let t = grp.start; t < end; t += 3) {
+      const a = remap[oldIdx[t]];
+      const b = remap[oldIdx[t + 1]];
+      const c = remap[oldIdx[t + 2]];
+      if (a !== b && b !== c && a !== c) {
+        newIndices.push(a, b, c);
+      }
+    }
+    const gCount = newIndices.length - gStart;
+    if (gCount > 0) {
+      newGroups.push({ start: gStart, count: gCount, materialIndex: grp.materialIndex || 0 });
     }
   }
   if (newIndices.length < 12) return baseGeom;
@@ -1189,9 +1227,19 @@ function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
     }
   }
   lodGeom.setIndex(newIndices);
+  lodGeom.clearGroups();
+  newGroups.forEach((ng) => lodGeom.addGroup(ng.start, ng.count, ng.materialIndex));
   lodGeom.computeVertexNormals();
   baseGeom.userData.lodGeomCache[clampedLod] = lodGeom;
   return lodGeom;
+}
+
+function makeSimpleShadedRoleMaterial(role, matKey, lerpAmt, activeStyle, customMats) {
+  const m = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.68, metalness: 0.02 });
+  const rec = { mat: m, role, matKey: matKey || 'mammothFur', lerpAmt: lerpAmt || 0.36 };
+  applyStyleToGLBMaterialRecord(rec, activeStyle);
+  if (!customMats) activeGLBMaterials.push(rec);
+  return m;
 }
 
 /**
@@ -1206,6 +1254,7 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
   const mRock = (customMats && customMats.rock) || materials.rock;
   const mTrunk = (customMats && customMats.trunk) || materials.trunk;
   const mFol1 = (customMats && customMats.foliage1) || materials.foliage1;
+  const activeStyle = (customMats && customMats._styleObj) || STYLES[currentStyleIdx];
 
   let headBone = null;
   cloned.traverse((node) => {
@@ -1222,34 +1271,21 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
       if (entry.preserveMaterials && node.geometry) {
         node.geometry = getOrBuildVariablePolyGeometry(node.geometry, lodIdx);
       }
-      if (entry.preserveMaterials && node.material) {
-        const srcMat = Array.isArray(node.material) ? node.material[0] : node.material;
-        const clonedMat = srcMat.clone();
-        const hasVC = Boolean(node.geometry && node.geometry.attributes && node.geometry.attributes.color);
-        if (hasVC) {
-          clonedMat.color.setHex(0xffffff);
-          clonedMat.vertexColors = true;
-        } else if (assetId === 'megaloceros') {
-          if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
-            clonedMat.color.setHex(0xd8ccb8);
-          } else if (/material\.011|eye/i.test(matName)) {
-            clonedMat.color.setHex(0x0b0f19);
-          }
-        }
-        clonedMat.map = null;
-        clonedMat.normalMap = null;
-        clonedMat.flatShading = true;
-        clonedMat.roughness = 0.72;
-        clonedMat.metalness = 0.02;
-        const rec = {
-          mat: clonedMat,
-          baseColor: clonedMat.color ? clonedMat.color.clone() : new THREE.Color(0xffffff),
-          hasVertexColors: hasVC,
-          matKey: entry.matKey || 'mammothFur'
-        };
-        applyStyleToGLBMaterialRecord(rec, (customMats && customMats._styleObj) || STYLES[currentStyleIdx]);
-        if (!customMats) activeGLBMaterials.push(rec);
-        node.material = clonedMat;
+      if (entry.preserveMaterials && node.geometry && node.geometry.groups && node.geometry.groups.length === 4) {
+        const lerpAmt = assetId === 'smilodon' ? 0.52 : 0.28;
+        node.material = [
+          makeSimpleShadedRoleMaterial('dark', entry.matKey, lerpAmt, activeStyle, customMats),
+          makeSimpleShadedRoleMaterial('primary', entry.matKey, lerpAmt, activeStyle, customMats),
+          makeSimpleShadedRoleMaterial('secondary', entry.matKey, lerpAmt, activeStyle, customMats),
+          makeSimpleShadedRoleMaterial('ivory', entry.matKey, lerpAmt, activeStyle, customMats)
+        ];
+      } else if (entry.preserveMaterials && node.material) {
+        let role = 'primary';
+        if (/stag_horns/i.test(nodeName) || /horn|antler|material\.009/i.test(matName)) role = 'ivory';
+        else if (/material\.011|material\.010|eye|hoof|hooves/i.test(matName)) role = 'dark';
+        else if (/material\.007/i.test(matName)) role = 'secondary';
+        else if (/material\.008/i.test(matName)) role = 'cape';
+        node.material = makeSimpleShadedRoleMaterial(role, entry.matKey, 0.38, activeStyle, customMats);
       } else if (/eye_black|eyes_black|material\.011/i.test(matName)) {
         node.material = materials.eyeGloss;
       } else if (/eye_white/i.test(matName)) {
@@ -1807,110 +1843,129 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
 }
 
 // ============================================================================
-// 6. MULTI-LOD TERATORN, MEGAFLORA, CLIFF WATERFALL & FULL VALLEY COMPILER
+// 6. MULTI-LOD HAAST'S EAGLE, MEGAFLORA, CLIFF WATERFALL & FULL VALLEY COMPILER
 // ============================================================================
 function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   const cfg = LOD_TIERS[Math.max(0, Math.min(3, lodIdx))];
-  const mFeather = (customMats && customMats.cliff) || materials.cliff;
-  const mBeak = (customMats && customMats.tusk) || materials.tusk;
+  const mMantle = (customMats && customMats.trunk) || materials.trunk;
+  const mPinion = (customMats && customMats.cliff) || materials.cliff;
+  const mBuff = (customMats && customMats.tusk) || materials.tusk;
+  const mOchre = (customMats && customMats.smilodonCoat) || materials.smilodonCoat;
   const group = new THREE.Group();
-
-  const glbClone = instantiatePreRiggedGLBIfCached('teratorn_vulture', lodIdx, customMats);
-  if (glbClone) {
-    group.add(glbClone);
-    tagAsset(group, 'teratorn_vulture', `Teratorn Giant Vulture (${cfg.short})`);
-    return group;
-  }
 
   const segR = cfg.id === 0 ? 7 : Math.max(9, Math.round(11 * cfg.segMul));
   const segL = cfg.id === 0 ? 8 : Math.max(10, Math.round(14 * cfg.segMul));
-  const disp = 0.012 * cfg.displace;
+  const disp = 0.010 * cfg.displace;
 
-  // Continuous Lofted Avian Fuselage -> Neck Ruff -> Raptorial Cranium
+  // 1. Haast's Eagle (Hieraaetus moorei) Muscular Torso & Dorsal Mantle
   const bodySlices = [
-    [0, 0.02, -0.58, 0.14, 0.11, 0.01, 0.05],
-    [0, 0.0, -0.12, 0.30, 0.25, 0.04, 0.10],
-    [0, 0.02, 0.34, 0.27, 0.22, 0.03, 0.08],
-    [0, 0.08, 0.64, 0.16, 0.15, 0.02, 0.04],
-    [0, 0.07, 0.82, 0.10, 0.10, 0.0, 0.04]
+    [0, 0.03, -0.54, 0.15, 0.12, 0.02, 0.04],
+    [0, 0.02, -0.10, 0.31, 0.24, 0.06, 0.08],
+    [0, 0.04, 0.32, 0.28, 0.22, 0.05, 0.06],
+    [0, 0.10, 0.62, 0.18, 0.16, 0.03, 0.04],
+    [0, 0.09, 0.80, 0.11, 0.11, 0.01, 0.03]
   ];
   const bodyGeom = buildLoftedAnatomicalBody(bodySlices, segR, segL, disp, 4.4, { capStart: true, capEnd: true });
-  addMeshWithOutline(bodyGeom, mFeather, group);
+  addMeshWithOutline(bodyGeom, mMantle, group);
 
-  // Hooked Raptorial Beak
-  const beakG = buildTaperedCurveGeometry(
-    [
-      [0, 0.06, 0.80],
-      [0, 0.05, 0.98],
-      [0, -0.02, 1.12]
-    ],
-    0.068,
-    0.008,
-    8,
-    9,
-    0.72,
-    0.0,
-    5.2
+  // 2. Countershaded Pale Buff Breast, Throat & Eagle Crown Crest
+  const breastSlices = [
+    [0, -0.06, -0.26, 0.22, 0.14, 0.0, 0.04],
+    [0, -0.07, 0.16, 0.25, 0.16, 0.0, 0.06],
+    [0, -0.01, 0.50, 0.17, 0.12, 0.0, 0.04]
+  ];
+  const breastG = buildLoftedAnatomicalBody(breastSlices, Math.max(6, segR - 2), 6, disp * 0.4, 5.8, { capStart: true, capEnd: true });
+  addMeshWithOutline(breastG, mBuff, group);
+
+  const crestG = buildTaperedCurveGeometry(
+    [[0, 0.16, 0.72], [0, 0.22, 0.56], [0, 0.20, 0.42]],
+    0.095, 0.024, 6, 5, 0.65, 0.0, 6.1
   );
-  addMeshWithOutline(beakG, mBeak, group);
+  addMeshWithOutline(crestG, mMantle, group);
 
+  // 3. Golden-Ochre Cere, Massive Hooked Eagle Beak & Fierce Eyes
+  const cere = addMeshWithOutline(new THREE.SphereGeometry(0.068, 7, 6), mOchre, group);
+  cere.scale.set(0.95, 0.82, 1.15);
+  cere.position.set(0, 0.08, 0.80);
+
+  const beakG = buildTaperedCurveGeometry(
+    [[0, 0.08, 0.82], [0, 0.06, 0.99], [0, -0.04, 1.10]],
+    0.066, 0.007, 8, 8, 0.68, 0.0, 5.2
+  );
+  addMeshWithOutline(beakG, mPinion, group);
+
+  [-1, 1].forEach((side) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.024, 7, 7), materials.eyeGloss);
+    eye.position.set(side * 0.088, 0.11, 0.74);
+    group.add(eye);
+
+    // Tucked Feathered Tarsus & Golden-Ochre Raptorial Talons
+    const talonG = buildTaperedCurveGeometry(
+      [[side * 0.13, -0.16, -0.18], [side * 0.14, -0.26, -0.32], [side * 0.13, -0.22, -0.42]],
+      0.045, 0.014, 6, 5, 0.85, 0.0, side + 8.3
+    );
+    addMeshWithOutline(talonG, mOchre, group);
+  });
+
+  // 4. Broad, Cambered Forest-Eagle Wings (3.0m Span) with Distinct Coverts & Slotted Primaries
   const wingRigs = [];
   [-1, 1].forEach((side) => {
     const innerPivot = new THREE.Group();
-    innerPivot.position.set(side * 0.20, 0.04, 0.06);
+    innerPivot.position.set(side * 0.21, 0.05, 0.08);
     group.add(innerPivot);
 
     const innerSlices = [
-      [0, 0, 0.02, 0.28, 0.056, 0.01, 0.0],
-      [side * 0.48, 0.02, 0.0, 0.25, 0.048, 0.01, 0.0],
-      [side * 0.94, 0.04, -0.03, 0.21, 0.038, 0.0, 0.0]
+      [0, 0, 0.03, 0.32, 0.058, 0.01, 0.0],
+      [side * 0.44, 0.02, 0.01, 0.30, 0.048, 0.01, 0.0],
+      [side * 0.86, 0.03, -0.02, 0.25, 0.038, 0.0, 0.0]
     ];
-    const innerG = buildLoftedAnatomicalBody(innerSlices, Math.max(7, segR), 7, disp * 0.4, side + 5.1, { capStart: false, capEnd: false });
-    addMeshWithOutline(innerG, mFeather, innerPivot);
+    const innerG = buildLoftedAnatomicalBody(innerSlices, Math.max(7, segR), 7, disp * 0.35, side + 5.1, { capStart: false, capEnd: false });
+    addMeshWithOutline(innerG, mMantle, innerPivot);
 
     const outerPivot = new THREE.Group();
-    outerPivot.position.set(side * 0.92, 0.04, -0.03);
+    outerPivot.position.set(side * 0.84, 0.03, -0.02);
     innerPivot.add(outerPivot);
 
     const outerSlices = [
-      [0, 0, 0.0, 0.21, 0.038, 0.0, 0.0],
-      [side * 0.45, 0.02, -0.05, 0.16, 0.028, 0.0, 0.0],
-      [side * 0.88, 0.03, -0.10, 0.09, 0.018, 0.0, 0.0]
+      [0, 0, 0.0, 0.24, 0.036, 0.0, 0.0],
+      [side * 0.36, 0.02, -0.04, 0.18, 0.026, 0.0, 0.0],
+      [side * 0.68, 0.03, -0.08, 0.10, 0.016, 0.0, 0.0]
     ];
-    const outerG = buildLoftedAnatomicalBody(outerSlices, Math.max(7, segR), 7, disp * 0.35, side + 7.2, { capStart: false, capEnd: true });
-    addMeshWithOutline(outerG, mFeather, outerPivot);
+    const outerG = buildLoftedAnatomicalBody(outerSlices, Math.max(7, segR), 7, disp * 0.3, side + 7.2, { capStart: false, capEnd: true });
+    addMeshWithOutline(outerG, mPinion, outerPivot);
 
     const primaries = cfg.id === 0 ? 4 : Math.max(5, Math.round(6 * cfg.segMul));
     for (let p = 0; p < primaries; p++) {
       const pf = p / Math.max(1, primaries - 1);
       const featherG = buildTaperedCurveGeometry(
         [
-          [side * (0.42 + pf * 0.42), 0.02, -0.04 - pf * 0.06],
-          [side * (0.68 + pf * 0.46), 0.02, -0.16 - pf * 0.10],
-          [side * (0.90 + pf * 0.50), 0.01, -0.30 - pf * 0.14]
+          [side * (0.28 + pf * 0.36), 0.01, -0.03 - pf * 0.05],
+          [side * (0.50 + pf * 0.38), 0.02, -0.14 - pf * 0.09],
+          [side * (0.68 + pf * 0.40), 0.03, -0.26 - pf * 0.12]
         ],
-        0.052,
-        0.008,
-        6,
-        6,
-        0.26,
-        0.0,
-        p + 14
+        0.054, 0.009, 6, 6, 0.24, 0.0, p + 14
       );
-      addMeshWithOutline(featherG, mFeather, outerPivot);
+      addMeshWithOutline(featherG, p % 2 === 0 ? mPinion : mBuff, outerPivot);
     }
     wingRigs.push({ side, innerPivot, outerPivot });
   });
 
+  // 5. Rounded Wedge-Shaped Eagle Tail Fan with Pale Subterminal Band
   const tailPivot = new THREE.Group();
-  tailPivot.position.set(0, 0.02, -0.52);
+  tailPivot.position.set(0, 0.03, -0.50);
   const tailSlices = [
-    [0, 0.0, 0.0, 0.14, 0.03, 0.0, 0.0],
-    [0, -0.01, -0.26, 0.28, 0.024, 0.0, 0.0],
-    [0, -0.02, -0.52, 0.38, 0.018, 0.0, 0.0]
+    [0, 0.0, 0.0, 0.16, 0.032, 0.0, 0.0],
+    [0, -0.01, -0.28, 0.32, 0.024, 0.0, 0.0],
+    [0, -0.02, -0.58, 0.42, 0.016, 0.0, 0.0]
   ];
   const tailFanG = buildLoftedAnatomicalBody(tailSlices, Math.max(7, segR), 7, disp * 0.25, 9.4, { capStart: false, capEnd: true });
-  addMeshWithOutline(tailFanG, mFeather, tailPivot);
+  addMeshWithOutline(tailFanG, mPinion, tailPivot);
+
+  const tailBandG = buildLoftedAnatomicalBody(
+    [[0, 0.008, -0.18, 0.24, 0.026, 0.0, 0.0], [0, 0.002, -0.42, 0.36, 0.020, 0.0, 0.0]],
+    Math.max(6, segR - 2), 4, 0.0, 9.8, { capStart: false, capEnd: false }
+  );
+  addMeshWithOutline(tailBandG, mBuff, tailPivot);
   group.add(tailPivot);
 
   activeAnimatedCreatures.push({
@@ -1918,11 +1973,11 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
     group,
     wingRigs,
     tailPivot,
-    speed: 2.6,
-    seed: Math.random() * 6.28
+    speed: 2.35,
+    seed: (activeAnimatedCreatures.length * 2.09) % 6.28
   });
 
-  tagAsset(group, 'teratorn_vulture', `Teratorn Giant Vulture (${cfg.short})`);
+  tagAsset(group, 'teratorn_vulture', `Haast's Eagle (${cfg.short})`);
   return group;
 }
 
@@ -2331,7 +2386,7 @@ const ASSET_META = {
   woolly_mammoth: { label: 'Woolly Mammoth (3.8m)', scale: 1.0, offset: [0, 0, 0], placardY: 4.35 },
   megaloceros: { label: 'Giant Irish Elk (3.1m)', scale: 1.0, offset: [0, 0, 0], placardY: 4.15 },
   smilodon: { label: 'Saber-Toothed Cat (1.2m)', scale: 1.0, offset: [0, 0, 0], placardY: 2.35 },
-  teratorn_vulture: { label: 'Teratorn Giant Vulture (3.5m)', scale: 1.0, offset: [0, 1.6, 0], placardY: 3.1 },
+  teratorn_vulture: { label: "Haast's Eagle (3.0m)", scale: 1.0, offset: [0, 1.6, 0], placardY: 3.1 },
   giant_sequoia: { label: 'Prehistoric Giant Sequoia (11.5m)', scale: 0.72, offset: [0, 0, 0], placardY: 4.8 },
   araucaria_conifer: { label: 'Monkey-Puzzle Conifer (7.2m)', scale: 0.82, offset: [0, 0, 0], placardY: 4.4 },
   waterfall_cliff: { label: 'Cascading Waterfall & Cliff', scale: 0.36, offset: [5.4, 0, 3.2], placardY: 3.6 }
@@ -2737,8 +2792,9 @@ function updateParabolicTeleport(customOrigin = null, customDir = null) {
     origin.addScaledVector(dir, 0.35);
   }
 
-  const vel = dir.clone().multiplyScalar(TELEPORT_SPEED);
-  const totalT = 1.75;
+  const launchSpeed = isDollhouse ? TELEPORT_SPEED * 2.85 : TELEPORT_SPEED;
+  const vel = dir.clone().multiplyScalar(launchSpeed);
+  const totalT = isDollhouse ? 3.2 : 1.75;
   const pts = [];
   let hitPoint = null;
 
@@ -2774,6 +2830,14 @@ function updateParabolicTeleport(customOrigin = null, customDir = null) {
 
 function executeTeleport() {
   if (validTeleportTarget) {
+    if (isDollhouse) {
+      isDollhouse = false;
+      xrOrigin.scale.set(1, 1, 1);
+      const dhBtn = document.getElementById('btn-dollhouse');
+      if (dhBtn) dhBtn.classList.remove('active');
+      const assetBadge = document.getElementById('asset-badge');
+      if (assetBadge) assetBadge.textContent = 'Scene: Full Prehistoric Valley (1:1)';
+    }
     xrOrigin.position.set(validTeleportTarget.x, validTeleportTarget.y, validTeleportTarget.z);
   }
   arcLine.visible = false;
@@ -3072,65 +3136,71 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/WoollyMammoth.glb',
+    url: './assets/models/WoollyMammoth.glb?v=4',
     matKey: 'mammothFur',
     rootScale: 1.48,
     preserveMaterials: true,
     preferredClip: /Mammoth_Idle/i,
     secondaryClip: /Mammoth_Look_Side/i,
     timeScale: 0.85,
-    boneScales: {}
+    boneScales: {
+      'Mammoth Head_07': [0.80, 0.82, 0.82],
+      'Mammoth Hair Top_017': [0.42, 0.42, 0.42],
+      'Mammoth L Hair_026': [0.50, 0.50, 0.50],
+      'Mammoth R Hair_027': [0.50, 0.50, 0.50],
+      'Mammoth Hair Back_028': [0.55, 0.55, 0.55],
+      'Mammoth L Eyebrow_024': [0.55, 0.55, 0.55],
+      'Mammoth R Eyebrow_025': [0.55, 0.55, 0.55]
+    }
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/Stag.glb',
+    url: './assets/models/Stag.glb?v=4',
     matKey: 'elkCoat',
     rootScale: 0.80,
     preserveMaterials: true,
     preferredClip: /Idle_2/i,
     secondaryClip: /Idle_Headlow/i,
     timeScale: 0.85,
-    boneScales: { Neck1: [1.06, 1.10, 1.05] }
+    boneScales: {
+      Stag_Horns: [1.32, 1.18, 1.24],
+      Neck1: [1.14, 1.22, 1.14],
+      Torso3: [1.10, 1.16, 1.12]
+    }
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/Smilodon.glb',
+    url: './assets/models/Smilodon.glb?v=4',
     matKey: 'smilodonCoat',
     rootScale: 1.05,
     preserveMaterials: true,
     preferredClip: /Sabertooth_Idle/i,
     secondaryClip: /Sabertooth_Look_Side/i,
     timeScale: 0.88,
-    boneScales: {}
-  },
-  {
-    assetId: 'teratorn_vulture',
-    url: './assets/models/Pterodactyl.glb',
-    matKey: 'cliff',
-    rootScale: 1.0,
-    preserveMaterials: true,
-    preferredClip: /^Flap$/i,
-    secondaryClip: /^Glide$/i,
-    timeScale: 0.78,
-    boneScales: {}
+    boneScales: {
+      'Sabertooth Head_07': [0.84, 0.86, 0.86],
+      'Sabertooth zL Cheek_022': [0.64, 0.70, 0.70],
+      'Sabertooth zR Cheek_023': [0.64, 0.70, 0.70],
+      'Sabertooth Tail 1_046': [0.52, 0.72, 0.72]
+    }
   },
   {
     assetId: 'giant_sequoia',
-    url: './assets/models/PineTree_1.glb',
+    url: './assets/models/PineTree_1.glb?v=4',
     matKey: 'foliage1',
     rootScale: 1.0,
     boneScales: {}
   },
   {
     assetId: 'araucaria_conifer',
-    url: './assets/models/CommonTree_1.glb',
+    url: './assets/models/CommonTree_1.glb?v=4',
     matKey: 'foliage1',
     rootScale: 1.0,
     boneScales: {}
   }
 ];
 
-function bakeSimpleShadedVertexColorsFromLUT(gltfScene, gltf) {
+function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
   const extras = (gltf && gltf.parser && gltf.parser.json && gltf.parser.json.extras) || (gltf && gltf.userData) || {};
   const shadedSpec = extras.wildvr_simple_shaded;
   const matSpecs = (shadedSpec && shadedSpec.materials) || [];
@@ -3143,60 +3213,99 @@ function bakeSimpleShadedVertexColorsFromLUT(gltfScene, gltf) {
     const geom = node.geometry;
     if (!geom || !geom.attributes.position) return;
 
+    const posAttr = geom.attributes.position;
     const uvAttr = geom.attributes.uv;
     const mSpec = matSpecs[Math.min(primCounter, matSpecs.length - 1)] || matSpecs[0];
     primCounter += 1;
 
-    if (uvAttr && mSpec && mSpec.lut_grid && mSpec.palette_rgb) {
-      const gridSz = mSpec.grid_size || 64;
-      const lut = mSpec.lut_grid;
-      const pal = mSpec.palette_rgb;
-      const vCount = geom.attributes.position.count;
-      const vLabels = new Uint8Array(vCount);
-      for (let i = 0; i < vCount; i++) {
-        let u = uvAttr.getX(i) % 1.0;
-        let v = uvAttr.getY(i) % 1.0;
-        if (u < 0) u += 1.0;
-        if (v < 0) v += 1.0;
-        const gx = Math.min(gridSz - 1, Math.floor(u * gridSz));
-        const gy = Math.min(gridSz - 1, Math.floor(v * gridSz));
-        vLabels[i] = lut[gy * gridSz + gx] || 0;
-      }
+    if ((assetId === 'woolly_mammoth' || assetId === 'smilodon') && geom.index) {
+      const gridSz = (mSpec && mSpec.grid_size) || 64;
+      const lut = (mSpec && mSpec.lut_grid) || null;
+      const vCount = posAttr.count;
+      const vZones = new Uint8Array(vCount);
 
-      if (geom.index) {
-        const idxArr = geom.index.array;
-        const maxLbl = pal.length - 1;
-        for (let pass = 0; pass < 2; pass++) {
-          for (let t = 0; t < idxArr.length; t += 3) {
-            const a = idxArr[t], b = idxArr[t + 1], c = idxArr[t + 2];
-            const la = vLabels[a], lb = vLabels[b], lc = vLabels[c];
-            if (la === maxLbl || lb === maxLbl || lc === maxLbl) continue;
-            if (la === lb && la !== lc) vLabels[c] = la;
-            else if (la === lc && la !== lb) vLabels[b] = la;
-            else if (lb === lc && lb !== la) vLabels[a] = lb;
+      for (let i = 0; i < vCount; i++) {
+        let px = posAttr.getX(i);
+        let py = posAttr.getY(i);
+        let pz = posAttr.getZ(i);
+        let uvZone = 1;
+        if (uvAttr && lut) {
+          let u = uvAttr.getX(i) % 1.0;
+          let v = uvAttr.getY(i) % 1.0;
+          if (u < 0) u += 1.0;
+          if (v < 0) v += 1.0;
+          const gx = Math.min(gridSz - 1, Math.floor(u * gridSz));
+          const gy = Math.min(gridSz - 1, Math.floor(v * gridSz));
+          uvZone = lut[gy * gridSz + gx] ?? 1;
+        }
+
+        let zone = 1;
+        if (assetId === 'woolly_mammoth') {
+          const isTusk = py < -88 && pz > 42 && pz < 188 && (uvZone === 3 || Math.abs(px) > 13.5);
+          const isDark = !isTusk && (uvZone === 0 || pz < 7.5);
+          const isSecondary = !isTusk && !isDark && (uvZone === 2 || (pz > 38 && pz < 92 && py > -62));
+          zone = isTusk ? 3 : (isDark ? 0 : (isSecondary ? 2 : 1));
+
+          // Fix cartoony proportions: streamline wide cartoon head/cheeks & hair tuft, lengthen/broaden torso & hump
+          if (py < -22 && pz > 82 && zone !== 3) px *= 0.72;
+          if (pz > 216) pz = 216 + (pz - 216) * 0.36;
+          if (py > -18) py = -18 + (py + 18) * 1.48;
+          if (py > -15 && pz > 55 && pz < 205) px *= 1.26;
+          if (pz > 150 && py > -36 && py < 22) {
+            pz += 22.0 * Math.exp(-((py + 6) * (py + 6)) / 320.0) * Math.min(1.0, (pz - 150) / 45.0);
+          } else if (pz > 145 && py >= 22) {
+            pz -= Math.min(14.0, (py - 22) * 0.18) * Math.min(1.0, (pz - 145) / 50.0);
+          }
+        } else {
+          const isSaber = py < -50 && pz > 45 && pz < 84 && (uvZone === 3 || (Math.abs(px) > 3.4 && Math.abs(px) < 11.5 && pz < 69));
+          const isDark = !isSaber && (uvZone === 0 || (py < -69 && pz > 68 && pz < 82 && Math.abs(px) < 5.5));
+          const isSecondary = !isSaber && !isDark && (uvZone === 2 || (pz < 46 && py > -58 && py < 56));
+          zone = isSaber ? 3 : (isDark ? 0 : (isSecondary ? 2 : 1));
+
+          // Fix cartoony proportions: narrow puffy cheeks, lengthen muscular torso, bob lynx tail
+          if (py < -38 && pz > 52 && zone !== 3) px *= 0.75;
+          if (py > -18 && py <= 68) py = -18 + (py + 18) * 1.25;
+          else if (py > 68) py = -18 + 86 * 1.25 + (py - 68) * 0.38;
+          if (py > -28 && py < 24 && pz > 42) {
+            px *= 1.18;
+            if (pz > 72) pz += 6.5 * Math.exp(-((py + 6) * (py + 6)) / 180.0);
           }
         }
+        vZones[i] = zone;
+        posAttr.setXYZ(i, px, py, pz);
+      }
+      posAttr.needsUpdate = true;
+
+      // Partition triangles into 4 clean simple-shaded material groups (0: Dark, 1: Primary, 2: Secondary, 3: Ivory)
+      const oldIdx = geom.index.array;
+      const buckets = [[], [], [], []];
+      for (let t = 0; t < oldIdx.length; t += 3) {
+        const a = oldIdx[t], b = oldIdx[t + 1], c = oldIdx[t + 2];
+        const za = vZones[a], zb = vZones[b], zc = vZones[c];
+        let triZone = za;
+        if (za === 3 || zb === 3 || zc === 3) triZone = 3;
+        else if (za === 0 && zb === 0 && zc === 0) triZone = 0;
+        else if ((za === 2 && zb === 2) || (za === 2 && zc === 2) || (zb === 2 && zc === 2)) triZone = 2;
+        else triZone = 1;
+        buckets[triZone].push(a, b, c);
       }
 
-      const linearPal = pal.map((rgb) => {
-        const c = new THREE.Color();
-        c.setRGB(rgb[0], rgb[1], rgb[2], THREE.SRGBColorSpace);
-        return [c.r, c.g, c.b];
-      });
-      const colors = new Float32Array(vCount * 3);
-      for (let i = 0; i < vCount; i++) {
-        const rgb = linearPal[vLabels[i]] || linearPal[0] || [0.35, 0.20, 0.09];
-        colors[i * 3] = rgb[0];
-        colors[i * 3 + 1] = rgb[1];
-        colors[i * 3 + 2] = rgb[2];
+      const newIdx = [];
+      geom.clearGroups();
+      for (let g = 0; g < 4; g++) {
+        const start = newIdx.length;
+        const bArr = buckets[g];
+        for (let k = 0; k < bArr.length; k++) newIdx.push(bArr[k]);
+        geom.addGroup(start, bArr.length, g);
       }
-      geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geom.setIndex(newIdx);
+      geom.computeVertexNormals();
     }
   });
 }
 
-function tagLoadedGLBTemplate(gltfScene, gltf = null) {
-  bakeSimpleShadedVertexColorsFromLUT(gltfScene, gltf);
+function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '') {
+  reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId);
 }
 
 function preloadAllStudioGLBAssets() {
@@ -3204,7 +3313,7 @@ function preloadAllStudioGLBAssets() {
     gltfLoader.load(
       spec.url,
       (gltf) => {
-        tagLoadedGLBTemplate(gltf.scene, gltf);
+        tagLoadedGLBTemplate(gltf.scene, gltf, spec.assetId);
         glbHeroCache[spec.assetId] = {
           ...spec,
           scene: gltf.scene,
@@ -3257,11 +3366,16 @@ function updateBiomechanicalAnimations(dt, t) {
   activeAnimatedCreatures.forEach((c) => {
     if (c.kind === 'avian_soar') {
       const flapPhase = t * c.speed + c.seed;
+      const glideEnv = 0.48 + 0.52 * Math.max(0.15, Math.sin(t * 0.52 + c.seed));
       c.wingRigs.forEach((w) => {
-        w.innerPivot.rotation.z = w.side * (0.08 + Math.sin(flapPhase) * 0.34);
-        w.outerPivot.rotation.z = w.side * Math.sin(flapPhase - 0.65) * 0.42;
+        w.innerPivot.rotation.z = w.side * (0.06 + Math.sin(flapPhase) * 0.32 * glideEnv);
+        w.outerPivot.rotation.z = w.side * Math.sin(flapPhase - 0.68) * 0.38 * glideEnv;
       });
-      if (c.tailPivot) c.tailPivot.rotation.x = Math.cos(flapPhase) * 0.12;
+      if (c.group) c.group.rotation.z = Math.sin(t * 0.52 + c.seed) * 0.14;
+      if (c.tailPivot) {
+        c.tailPivot.rotation.x = Math.cos(flapPhase) * 0.08 * glideEnv;
+        c.tailPivot.rotation.z = Math.sin(t * 0.52 + c.seed) * 0.10;
+      }
       return;
     }
 
