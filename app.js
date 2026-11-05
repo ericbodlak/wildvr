@@ -1794,7 +1794,7 @@ function rebuildFullValleyScene(lodIdx = currentLodIdx) {
     const bird = buildTeratornAtLOD(currentLodIdx);
     const angle = (v * Math.PI * 2) / 3;
     bird.position.set(Math.cos(angle) * 11, 22 + v * 1.5, Math.sin(angle) * 11);
-    bird.rotation.y = -angle;
+    bird.rotation.y = -angle + Math.PI;
     vultureFlock.add(bird);
   }
 
@@ -2622,15 +2622,15 @@ function updateBiomechanicalAnimations(dt, t) {
       return;
     }
 
-    // 4-Limb 3-Joint Quadruped Gait (Hip/Shoulder Swing + Knee Lift Flexion + Fetlock/Ankle Strike)
+    // 4-Limb 3-Joint Quadruped Gait (In Three.js right-handed coords, negative rot.x swings -Y leg toward +Z forward)
     if (c.limbs) {
       c.limbs.forEach((limb) => {
         const p = t * c.speed + limb.phase + c.seed;
-        const swing = Math.sin(p);
+        const swing = -Math.sin(p);
         const lift = Math.max(0, Math.cos(p));
         limb.root.rotation.x = swing * c.strideAmp;
-        limb.knee.rotation.x = -lift * c.strideAmp * 1.65;
-        limb.ankle.rotation.x = lift * c.strideAmp * 0.95 - swing * 0.14;
+        limb.knee.rotation.x = lift * c.strideAmp * 1.25;
+        limb.ankle.rotation.x = -lift * c.strideAmp * 0.75 - swing * 0.14;
       });
     }
 
