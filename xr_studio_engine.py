@@ -191,6 +191,8 @@ class WalkaboutStudioController:
             "buildTaperedCurveGeometry",
             "buildArticulatedQuadrupedLimb",
             "instantiatePreRiggedGLBIfCached",
+            "getOrBuildVariablePolyGeometry",
+            "bakeSimpleShadedVertexColorsFromLUT",
             "updateBiomechanicalAnimations",
             "GLTFLoader",
             "DRACOLoader",

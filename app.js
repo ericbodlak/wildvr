@@ -366,8 +366,10 @@ const wireframeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: t
 function applyStyleToGLBMaterialRecord(rec, s) {
   if (!rec || !rec.mat || !s) return;
   const m = rec.mat;
-  m.flatShading = Boolean(s.flat || rec.forceFlat);
+  m.flatShading = s.pipeline === 'wireframe_inspector' ? false : true;
   m.wireframe = Boolean(s.wireframe);
+  m.vertexColors = Boolean(rec.hasVertexColors && s.pipeline !== 'clay_sculpt');
+  m.normalMap = null;
   if (s.pipeline === 'clay_sculpt') {
     m.map = PROC_TEXTURES.clayRake;
     m.bumpMap = PROC_TEXTURES.clayRake;
@@ -376,35 +378,25 @@ function applyStyleToGLBMaterialRecord(rec, s) {
     m.roughness = s.roughness;
     m.metalness = s.metalness;
   } else if (s.pipeline === 'papercraft') {
-    m.map = rec.baseMap || PROC_TEXTURES.paperGrain;
+    m.map = null;
     m.bumpMap = PROC_TEXTURES.paperGrain;
-    m.bumpScale = s.bumpScale;
+    m.bumpScale = s.bumpScale * 0.5;
     m.color.copy(rec.baseColor);
     m.roughness = 0.88;
     m.metalness = 0.0;
-  } else if (s.pipeline === 'voxel_craft') {
-    m.map = rec.baseMap || PROC_TEXTURES.voxelPixel;
-    m.bumpMap = rec.baseBumpMap;
-    m.color.copy(rec.baseColor);
-    m.roughness = 0.85;
-    m.metalness = 0.0;
   } else {
-    m.map = rec.baseMap;
-    m.normalMap = rec.baseNormalMap;
-    m.bumpMap = rec.baseBumpMap;
-    m.bumpScale = rec.baseBumpScale;
+    m.map = null;
+    m.bumpMap = null;
+    m.bumpScale = 0.0;
     m.color.copy(rec.baseColor);
     m.roughness = s.pipeline === 'wet_realism'
-      ? Math.min(rec.baseRoughness, 0.34)
-      : (s.pipeline === 'golden_velvet' ? 0.46 : rec.baseRoughness);
-    m.metalness = s.pipeline === 'wet_realism' ? Math.max(rec.baseMetalness, 0.10) : rec.baseMetalness;
+      ? 0.38
+      : (s.pipeline === 'golden_velvet' ? 0.48 : 0.72);
+    m.metalness = s.pipeline === 'wet_realism' ? 0.08 : 0.02;
   }
   if (s.emissiveStrength > 0) {
     m.emissive.set(s.emissiveFauna || '#000000');
     m.emissiveIntensity = s.emissiveStrength * 0.45;
-  } else if (rec.baseEmissive) {
-    m.emissive.copy(rec.baseEmissive);
-    m.emissiveIntensity = rec.baseEmissiveIntensity;
   } else {
     m.emissive.set('#000000');
     m.emissiveIntensity = 0.0;
@@ -882,7 +874,91 @@ function buildArticulatedQuadrupedLimb(cfg, rUpper, rKnee, rAnkle, upperLen, low
 }
 
 /**
- * Loads, clones, and morphs a pre-rigged .glb base animal (via SkeletonUtils + bone scaling + Head bone grafts).
+ * Builds or retrieves a cached variable-polygon BufferGeometry for LOD 0..3 using
+ * seam- and extremity-preserving spatial vertex clustering so skeletal skinning
+ * (JOINTS_0, WEIGHTS_0) and simple-shaded vertex colors remain 100% intact.
+ */
+function getOrBuildVariablePolyGeometry(baseGeom, lodIdx) {
+  if (!baseGeom || !baseGeom.index || !baseGeom.attributes.position) return baseGeom;
+  const clampedLod = Math.max(0, Math.min(3, lodIdx));
+  if (clampedLod === 3) return baseGeom;
+  if (!baseGeom.userData.lodGeomCache) baseGeom.userData.lodGeomCache = {};
+  if (baseGeom.userData.lodGeomCache[clampedLod]) return baseGeom.userData.lodGeomCache[clampedLod];
+
+  const gridResByLod = [13, 21, 34, 64];
+  const gridRes = gridResByLod[clampedLod];
+  baseGeom.computeBoundingBox();
+  const bb = baseGeom.boundingBox;
+  const minX = bb.min.x, minY = bb.min.y, minZ = bb.min.z;
+  const spanX = Math.max(1e-4, bb.max.x - minX);
+  const spanY = Math.max(1e-4, bb.max.y - minY);
+  const spanZ = Math.max(1e-4, bb.max.z - minZ);
+  const cx = 0.5 * (bb.min.x + bb.max.x);
+  const cy = 0.5 * (bb.min.y + bb.max.y);
+  const cz = 0.5 * (bb.min.z + bb.max.z);
+  const maxRadSq = Math.max(1e-4, 0.25 * (spanX * spanX + spanY * spanY + spanZ * spanZ));
+
+  const posAttr = baseGeom.attributes.position;
+  const colAttr = baseGeom.attributes.color;
+  const skinAttr = baseGeom.attributes.skinIndex;
+  const vCount = posAttr.count;
+  const cellMap = new Map();
+  const remap = new Int32Array(vCount);
+  const clusterSum = [];
+
+  for (let i = 0; i < vCount; i++) {
+    const px = posAttr.getX(i), py = posAttr.getY(i), pz = posAttr.getZ(i);
+    const dx = px - cx, dy = py - cy, dz = pz - cz;
+    const isExtremity = (dx * dx + dy * dy + dz * dz) > maxRadSq * 0.48;
+    const res = isExtremity ? gridRes * 2.2 : gridRes;
+    const qx = Math.floor(((px - minX) / spanX) * res);
+    const qy = Math.floor(((py - minY) / spanY) * res);
+    const qz = Math.floor(((pz - minZ) / spanZ) * res);
+    const cKey = colAttr
+      ? `${Math.round(colAttr.getX(i) * 5)}_${Math.round(colAttr.getY(i) * 5)}_${Math.round(colAttr.getZ(i) * 5)}`
+      : '0';
+    const bKey = skinAttr ? skinAttr.getX(i) : 0;
+    const key = `${qx}_${qy}_${qz}_${cKey}_${bKey}`;
+    let rep = cellMap.get(key);
+    if (rep === undefined) {
+      rep = i;
+      cellMap.set(key, rep);
+      clusterSum[rep] = [px, py, pz, 1];
+    } else {
+      const s = clusterSum[rep];
+      s[0] += px; s[1] += py; s[2] += pz; s[3] += 1;
+    }
+    remap[i] = rep;
+  }
+
+  const oldIdx = baseGeom.index.array;
+  const newIndices = [];
+  for (let t = 0; t < oldIdx.length; t += 3) {
+    const a = remap[oldIdx[t]];
+    const b = remap[oldIdx[t + 1]];
+    const c = remap[oldIdx[t + 2]];
+    if (a !== b && b !== c && a !== c) {
+      newIndices.push(a, b, c);
+    }
+  }
+  if (newIndices.length < 12) return baseGeom;
+
+  const lodGeom = baseGeom.clone();
+  const newPos = lodGeom.attributes.position;
+  for (let r = 0; r < clusterSum.length; r++) {
+    const s = clusterSum[r];
+    if (s && s[3] > 1) {
+      newPos.setXYZ(r, s[0] / s[3], s[1] / s[3], s[2] / s[3]);
+    }
+  }
+  lodGeom.setIndex(newIndices);
+  lodGeom.computeVertexNormals();
+  baseGeom.userData.lodGeomCache[clampedLod] = lodGeom;
+  return lodGeom;
+}
+
+/**
+ * Loads, clones, and morphs a pre-rigged .glb base animal (via SkeletonUtils + simple-shaded variable-poly LODs).
  */
 function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, graftBuilderFn = null) {
   const entry = glbHeroCache[assetId];
@@ -906,45 +982,33 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
     if ((node.isMesh || node.isSkinnedMesh) && !node.userData.isHelperOverlay) {
       const matName = (node.userData && node.userData.origMatName) || (node.material && node.material.name) || '';
       const nodeName = (node.userData && node.userData.origNodeName) || node.name || '';
+      if (entry.preserveMaterials && node.geometry) {
+        node.geometry = getOrBuildVariablePolyGeometry(node.geometry, lodIdx);
+      }
       if (entry.preserveMaterials && node.material) {
         const srcMat = Array.isArray(node.material) ? node.material[0] : node.material;
         const clonedMat = srcMat.clone();
-        if (assetId === 'megaloceros') {
+        const hasVC = Boolean(node.geometry && node.geometry.attributes && node.geometry.attributes.color);
+        if (hasVC) {
+          clonedMat.color.setHex(0xffffff);
+          clonedMat.vertexColors = true;
+        } else if (assetId === 'megaloceros') {
           if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
             clonedMat.color.setHex(0xd8ccb8);
-            clonedMat.roughness = 0.40;
-            clonedMat.bumpMap = PROC_TEXTURES.barkFurrow;
-            clonedMat.bumpScale = 0.035;
           } else if (/material\.011|eye/i.test(matName)) {
             clonedMat.color.setHex(0x0b0f19);
-            clonedMat.roughness = 0.08;
-            clonedMat.metalness = 0.22;
-          } else if (/material\.003/i.test(matName)) {
-            clonedMat.bumpMap = PROC_TEXTURES.furWeave;
-            clonedMat.bumpScale = 0.04;
-            clonedMat.roughness = 0.62;
-          } else if (/^material$/i.test(matName)) {
-            clonedMat.bumpMap = PROC_TEXTURES.furWeave;
-            clonedMat.bumpScale = 0.05;
-            clonedMat.roughness = 0.62;
           }
-        } else {
-          clonedMat.roughness = Math.max(0.45, clonedMat.roughness !== undefined ? clonedMat.roughness : 0.65);
-          clonedMat.metalness = Math.min(0.10, clonedMat.metalness !== undefined ? clonedMat.metalness : 0.04);
         }
+        clonedMat.map = null;
+        clonedMat.normalMap = null;
+        clonedMat.flatShading = true;
+        clonedMat.roughness = 0.72;
+        clonedMat.metalness = 0.02;
         const rec = {
           mat: clonedMat,
           baseColor: clonedMat.color ? clonedMat.color.clone() : new THREE.Color(0xffffff),
-          baseMap: clonedMat.map || null,
-          baseNormalMap: clonedMat.normalMap || null,
-          baseBumpMap: clonedMat.bumpMap || null,
-          baseBumpScale: clonedMat.bumpScale || 0.04,
-          baseRoughness: clonedMat.roughness !== undefined ? clonedMat.roughness : 0.62,
-          baseMetalness: clonedMat.metalness !== undefined ? clonedMat.metalness : 0.04,
-          baseEmissive: clonedMat.emissive ? clonedMat.emissive.clone() : new THREE.Color(0x000000),
-          baseEmissiveIntensity: clonedMat.emissiveIntensity !== undefined ? clonedMat.emissiveIntensity : 1.0,
-          matKey: entry.matKey || 'mammothFur',
-          forceFlat: lodIdx === 0 && comparisonMode === 'compare_lods'
+          hasVertexColors: hasVC,
+          matKey: entry.matKey || 'mammothFur'
         };
         applyStyleToGLBMaterialRecord(rec, (customMats && customMats._styleObj) || STYLES[currentStyleIdx]);
         if (!customMats) activeGLBMaterials.push(rec);
@@ -2789,7 +2853,7 @@ const STUDIO_GLB_MANIFEST = [
     preferredClip: /Idle_2/i,
     secondaryClip: /Idle_Headlow/i,
     timeScale: 0.85,
-    boneScales: { Stag_Horns: [1.65, 1.30, 1.40], Neck1: [1.10, 1.14, 1.08] }
+    boneScales: { Neck1: [1.06, 1.10, 1.05] }
   },
   {
     assetId: 'smilodon',
@@ -2829,13 +2893,73 @@ const STUDIO_GLB_MANIFEST = [
   }
 ];
 
-function tagLoadedGLBTemplate(gltfScene) {
+function bakeSimpleShadedVertexColorsFromLUT(gltfScene, gltf) {
+  const extras = (gltf && gltf.parser && gltf.parser.json && gltf.parser.json.extras) || (gltf && gltf.userData) || {};
+  const shadedSpec = extras.wildvr_simple_shaded;
+  const matSpecs = (shadedSpec && shadedSpec.materials) || [];
+  let primCounter = 0;
+
   gltfScene.traverse((node) => {
-    if (node.isMesh || node.isSkinnedMesh) {
-      node.userData.origMatName = (node.material && node.material.name) ? node.material.name : '';
-      node.userData.origNodeName = node.name || '';
+    if (!node.isMesh && !node.isSkinnedMesh) return;
+    node.userData.origMatName = (node.material && node.material.name) ? node.material.name : '';
+    node.userData.origNodeName = node.name || '';
+    const geom = node.geometry;
+    if (!geom || !geom.attributes.position) return;
+
+    const uvAttr = geom.attributes.uv;
+    const mSpec = matSpecs[Math.min(primCounter, matSpecs.length - 1)] || matSpecs[0];
+    primCounter += 1;
+
+    if (uvAttr && mSpec && mSpec.lut_grid && mSpec.palette_rgb) {
+      const gridSz = mSpec.grid_size || 64;
+      const lut = mSpec.lut_grid;
+      const pal = mSpec.palette_rgb;
+      const vCount = geom.attributes.position.count;
+      const vLabels = new Uint8Array(vCount);
+      for (let i = 0; i < vCount; i++) {
+        let u = uvAttr.getX(i) % 1.0;
+        let v = uvAttr.getY(i) % 1.0;
+        if (u < 0) u += 1.0;
+        if (v < 0) v += 1.0;
+        const gx = Math.min(gridSz - 1, Math.floor(u * gridSz));
+        const gy = Math.min(gridSz - 1, Math.floor(v * gridSz));
+        vLabels[i] = lut[gy * gridSz + gx] || 0;
+      }
+
+      if (geom.index) {
+        const idxArr = geom.index.array;
+        const maxLbl = pal.length - 1;
+        for (let pass = 0; pass < 2; pass++) {
+          for (let t = 0; t < idxArr.length; t += 3) {
+            const a = idxArr[t], b = idxArr[t + 1], c = idxArr[t + 2];
+            const la = vLabels[a], lb = vLabels[b], lc = vLabels[c];
+            if (la === maxLbl || lb === maxLbl || lc === maxLbl) continue;
+            if (la === lb && la !== lc) vLabels[c] = la;
+            else if (la === lc && la !== lb) vLabels[b] = la;
+            else if (lb === lc && lb !== la) vLabels[a] = lb;
+          }
+        }
+      }
+
+      const linearPal = pal.map((rgb) => {
+        const c = new THREE.Color();
+        c.setRGB(rgb[0], rgb[1], rgb[2], THREE.SRGBColorSpace);
+        return [c.r, c.g, c.b];
+      });
+      const colors = new Float32Array(vCount * 3);
+      for (let i = 0; i < vCount; i++) {
+        const rgb = linearPal[vLabels[i]] || linearPal[0] || [0.35, 0.20, 0.09];
+        colors[i * 3] = rgb[0];
+        colors[i * 3 + 1] = rgb[1];
+        colors[i * 3 + 2] = rgb[2];
+      }
+      geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     }
   });
+}
+
+function tagLoadedGLBTemplate(gltfScene, gltf = null) {
+  bakeSimpleShadedVertexColorsFromLUT(gltfScene, gltf);
 }
 
 function preloadAllStudioGLBAssets() {
@@ -2843,7 +2967,7 @@ function preloadAllStudioGLBAssets() {
     gltfLoader.load(
       spec.url,
       (gltf) => {
-        tagLoadedGLBTemplate(gltf.scene);
+        tagLoadedGLBTemplate(gltf.scene, gltf);
         glbHeroCache[spec.assetId] = {
           ...spec,
           scene: gltf.scene,

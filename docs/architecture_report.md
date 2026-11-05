@@ -231,7 +231,7 @@ articulated 3-joint quadruped limbs, biomechanical gait/IK solvers, and
 pre-rigged .glb SkeletonUtils morphing.
 @premise(P5_PIXPAL_DIORAMA_BUDGET)
 @premise(P7_STUDIO_CONVERGENCE)
-  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L220)` (`xr_studio_engine.py:220`)
+  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L222)` (`xr_studio_engine.py:222`)
     - *Signature:* `def run_full_studio_convergence(cls, studio_dir)`
     - *Docstring Intent:* Executes end-to-end studio verification across locomotion, wristwatch UI, and scene budget.
 @premise(P7_STUDIO_CONVERGENCE)
@@ -305,7 +305,7 @@ The following matrix maps every formal premise in the architecture argument to i
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `sync_inline_bundle` | `function` | `xr_studio_engine.py:145` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_skeletal_loft_and_glb_morph` | `function` | `xr_studio_engine.py:177` | `SYNCHRONIZED` |
-| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:220` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:222` | `SYNCHRONIZED` |
 
 ---
 
