@@ -494,16 +494,43 @@ const materials = {
   foliage2: new THREE.MeshStandardMaterial({ roughness: 0.65 }),
   rock: new THREE.MeshStandardMaterial({ roughness: 0.7 }),
   mammothFur: new THREE.MeshStandardMaterial({ roughness: 0.68 }),
+  mammothUndercoat: new THREE.MeshStandardMaterial({ color: 0x6b3214, roughness: 0.72, flatShading: true }),
   tusk: new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.08 }),
   elkCoat: new THREE.MeshStandardMaterial({ roughness: 0.6 }),
   smilodonCoat: new THREE.MeshStandardMaterial({ roughness: 0.58 }),
+  countershadeCream: new THREE.MeshStandardMaterial({ color: 0xf2dfc1, roughness: 0.68, flatShading: true }),
+  amberSpot: new THREE.MeshStandardMaterial({ color: 0xb37428, roughness: 0.68, flatShading: true }),
+  raptorGold: new THREE.MeshStandardMaterial({ color: 0xf5b727, roughness: 0.55, flatShading: true }),
+  rigBoneGold: new THREE.MeshBasicMaterial({ color: 0xffd166, depthTest: false, transparent: true, opacity: 0.96 }),
+  rigBoneCyan: new THREE.MeshBasicMaterial({ color: 0x00f5d4, depthTest: false, transparent: true, opacity: 0.96 }),
+  rigBoneCoral: new THREE.MeshBasicMaterial({ color: 0xff6b6b, depthTest: false, transparent: true, opacity: 0.96 }),
   eyeGloss: new THREE.MeshStandardMaterial({ color: 0x0b0f19, roughness: 0.08, metalness: 0.2 }),
   handSkin: new THREE.MeshStandardMaterial({ color: 0xe6ccb2, roughness: 0.65 }),
   wristRing: new THREE.MeshBasicMaterial({ color: 0x52b788 })
 };
 
+function attachWalkaboutAnime4BandShader(mat) {
+  mat.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <dithering_fragment>',
+      `
+      float luma = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114));
+      float qLuma = luma < 0.18 ? 0.42 : (luma < 0.36 ? 0.72 : (luma < 0.62 ? 0.98 : 1.14));
+      gl_FragColor.rgb = clamp(gl_FragColor.rgb * (0.45 + 0.55 * qLuma), 0.0, 1.0);
+      #include <dithering_fragment>
+      `
+    );
+  };
+}
+['mammothFur', 'mammothUndercoat', 'tusk', 'elkCoat', 'smilodonCoat', 'countershadeCream', 'amberSpot', 'raptorGold'].forEach((k) => {
+  if (materials[k]) attachWalkaboutAnime4BandShader(materials[k]);
+});
+
 let outlineMeshes = [];
 let wireframeMeshes = [];
+let skeletonRigGroups = [];
+let animalSkinMeshes = [];
+let isSkeletonXRayActive = false;
 let activeGLBMaterials = [];
 const outlineMat = new THREE.LineBasicMaterial({ color: 0x111827, transparent: true, opacity: 0.82 });
 const wireframeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.58 });
@@ -627,6 +654,25 @@ function applyStyle(idx) {
       m.emissiveIntensity = 0;
     }
     m.needsUpdate = true;
+  });
+
+  const extraFaunaColors = {
+    mammothUndercoat: new THREE.Color(s.mammothFur || '#6f4518').multiplyScalar(0.62),
+    countershadeCream: new THREE.Color(s.tusk || '#f8f5e6').lerp(new THREE.Color(s.elkCoat || '#8c6d46'), 0.22),
+    amberSpot: new THREE.Color(s.smilodonCoat || '#d99b43').multiplyScalar(0.58),
+    raptorGold: new THREE.Color('#f59e0b').lerp(new THREE.Color(s.smilodonCoat || '#d99b43'), 0.25)
+  };
+  Object.keys(extraFaunaColors).forEach((ek) => {
+    const em = materials[ek];
+    if (!em) return;
+    em.color.copy(extraFaunaColors[ek]);
+    em.flatShading = Boolean(s.flat);
+    em.wireframe = Boolean(s.wireframe);
+    em.roughness = s.roughness;
+    em.metalness = s.metalness;
+    em.emissive.set(s.emissiveFauna || '#000000');
+    em.emissiveIntensity = s.emissiveStrength || 0;
+    em.needsUpdate = true;
   });
 
   outlineMat.color.setHex(s.outlineColor !== undefined ? s.outlineColor : 0x111827);
@@ -876,10 +922,11 @@ function addMeshWithOutline(geom, mat, parent = worldGroup, teleportable = false
   mesh.receiveShadow = true;
   parent.add(mesh);
   if (teleportable) teleportableMeshes.push(mesh);
+  if (!teleportable && parent !== worldGroup) animalSkinMeshes.push(mesh);
   activeSceneTriangles += countGeomTriangles(geom);
 
   const s = STYLES[currentStyleIdx];
-  const edges = new THREE.EdgesGeometry(geom, 24);
+  const edges = new THREE.EdgesGeometry(geom, 18);
   const line = new THREE.LineSegments(edges, outlineMat);
   line.visible = Boolean(s && s.outlines);
   line.userData.isHelperOverlay = true;
@@ -892,6 +939,66 @@ function addMeshWithOutline(geom, mat, parent = worldGroup, teleportable = false
   mesh.add(wf);
   wireframeMeshes.push(wf);
   return mesh;
+}
+
+function buildCorrelatedBoneRigSegment(pStart, pEnd, rJoint = 0.045, colorGroup = 'gold', parent = null) {
+  const mat = colorGroup === 'cyan'
+    ? materials.rigBoneCyan
+    : (colorGroup === 'coral' ? materials.rigBoneCoral : materials.rigBoneGold);
+  const startV = new THREE.Vector3(pStart[0], pStart[1], pStart[2]);
+  const endV = new THREE.Vector3(pEnd[0], pEnd[1], pEnd[2]);
+  const diff = new THREE.Vector3().subVectors(endV, startV);
+  const len = Math.max(0.01, diff.length());
+  const mid = new THREE.Vector3().addVectors(startV, endV).multiplyScalar(0.5);
+
+  const boneGrp = new THREE.Group();
+  boneGrp.userData.isHelperOverlay = true;
+  const sphereG = new THREE.OctahedronGeometry(rJoint, 1);
+  const jStart = new THREE.Mesh(sphereG, mat);
+  jStart.position.copy(startV);
+  jStart.userData.isHelperOverlay = true;
+  boneGrp.add(jStart);
+
+  const jEnd = new THREE.Mesh(new THREE.OctahedronGeometry(rJoint * 0.78, 1), mat);
+  jEnd.position.copy(endV);
+  jEnd.userData.isHelperOverlay = true;
+  boneGrp.add(jEnd);
+
+  const strutG = new THREE.ConeGeometry(rJoint * 0.62, len, 4);
+  const strut = new THREE.Mesh(strutG, mat);
+  strut.position.copy(mid);
+  strut.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), diff.clone().normalize());
+  strut.userData.isHelperOverlay = true;
+  boneGrp.add(strut);
+
+  if (parent) parent.add(boneGrp);
+  return boneGrp;
+}
+
+function setSkeletonXRayMode(active) {
+  isSkeletonXRayActive = Boolean(active);
+  skeletonRigGroups.forEach((rg) => { rg.visible = isSkeletonXRayActive; });
+  ['mammothFur', 'mammothUndercoat', 'tusk', 'elkCoat', 'smilodonCoat', 'countershadeCream', 'amberSpot', 'raptorGold'].forEach((k) => {
+    const m = materials[k];
+    if (!m) return;
+    m.transparent = isSkeletonXRayActive;
+    m.opacity = isSkeletonXRayActive ? 0.34 : 1.0;
+    m.depthWrite = !isSkeletonXRayActive;
+    m.needsUpdate = true;
+  });
+  animalSkinMeshes.forEach((mesh) => {
+    if (mesh && mesh.material && !Array.isArray(mesh.material)) {
+      mesh.material.transparent = isSkeletonXRayActive;
+      mesh.material.opacity = isSkeletonXRayActive ? 0.34 : 1.0;
+      mesh.material.depthWrite = !isSkeletonXRayActive;
+      mesh.material.needsUpdate = true;
+    }
+  });
+  const xrayBtn = document.getElementById('btn-toggle-xray-rig');
+  if (xrayBtn) {
+    xrayBtn.classList.toggle('active', isSkeletonXRayActive);
+    xrayBtn.textContent = isSkeletonXRayActive ? '🦴 3D X-Ray Rig: ON [X]' : '🦴 3D X-Ray Rig: OFF [X]';
+  }
 }
 
 function make3DLabelSprite(titleText, subText, borderHex = '#52b788') {
@@ -1005,13 +1112,19 @@ function buildLoftedAnatomicalBody(slices, radialSegs = 16, lengthSegs = 24, dis
     const ventral = ventralCurve.getPointAt(u).x * endTaper;
 
     for (let j = 0; j <= rSeg; j++) {
-      const v = j / rSeg;
+      const stagger = (i % 2) * (0.46 / rSeg);
+      const v = (j / rSeg) + stagger;
       const theta = v * Math.PI * 2;
       const cosT = Math.cos(theta);
       const sinT = Math.sin(theta);
 
-      let localX = cosT * rx * (1.0 + 0.05 * Math.sin(theta * 2.0));
-      let localY = sinT * ry;
+      // Walkabout Mini Golf chiseled planar bevel modulation (matches 6-view orthogonal visual hull)
+      const chiselSides = (opts && opts.chiselSides) || 8;
+      const chiselAmt = (opts && opts.chiselAmt !== undefined) ? opts.chiselAmt : 0.085;
+      const facetBevel = 1.0 - chiselAmt * (0.5 - 0.5 * Math.cos(theta * chiselSides));
+
+      let localX = cosT * rx * (1.0 + 0.05 * Math.sin(theta * 2.0)) * facetBevel;
+      let localY = sinT * ry * facetBevel;
       if (sinT > 0) {
         localY += dorsal * Math.pow(sinT, 3);
       } else {
@@ -1027,7 +1140,7 @@ function buildLoftedAnatomicalBody(slices, radialSegs = 16, lengthSegs = 24, dis
       const wy = c.y + right.y * localX + orthoUp.y * localY;
       const wz = c.z + right.z * localX + orthoUp.z * localY;
       positions.push(wx, wy, wz);
-      uvs.push(u * 2.5, v);
+      uvs.push(u * 2.5, j / rSeg);
     }
   }
 
@@ -1043,27 +1156,14 @@ function buildLoftedAnatomicalBody(slices, radialSegs = 16, lengthSegs = 24, dis
     }
   }
 
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geom.setIndex(indices);
+  const indexedGeom = new THREE.BufferGeometry();
+  indexedGeom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  indexedGeom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  indexedGeom.setIndex(indices);
+  // Convert to non-indexed per-triangle face normals so THREE.MeshToonMaterial renders
+  // crisp Walkabout Mini Golf planar triangular facets + 4-band anime cel-shading
+  const geom = indexedGeom.toNonIndexed();
   geom.computeVertexNormals();
-
-  // Weld longitudinal seam normals (j = 0 and j = rSeg) for crease-free shading
-  const normAttr = geom.attributes.normal;
-  if (normAttr) {
-    for (let i = 0; i <= lSeg; i++) {
-      const idx0 = i * ringStride;
-      const idxN = i * ringStride + rSeg;
-      const nx = normAttr.getX(idx0) + normAttr.getX(idxN);
-      const ny = normAttr.getY(idx0) + normAttr.getY(idxN);
-      const nz = normAttr.getZ(idx0) + normAttr.getZ(idxN);
-      const len = Math.hypot(nx, ny, nz) || 1.0;
-      normAttr.setXYZ(idx0, nx / len, ny / len, nz / len);
-      normAttr.setXYZ(idxN, nx / len, ny / len, nz / len);
-    }
-    normAttr.needsUpdate = true;
-  }
   return geom;
 }
 
@@ -1151,6 +1251,16 @@ function buildArticulatedQuadrupedLimb(cfg, rUpper, rKnee, rAnkle, upperLen, low
       }
     }
   }
+
+  const rigCol = footSpec.rigColor || 'cyan';
+  const rBone = Math.max(0.028, rKnee * 0.24);
+  const bUpper = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -upperLen, 0], rBone, rigCol, hipPivot);
+  const bLower = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -lowerLen, 0], rBone * 0.85, rigCol, kneePivot);
+  const bFoot = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -0.10, 0.14], rBone * 0.72, rigCol, anklePivot);
+  bUpper.visible = isSkeletonXRayActive;
+  bLower.visible = isSkeletonXRayActive;
+  bFoot.visible = isSkeletonXRayActive;
+  skeletonRigGroups.push(bUpper, bLower, bFoot);
 
   return { root: hipPivot, knee: kneePivot, ankle: anklePivot };
 }
@@ -1301,38 +1411,61 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
     if ((node.isMesh || node.isSkinnedMesh) && !node.userData.isHelperOverlay) {
       const matName = (node.userData && node.userData.origMatName) || (node.material && node.material.name) || '';
       const nodeName = (node.userData && node.userData.origNodeName) || node.name || '';
-      if (entry.preserveMaterials && node.geometry) {
-        node.geometry = getOrBuildVariablePolyGeometry(node.geometry, lodIdx);
-      }
-      if (entry.preserveMaterials && node.geometry && node.geometry.groups && node.geometry.groups.length >= 2) {
-        const lerpAmt = assetId === 'smilodon' ? 0.52 : 0.28;
-        node.material = [
-          makeSimpleShadedRoleMaterial('dark', entry.matKey, lerpAmt, activeStyle, customMats),
-          makeSimpleShadedRoleMaterial('primary', entry.matKey, lerpAmt, activeStyle, customMats),
-          makeSimpleShadedRoleMaterial('secondary', entry.matKey, lerpAmt, activeStyle, customMats),
-          makeSimpleShadedRoleMaterial('ivory', entry.matKey, lerpAmt, activeStyle, customMats)
-        ];
-      } else if (entry.preserveMaterials && node.material) {
-        let role = 'primary';
-        if (/stag_horns/i.test(nodeName) || /horn|antler|material\.009/i.test(matName)) role = 'ivory';
-        else if (/material\.011|material\.010|eye|hoof|hooves/i.test(matName)) role = 'dark';
-        else if (/material\.007/i.test(matName)) role = 'secondary';
-        else if (/material\.008/i.test(matName)) role = 'cape';
-        node.material = makeSimpleShadedRoleMaterial(role, entry.matKey, 0.38, activeStyle, customMats);
-      } else if (/eye_black|eyes_black|material\.011/i.test(matName)) {
-        node.material = materials.eyeGloss;
-      } else if (/eye_white/i.test(matName)) {
-        node.material = mTusk;
-      } else if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
-        node.material = mTusk;
-      } else if (/hooves|nose|muzzle|material\.010|material\.001/i.test(matName)) {
-        node.material = mRock;
-      } else if (/wood/i.test(matName)) {
-        node.material = mTrunk;
-      } else if (/green/i.test(matName)) {
-        node.material = mFol1;
+      if (entry.isSixViewWalkaboutGLB && node.geometry) {
+        const hasVCol = Boolean(node.geometry.attributes && node.geometry.attributes.color);
+        const vMat = new THREE.MeshStandardMaterial({
+          vertexColors: hasVCol,
+          color: hasVCol ? 0xffffff : mPrimary.color,
+          flatShading: true,
+          roughness: 0.72,
+          metalness: 0.02,
+          transparent: isSkeletonXRayActive,
+          opacity: isSkeletonXRayActive ? 0.34 : 1.0,
+          depthWrite: !isSkeletonXRayActive
+        });
+        node.material = vMat;
+        animalSkinMeshes.push(node);
+        const s = STYLES[currentStyleIdx];
+        const edges = new THREE.EdgesGeometry(node.geometry, 22);
+        const line = new THREE.LineSegments(edges, outlineMat);
+        line.visible = Boolean(s && s.outlines);
+        line.userData.isHelperOverlay = true;
+        node.add(line);
+        outlineMeshes.push(line);
       } else {
-        node.material = mPrimary;
+        if (entry.preserveMaterials && node.geometry) {
+          node.geometry = getOrBuildVariablePolyGeometry(node.geometry, lodIdx);
+        }
+        if (entry.preserveMaterials && node.geometry && node.geometry.groups && node.geometry.groups.length >= 2) {
+          const lerpAmt = assetId === 'smilodon' ? 0.52 : 0.28;
+          node.material = [
+            makeSimpleShadedRoleMaterial('dark', entry.matKey, lerpAmt, activeStyle, customMats),
+            makeSimpleShadedRoleMaterial('primary', entry.matKey, lerpAmt, activeStyle, customMats),
+            makeSimpleShadedRoleMaterial('secondary', entry.matKey, lerpAmt, activeStyle, customMats),
+            makeSimpleShadedRoleMaterial('ivory', entry.matKey, lerpAmt, activeStyle, customMats)
+          ];
+        } else if (entry.preserveMaterials && node.material) {
+          let role = 'primary';
+          if (/stag_horns/i.test(nodeName) || /horn|antler|material\.009/i.test(matName)) role = 'ivory';
+          else if (/material\.011|material\.010|eye|hoof|hooves/i.test(matName)) role = 'dark';
+          else if (/material\.007/i.test(matName)) role = 'secondary';
+          else if (/material\.008/i.test(matName)) role = 'cape';
+          node.material = makeSimpleShadedRoleMaterial(role, entry.matKey, 0.38, activeStyle, customMats);
+        } else if (/eye_black|eyes_black|material\.011/i.test(matName)) {
+          node.material = materials.eyeGloss;
+        } else if (/eye_white/i.test(matName)) {
+          node.material = mTusk;
+        } else if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
+          node.material = mTusk;
+        } else if (/hooves|nose|muzzle|material\.010|material\.001/i.test(matName)) {
+          node.material = mRock;
+        } else if (/wood/i.test(matName)) {
+          node.material = mTrunk;
+        } else if (/green/i.test(matName)) {
+          node.material = mFol1;
+        } else {
+          node.material = mPrimary;
+        }
       }
       node.castShadow = true;
       node.receiveShadow = true;
@@ -1392,6 +1525,7 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
 function buildMammothAtLOD(lodIdx = 2, customMats = null) {
   const cfg = LOD_TIERS[Math.max(0, Math.min(3, lodIdx))];
   const mFur = (customMats && customMats.mammothFur) || materials.mammothFur;
+  const mUndercoat = (customMats && customMats.mammothUndercoat) || materials.mammothUndercoat;
   const mTusk = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
   const segR = cfg.id === 0 ? 9 : Math.round(16 * cfg.segMul);
@@ -1399,8 +1533,40 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
   const disp = 0.024 * cfg.displace;
 
   const glbClone = instantiatePreRiggedGLBIfCached('woolly_mammoth', lodIdx, customMats);
-  if (glbClone) {
+  if (glbClone && glbHeroCache.woolly_mammoth && (glbHeroCache.woolly_mammoth.isSixViewWalkaboutGLB || glbHeroCache.woolly_mammoth.isUserDroppedOverride)) {
     group.add(glbClone);
+    const axialRig = new THREE.Group();
+    axialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, 1.82, -1.25], [0, 2.15, -0.25]],
+      [[0, 2.15, -0.25], [0, 2.58, 0.78]],
+      [[0, 2.58, 0.78], [0, 2.48, 1.28]],
+      [[0, 2.48, 1.28], [0, 2.86, 1.65]],
+      [[0, 2.86, 1.65], [0, 2.32, 1.98]],
+      [[0, 2.32, 1.98], [0, 1.42, 2.18]],
+      [[0, 1.42, 2.18], [0, 0.68, 1.98]],
+      [[0, 1.82, -1.25], [0, 1.12, -1.82]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.08, 'gold', axialRig));
+    [
+      [[-0.44, 1.56, 0.86], [-0.44, 0.82, 0.84], 'coral'],
+      [[-0.44, 0.82, 0.84], [-0.44, 0.08, 0.88], 'coral'],
+      [[0.44, 1.56, 0.86], [0.44, 0.82, 0.84], 'cyan'],
+      [[0.44, 0.82, 0.84], [0.44, 0.08, 0.88], 'cyan'],
+      [[-0.40, 1.46, -1.12], [-0.40, 0.76, -1.14], 'coral'],
+      [[-0.40, 0.76, -1.14], [-0.40, 0.08, -1.10], 'coral'],
+      [[0.40, 1.46, -1.12], [0.40, 0.76, -1.14], 'cyan'],
+      [[0.40, 0.76, -1.14], [0.40, 0.08, -1.10], 'cyan']
+    ].forEach(([p0, p1, col]) => buildCorrelatedBoneRigSegment(p0, p1, 0.068, col, axialRig));
+    group.add(axialRig);
+    skeletonRigGroups.push(axialRig);
+    activeAnimatedCreatures.push({
+      kind: 'graviportal_amble',
+      group,
+      spineRoot: glbClone,
+      speed: 1.85,
+      strideAmp: 0.22,
+      seed: 0.4
+    });
     tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
     return group;
   }
@@ -1513,6 +1679,13 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
     addMeshWithOutline(tuskGeom, mTusk, headPivot);
   });
 
+  // Sculpted Walkabout-style Shaggy Cranial Crown Forelock Tuft (matches 6-view turnaround)
+  const crownTuftG = buildTaperedCurveGeometry(
+    [[0, 0.72, 0.12], [0, 0.94, 0.34], [0, 0.80, 0.56]],
+    0.26, 0.06, 6, 5, 0.72, 0.0, 4.2
+  );
+  addMeshWithOutline(crownTuftG, mUndercoat, headPivot);
+
   // 4 Articulated 3-Joint Quadruped Limbs (Hip/Shoulder -> Knee -> Ankle -> Foot with Ivory Toenails)
   const limbSpecs = [
     [-0.68, 2.02, 0.98, 0.42, 0.34, 0.31, 1.02, 0.90, 0.0],
@@ -1521,13 +1694,14 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
     [0.60, 1.86, -1.22, 0.38, 0.31, 0.28, 0.94, 0.82, Math.PI * 1.5]
   ];
   const limbs = limbSpecs.map(([lx, ly, lz, rU, rK, rA, uLen, lLen, phase], idx) => {
-    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'pillar_toes' }, mFur, mTusk, idx + 12);
+    const rigColor = lx < 0 ? 'coral' : 'cyan';
+    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'pillar_toes', rigColor }, mFur, mTusk, idx + 12);
     limb.root.position.set(lx, ly, lz);
     spineRoot.add(limb.root);
     return { ...limb, phase };
   });
 
-  // Contoured Downward-Draping Shaggy Fur Locks along Flank & Shoulder Skirt (Scales with LOD 1 -> 2 -> 3)
+  // Contoured Downward-Draping Shaggy Fur Locks along Flank & Shoulder Skirt (Two-Tone Russet + Espresso Undercoat)
   for (let f = 0; f < cfg.furShells; f++) {
     const side = f % 2 === 0 ? -1 : 1;
     const rowFrac = Math.floor(f / 2) / Math.max(1, Math.floor(cfg.furShells / 2) - 1);
@@ -1539,9 +1713,9 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
       [
         [fx * 0.82, fy + 0.22, fz],
         [fx * 0.98, fy - 0.12, fz - 0.03],
-        [fx * 0.92, fy - 0.46, fz - 0.06]
+        [fx * 0.92, fy - 0.52, fz - 0.06]
       ],
-      0.22,
+      0.24,
       0.035,
       6,
       6,
@@ -1549,8 +1723,25 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
       disp * 0.4,
       f * 1.7
     );
-    addMeshWithOutline(lockGeom, mFur, spineRoot);
+    addMeshWithOutline(lockGeom, (f % 4 < 2) ? mUndercoat : mFur, spineRoot);
   }
+
+  // 1:1 Correlated Axial 3D Skeletal Rig (Pelvis -> Lumbar -> Thoracic -> Withers -> Skull -> Trunk)
+  const axialRig = new THREE.Group();
+  axialRig.visible = isSkeletonXRayActive;
+  [
+    [[0, 2.05, -1.22], [0, 2.24, -0.35]],
+    [[0, 2.24, -0.35], [0, 2.48, 0.55]],
+    [[0, 2.48, 0.55], [0, 2.68, 1.15]],
+    [[0, 2.68, 1.15], [0, 2.62, 1.52]],
+    [[0, 2.05, -1.22], [0, 1.55, -1.92]]
+  ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.085, 'gold', axialRig));
+  spineRoot.add(axialRig);
+  const headRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, 0.22, 0.72], 0.08, 'gold', headPivot);
+  const trunkRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -1.68, 0.24], 0.065, 'gold', trunkPiv);
+  headRig.visible = isSkeletonXRayActive;
+  trunkRig.visible = isSkeletonXRayActive;
+  skeletonRigGroups.push(axialRig, headRig, trunkRig);
 
   activeAnimatedCreatures.push({
     kind: 'graviportal_amble',
@@ -1572,6 +1763,8 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
 function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
   const cfg = LOD_TIERS[Math.max(0, Math.min(3, lodIdx))];
   const mCoat = (customMats && customMats.elkCoat) || materials.elkCoat;
+  const mCream = (customMats && customMats.countershadeCream) || materials.countershadeCream;
+  const mUndercoat = (customMats && customMats.mammothUndercoat) || materials.mammothUndercoat;
   const mTusk = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
   const segR = cfg.id === 0 ? 8 : Math.round(14 * cfg.segMul);
@@ -1579,8 +1772,29 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
   const disp = 0.020 * cfg.displace;
 
   const glbClone = instantiatePreRiggedGLBIfCached('megaloceros', lodIdx, customMats);
-  if (glbClone) {
+  if (glbClone && glbHeroCache.megaloceros && (glbHeroCache.megaloceros.isSixViewWalkaboutGLB || glbHeroCache.megaloceros.isUserDroppedOverride)) {
     group.add(glbClone);
+    const axialRig = new THREE.Group();
+    axialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, 1.72, -0.78], [0, 1.70, -0.10]],
+      [[0, 1.70, -0.10], [0, 1.96, 0.56]],
+      [[0, 1.96, 0.56], [0, 2.32, 0.88]],
+      [[0, 2.32, 0.88], [0, 2.70, 1.12]],
+      [[0, 2.70, 1.12], [0, 2.58, 1.60]],
+      [[0, 2.70, 1.12], [-1.68, 3.22, 0.56]],
+      [[0, 2.70, 1.12], [1.68, 3.22, 0.56]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.06, 'gold', axialRig));
+    group.add(axialRig);
+    skeletonRigGroups.push(axialRig);
+    activeAnimatedCreatures.push({
+      kind: 'cervid_trot',
+      group,
+      spineRoot: glbClone,
+      speed: 2.35,
+      strideAmp: 0.25,
+      seed: 1.9
+    });
     tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
     return group;
   }
@@ -1598,6 +1812,23 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
   ];
   const torsoGeom = buildLoftedAnatomicalBody(torsoSlices, segR, segL, disp, 2.2, { capStart: true, capEnd: true });
   addMeshWithOutline(torsoGeom, mCoat, spineRoot);
+
+  // Walkabout 6-View Countershading: Cream-Buff Ventral Belly Panel, Rump Patch & Dark Withers Saddle
+  const bellyG = buildLoftedAnatomicalBody(
+    [[0, 1.38, -0.72, 0.34, 0.18, 0.0, 0.0], [0, 1.32, 0.05, 0.36, 0.20, 0.0, 0.0], [0, 1.36, 0.68, 0.38, 0.22, 0.0, 0.0]],
+    Math.max(6, segR - 2), 6, 0.0, 3.1, { capStart: true, capEnd: true }
+  );
+  addMeshWithOutline(bellyG, mCream, spineRoot);
+
+  const rumpPatch = addMeshWithOutline(new THREE.SphereGeometry(0.32, 7, 6), mCream, spineRoot);
+  rumpPatch.scale.set(1.12, 1.05, 0.55);
+  rumpPatch.position.set(0, 1.78, -0.98);
+
+  const saddleG = buildLoftedAnatomicalBody(
+    [[0, 2.18, 0.15, 0.34, 0.22, 0.10, 0.0], [0, 2.28, 0.56, 0.42, 0.28, 0.16, 0.0], [0, 2.16, 0.84, 0.30, 0.20, 0.06, 0.0]],
+    Math.max(6, segR - 2), 5, 0.0, 4.1, { capStart: true, capEnd: true }
+  );
+  addMeshWithOutline(saddleG, mUndercoat, spineRoot);
 
   // Articulated Neck & Stag Head Group (Unpinched base socketed into chest)
   const neckPivot = new THREE.Group();
@@ -1706,6 +1937,12 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
     }
   });
 
+  const throatBibG = buildLoftedAnatomicalBody(
+    [[0, -0.02, 0.16, 0.20, 0.16, 0.0, 0.0], [0, 0.42, 0.38, 0.16, 0.14, 0.0, 0.0], [0, 0.78, 0.52, 0.11, 0.10, 0.0, 0.0]],
+    6, 5, 0.0, 5.2, { capStart: true, capEnd: true }
+  );
+  addMeshWithOutline(throatBibG, mCream, neckPivot);
+
   // 4 Articulated 3-Joint Cervine Legs with Fetlocks & Cloven Hooves
   const limbSpecs = [
     [-0.31, 1.56, 0.64, 0.16, 0.105, 0.075, 0.78, 0.70, 0.0],
@@ -1714,11 +1951,32 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
     [0.29, 1.58, -0.78, 0.18, 0.11, 0.075, 0.80, 0.70, 0.0]
   ];
   const limbs = limbSpecs.map(([lx, ly, lz, rU, rK, rA, uLen, lLen, phase], idx) => {
-    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'cloven_hoof' }, mCoat, materials.rock, idx + 24);
+    const rigColor = lx < 0 ? 'coral' : 'cyan';
+    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'cloven_hoof', rigColor }, mCoat, materials.rock, idx + 24);
     limb.root.position.set(lx, ly, lz);
     spineRoot.add(limb.root);
     return { ...limb, phase };
   });
+
+  // 1:1 Correlated Axial & Antler 3D Skeletal Rig (Pelvis -> Lumbar -> Withers -> Neck -> Skull -> Palmate Antlers)
+  const axialRig = new THREE.Group();
+  axialRig.visible = isSkeletonXRayActive;
+  [
+    [[0, 1.74, -0.82], [0, 1.72, -0.15]],
+    [[0, 1.72, -0.15], [0, 1.88, 0.56]],
+    [[0, 1.88, 0.56], [0, 1.84, 0.66]],
+    [[0, 1.74, -0.82], [0, 1.58, -1.16]]
+  ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.055, 'gold', axialRig));
+  spineRoot.add(axialRig);
+  const neckRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, 0.88, 0.42], 0.05, 'gold', neckPivot);
+  const headRig = new THREE.Group();
+  headRig.visible = isSkeletonXRayActive;
+  buildCorrelatedBoneRigSegment([0, 0, 0], [0, -0.06, 0.62], 0.048, 'gold', headRig);
+  buildCorrelatedBoneRigSegment([-0.10, 0.14, -0.02], [-1.68, 0.86, -0.36], 0.042, 'coral', headRig);
+  buildCorrelatedBoneRigSegment([0.10, 0.14, -0.02], [1.68, 0.86, -0.36], 0.042, 'cyan', headRig);
+  headPivot.add(headRig);
+  neckRig.visible = isSkeletonXRayActive;
+  skeletonRigGroups.push(axialRig, neckRig, headRig);
 
   activeAnimatedCreatures.push({
     kind: 'cervid_trot',
@@ -1739,6 +1997,8 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
 function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
   const cfg = LOD_TIERS[Math.max(0, Math.min(3, lodIdx))];
   const mCoat = (customMats && customMats.smilodonCoat) || materials.smilodonCoat;
+  const mCream = (customMats && customMats.countershadeCream) || materials.countershadeCream;
+  const mSpot = (customMats && customMats.amberSpot) || materials.amberSpot;
   const mTusk = (customMats && customMats.tusk) || materials.tusk;
   const group = new THREE.Group();
   const segR = cfg.id === 0 ? 8 : Math.round(14 * cfg.segMul);
@@ -1746,8 +2006,27 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
   const disp = 0.016 * cfg.displace;
 
   const glbClone = instantiatePreRiggedGLBIfCached('smilodon', lodIdx, customMats);
-  if (glbClone) {
+  if (glbClone && glbHeroCache.smilodon && (glbHeroCache.smilodon.isSixViewWalkaboutGLB || glbHeroCache.smilodon.isUserDroppedOverride)) {
     group.add(glbClone);
+    const axialRig = new THREE.Group();
+    axialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, 0.96, -0.68], [0, 0.96, -0.10]],
+      [[0, 0.96, -0.10], [0, 1.06, 0.48]],
+      [[0, 1.06, 0.48], [0, 1.26, 0.98]],
+      [[0, 1.26, 0.98], [0, 1.16, 1.34]],
+      [[0, 0.96, -0.68], [0, 0.78, -1.18]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.048, 'gold', axialRig));
+    group.add(axialRig);
+    skeletonRigGroups.push(axialRig);
+    activeAnimatedCreatures.push({
+      kind: 'predator_prowl',
+      group,
+      spineRoot: glbClone,
+      speed: 2.15,
+      strideAmp: 0.26,
+      seed: 3.1
+    });
     tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
     return group;
   }
@@ -1765,6 +2044,24 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
   ];
   const torsoGeom = buildLoftedAnatomicalBody(torsoSlices, segR, segL, disp, 1.5, { capStart: true, capEnd: true });
   addMeshWithOutline(torsoGeom, mCoat, spineRoot);
+
+  // Walkabout 6-View Countershading: Cream-Buff Ventral Belly & Chest Shield + Faceted Amber Spots
+  const bellyG = buildLoftedAnatomicalBody(
+    [[0, 0.58, -0.46, 0.24, 0.12, 0.0, 0.0], [0, 0.54, 0.06, 0.26, 0.14, 0.0, 0.0], [0, 0.64, 0.62, 0.32, 0.22, 0.0, 0.0]],
+    Math.max(6, segR - 2), 6, 0.0, 2.7, { capStart: true, capEnd: true }
+  );
+  addMeshWithOutline(bellyG, mCream, spineRoot);
+
+  [
+    [-0.36, 0.96, 0.22, 0.09], [0.36, 0.96, 0.22, 0.09],
+    [-0.32, 0.92, -0.08, 0.085], [0.32, 0.92, -0.08, 0.085],
+    [-0.30, 0.94, -0.38, 0.08], [0.30, 0.94, -0.38, 0.08],
+    [0.0, 1.24, 0.15, 0.11], [0.0, 1.16, -0.22, 0.10]
+  ].forEach(([sx, sy, sz, sr]) => {
+    const spot = addMeshWithOutline(new THREE.CylinderGeometry(sr, sr * 1.1, 0.04, 6), mSpot, spineRoot);
+    spot.position.set(sx, sy, sz);
+    spot.rotation.z = sx === 0 ? 0 : -Math.sign(sx) * 1.15;
+  });
 
   // Articulated Feline Neck, Skull & Sculpted Lower Mandible Pivot
   const headPivot = new THREE.Group();
@@ -1795,7 +2092,7 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
     [0, -0.02, 0.36, 0.09, 0.05, 0.0, 0.0]
   ];
   const jawGeom = buildLoftedAnatomicalBody(jawSlices, Math.max(7, segR), 7, disp * 0.25, 8.1, { capStart: false, capEnd: true });
-  addMeshWithOutline(jawGeom, mCoat, jawPivot);
+  addMeshWithOutline(jawGeom, mCream, jawPivot);
   headPivot.add(jawPivot);
 
   // Curved 24cm Maxillary Saber Canines (Tapered Blade Cross-Section), Rounded Ears & Predator Eyes
@@ -1852,11 +2149,29 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
     [0.22, 0.78, -0.52, 0.140, 0.100, 0.082, 0.38, 0.34, Math.PI * 1.5]
   ];
   const limbs = limbSpecs.map(([lx, ly, lz, rU, rK, rA, uLen, lLen, phase], idx) => {
-    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'clawed_paw' }, mCoat, mTusk, idx + 36);
+    const rigColor = lx < 0 ? 'coral' : 'cyan';
+    const limb = buildArticulatedQuadrupedLimb(cfg, rU, rK, rA, uLen, lLen, { kind: 'clawed_paw', rigColor }, mCoat, mTusk, idx + 36);
     limb.root.position.set(lx, ly, lz);
     spineRoot.add(limb.root);
     return { ...limb, phase };
   });
+
+  // 1:1 Correlated Axial, Jaw & Tail 3D Skeletal Rig (Pelvis -> Lumbar -> Scapula -> Skull -> Jaw -> Bobbed Tail)
+  const axialRig = new THREE.Group();
+  axialRig.visible = isSkeletonXRayActive;
+  [
+    [[0, 0.88, -0.55], [0, 0.85, -0.10]],
+    [[0, 0.85, -0.10], [0, 0.96, 0.44]],
+    [[0, 0.96, 0.44], [0, 1.02, 0.66]]
+  ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.048, 'gold', axialRig));
+  spineRoot.add(axialRig);
+  const headRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, 0.02, 0.54], 0.045, 'gold', headPivot);
+  const jawRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -0.02, 0.34], 0.036, 'gold', jawPivot);
+  const tailRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -0.22, -0.30], 0.034, 'gold', tailPivot);
+  headRig.visible = isSkeletonXRayActive;
+  jawRig.visible = isSkeletonXRayActive;
+  tailRig.visible = isSkeletonXRayActive;
+  skeletonRigGroups.push(axialRig, headRig, jawRig, tailRig);
 
   activeAnimatedCreatures.push({
     kind: 'predator_prowl',
@@ -1883,12 +2198,39 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   const mMantle = (customMats && customMats.trunk) || materials.trunk;
   const mPinion = (customMats && customMats.cliff) || materials.cliff;
   const mBuff = (customMats && customMats.tusk) || materials.tusk;
+  const mCream = (customMats && customMats.countershadeCream) || materials.countershadeCream;
   const mGoldenNape = (customMats && customMats.smilodonCoat) || materials.smilodonCoat;
+  const mRaptorGold = (customMats && customMats.raptorGold) || materials.raptorGold;
   const group = new THREE.Group();
 
   const segR = cfg.id === 0 ? 7 : Math.max(9, Math.round(11 * cfg.segMul));
   const segL = cfg.id === 0 ? 8 : Math.max(10, Math.round(14 * cfg.segMul));
   const disp = 0.008 * cfg.displace;
+
+  const glbClone = instantiatePreRiggedGLBIfCached('teratorn_vulture', lodIdx, customMats);
+  if (glbClone && glbHeroCache.teratorn_vulture && (glbHeroCache.teratorn_vulture.isSixViewWalkaboutGLB || glbHeroCache.teratorn_vulture.isUserDroppedOverride)) {
+    group.add(glbClone);
+    const eagleAxialRig = new THREE.Group();
+    eagleAxialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, -0.18, -0.22], [0, 0.18, 0.08]],
+      [[0, 0.18, 0.08], [0, 0.60, 0.44]],
+      [[0, 0.60, 0.44], [0, 0.46, 0.74]],
+      [[0, 0.18, 0.08], [-1.68, 0.38, -0.12]],
+      [[0, 0.18, 0.08], [1.68, 0.38, -0.12]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.042, 'gold', eagleAxialRig));
+    group.add(eagleAxialRig);
+    skeletonRigGroups.push(eagleAxialRig);
+    activeAnimatedCreatures.push({
+      kind: 'avian_soar',
+      group,
+      wingRigs: [],
+      speed: 2.35,
+      seed: (activeAnimatedCreatures.length * 2.09) % 6.28
+    });
+    tagAsset(group, 'teratorn_vulture', `Haast's Eagle (${cfg.short})`);
+    return group;
+  }
 
   // 1. Haast's Eagle (Hieraaetus moorei) Broad Muscular Torso & Thick Feathered Neck/Head
   // Eagles have a compact, muscular neck that blends smoothly into a wide, flat-crowned head (never a skinny vulture neck!)
@@ -1901,6 +2243,13 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   ];
   const bodyGeom = buildLoftedAnatomicalBody(bodySlices, segR, segL, disp, 4.4, { capStart: true, capEnd: true });
   addMeshWithOutline(bodyGeom, mMantle, group);
+
+  // Walkabout 6-View Ventral Breast Countershading (Matches BOTTOM view of Haast's Eagle turnaround)
+  const breastG = buildLoftedAnatomicalBody(
+    [[0, -0.10, -0.26, 0.22, 0.09, 0.0, 0.0], [0, -0.11, 0.12, 0.26, 0.11, 0.0, 0.0], [0, -0.04, 0.42, 0.18, 0.08, 0.0, 0.0]],
+    6, 5, 0.0, 4.9, { capStart: true, capEnd: true }
+  );
+  addMeshWithOutline(breastG, mCream, group);
 
   // 2. Golden-Tawny Eagle Crown, Nape Hackles & Supraorbital Brow Ridge (Aquiline Silhouette)
   // Eliminates any pale collar around the neck base (which looked like a vulture ruff)
@@ -1920,7 +2269,7 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   addMeshWithOutline(crestG, mGoldenNape, group);
 
   // 3. Deep Chisel-Shaped Aquiline Eagle Bill, Golden Cere & Fierce Supraorbital Brow
-  const cere = addMeshWithOutline(new THREE.SphereGeometry(0.082, 7, 6), mGoldenNape, group);
+  const cere = addMeshWithOutline(new THREE.SphereGeometry(0.082, 7, 6), mRaptorGold, group);
   cere.scale.set(1.10, 0.92, 1.15);
   cere.position.set(0, 0.08, 0.67);
 
@@ -1949,7 +2298,7 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
       [[side * 0.14, -0.20, -0.22], [side * 0.15, -0.28, -0.34], [side * 0.14, -0.24, -0.44]],
       0.048, 0.015, 6, 5, 0.85, 0.0, side + 8.3
     );
-    addMeshWithOutline(talonG, mGoldenNape, group);
+    addMeshWithOutline(talonG, mRaptorGold, group);
   });
 
   // 4. Broad, Rectangular Eagle Wings (3.0m Span) with Forward Carpal Wrist & Deep Splayed Finger Primaries
@@ -2003,6 +2352,12 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
       );
       addMeshWithOutline(fingerG, mPinion, outerPivot);
     }
+    const wingCol = side < 0 ? 'coral' : 'cyan';
+    const bInner = buildCorrelatedBoneRigSegment([0, 0, 0.04], [side * 0.82, 0.03, 0.14], 0.036, wingCol, innerPivot);
+    const bOuter = buildCorrelatedBoneRigSegment([0, 0, 0], [side * 0.90, 0.05, 0.0], 0.028, wingCol, outerPivot);
+    bInner.visible = isSkeletonXRayActive;
+    bOuter.visible = isSkeletonXRayActive;
+    skeletonRigGroups.push(bInner, bOuter);
     wingRigs.push({ side, innerPivot, outerPivot });
   });
 
@@ -2023,6 +2378,19 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   );
   addMeshWithOutline(tailBandG, mBuff, tailPivot);
   group.add(tailPivot);
+
+  // 1:1 Correlated Axial & Tail 3D Skeletal Rig (Keel Sternum -> Synsacrum -> Cervical -> Aquiline Skull -> Pygostyle Tail)
+  const eagleAxialRig = new THREE.Group();
+  eagleAxialRig.visible = isSkeletonXRayActive;
+  [
+    [[0, 0.03, -0.44], [0, 0.03, 0.10]],
+    [[0, 0.03, 0.10], [0, 0.07, 0.50]],
+    [[0, 0.07, 0.50], [0, 0.08, 0.88]]
+  ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.042, 'gold', eagleAxialRig));
+  group.add(eagleAxialRig);
+  const eagleTailRig = buildCorrelatedBoneRigSegment([0, 0, 0], [0, -0.02, -0.56], 0.034, 'gold', tailPivot);
+  eagleTailRig.visible = isSkeletonXRayActive;
+  skeletonRigGroups.push(eagleAxialRig, eagleTailRig);
 
   activeAnimatedCreatures.push({
     kind: 'avian_soar',
@@ -2285,6 +2653,8 @@ function rebuildFullValleyScene(lodIdx = currentLodIdx) {
   inspectableMeshes = [];
   outlineMeshes = [];
   wireframeMeshes = [];
+  skeletonRigGroups = [];
+  animalSkinMeshes = [];
   activeTrunkPivots = [];
   activeAnimatedCreatures = [];
   activeSwayFoliage = [];
@@ -2473,6 +2843,10 @@ function makeDedicatedStyleMatSet(styleIdx) {
       metalness: s.metalness
     });
   });
+  set.mammothUndercoat = new THREE.MeshStandardMaterial({ color: new THREE.Color(s.mammothFur || '#6f4518').multiplyScalar(0.62), flatShading: Boolean(s.flat), roughness: s.roughness });
+  set.countershadeCream = new THREE.MeshStandardMaterial({ color: new THREE.Color(s.tusk || '#f8f5e6').lerp(new THREE.Color(s.elkCoat || '#8c6d46'), 0.22), flatShading: Boolean(s.flat), roughness: s.roughness });
+  set.amberSpot = new THREE.MeshStandardMaterial({ color: new THREE.Color(s.smilodonCoat || '#d99b43').multiplyScalar(0.58), flatShading: Boolean(s.flat), roughness: s.roughness });
+  set.raptorGold = new THREE.MeshStandardMaterial({ color: new THREE.Color('#f59e0b').lerp(new THREE.Color(s.smilodonCoat || '#d99b43'), 0.25), flatShading: Boolean(s.flat), roughness: s.roughness });
   return set;
 }
 
@@ -2949,6 +3323,66 @@ function executeTeleport() {
   validTeleportTarget = null;
 }
 
+const SIX_VIEW_REF_MAP = {
+  woolly_mammoth: {
+    title: 'Woolly Mammoth (Mammuthus primigenius) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.814)',
+    styleImg: 'assets/references/woolly_mammoth_6view_style.jpg',
+    rigImg: 'assets/references/woolly_mammoth_6view_skeleton.jpg',
+    compareImg: 'assets/references/woolly_mammoth_6view_comparison.jpg',
+    glbUrl: 'assets/models/woolly_mammoth_6view.glb'
+  },
+  megaloceros: {
+    title: 'Giant Irish Elk (Megaloceros giganteus) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Aspect Parity: 0.826)',
+    styleImg: 'assets/references/megaloceros_6view_style.jpg',
+    rigImg: 'assets/references/megaloceros_6view_skeleton.jpg',
+    compareImg: 'assets/references/megaloceros_6view_comparison.jpg',
+    glbUrl: 'assets/models/megaloceros_6view.glb'
+  },
+  smilodon: {
+    title: 'Saber-Toothed Cat (Smilodon fatalis) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.848)',
+    styleImg: 'assets/references/smilodon_6view_style.jpg',
+    rigImg: 'assets/references/smilodon_6view_skeleton.jpg',
+    compareImg: 'assets/references/smilodon_6view_comparison.jpg',
+    glbUrl: 'assets/models/smilodon_6view.glb'
+  },
+  teratorn_vulture: {
+    title: "Haast's Eagle (Hieraaetus moorei) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Aspect Parity: 0.938)",
+    styleImg: 'assets/references/haast_eagle_6view_style.jpg',
+    rigImg: 'assets/references/haast_eagle_6view_skeleton.jpg',
+    compareImg: 'assets/references/haast_eagle_6view_comparison.jpg',
+    glbUrl: 'assets/models/haast_eagle_6view.glb'
+  }
+};
+
+function updateSixViewReferenceModal(speciesId = null) {
+  const modal = document.getElementById('six-view-ref-modal');
+  if (!modal) return;
+  const key = (speciesId && SIX_VIEW_REF_MAP[speciesId])
+    ? speciesId
+    : (SIX_VIEW_REF_MAP[isolatedAssetId] ? isolatedAssetId : 'woolly_mammoth');
+  const spec = SIX_VIEW_REF_MAP[key];
+  const titleEl = document.getElementById('six-view-ref-title');
+  const styleImgEl = document.getElementById('six-view-img-style');
+  const rigImgEl = document.getElementById('six-view-img-rig');
+  const compareImgEl = document.getElementById('six-view-img-compare');
+  const glbLinkEl = document.getElementById('six-view-glb-link');
+  const selectEl = document.getElementById('select-six-view-species');
+  if (titleEl) titleEl.textContent = spec.title;
+  if (styleImgEl) styleImgEl.src = spec.styleImg;
+  if (rigImgEl) rigImgEl.src = spec.rigImg;
+  if (compareImgEl && spec.compareImg) compareImgEl.src = spec.compareImg;
+  if (glbLinkEl && spec.glbUrl) glbLinkEl.href = spec.glbUrl;
+  if (selectEl) selectEl.value = key;
+}
+
+function toggleSixViewReferenceModal(forceState = null) {
+  const modal = document.getElementById('six-view-ref-modal');
+  if (!modal) return;
+  const nextOpen = forceState !== null ? Boolean(forceState) : modal.classList.contains('hidden');
+  modal.classList.toggle('hidden', !nextOpen);
+  if (nextOpen) updateSixViewReferenceModal();
+}
+
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyT') isAimingTeleport = true;
@@ -2957,6 +3391,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyN') applyLighting(currentLightingIdx - 1);
   if (e.code === 'KeyL') applyLighting(currentLightingIdx + 1);
   if (e.code === 'KeyM') triggerVoiceRequest();
+  if (e.code === 'KeyX') setSkeletonXRayMode(!isSkeletonXRayActive);
+  if (e.code === 'KeyR') toggleSixViewReferenceModal();
   if (e.code === 'Tab') {
     e.preventDefault();
     document.getElementById('style-panel').classList.toggle('minimized');
@@ -3036,9 +3472,20 @@ document.getElementById('btn-next-style').addEventListener('click', () => applyS
 document.getElementById('btn-next-lod').addEventListener('click', () => cycleLODMode());
 document.getElementById('btn-compare-lods').addEventListener('click', () => enterComparisonLineup('compare_lods'));
 document.getElementById('btn-compare-styles').addEventListener('click', () => enterComparisonLineup('compare_styles'));
-document.getElementById('select-asset').addEventListener('change', (e) => isolateAsset(e.target.value, true));
+document.getElementById('select-asset').addEventListener('change', (e) => {
+  isolateAsset(e.target.value, true);
+  updateSixViewReferenceModal(e.target.value);
+});
 document.getElementById('btn-approve-asset').addEventListener('click', () => approveCurrentAsset());
 document.getElementById('btn-voice-req').addEventListener('click', () => triggerVoiceRequest());
+const btnToggleXRayEl = document.getElementById('btn-toggle-xray-rig');
+if (btnToggleXRayEl) btnToggleXRayEl.addEventListener('click', () => setSkeletonXRayMode(!isSkeletonXRayActive));
+const btnOpenSixViewEl = document.getElementById('btn-open-six-view-ref');
+if (btnOpenSixViewEl) btnOpenSixViewEl.addEventListener('click', () => toggleSixViewReferenceModal(true));
+const btnCloseSixViewEl = document.getElementById('btn-close-six-view-ref');
+if (btnCloseSixViewEl) btnCloseSixViewEl.addEventListener('click', () => toggleSixViewReferenceModal(false));
+const selectSixViewEl = document.getElementById('select-six-view-species');
+if (selectSixViewEl) selectSixViewEl.addEventListener('change', (e) => updateSixViewReferenceModal(e.target.value));
 
 document.getElementById('btn-tp-meadow').addEventListener('click', () => {
   isolateAsset('all', false);
@@ -3255,48 +3702,39 @@ function updateHandPose(dt) {
   }
 }
 
-// Preload Artist-Sculpted Pre-Rigged .GLB Models & Drag-and-Drop Override Support
+// Preload 6-View Closed-Loop Walkabout .GLB Models & Drag-and-Drop Override Support
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/WoollyMammoth.glb?v=7',
+    url: './assets/models/woolly_mammoth_6view.glb?v=10',
     matKey: 'mammothFur',
-    rootScale: 1.48,
-    preserveMaterials: true,
-    preferredClip: /Mammoth_Idle/i,
-    secondaryClip: /Mammoth_Look_Side/i,
-    timeScale: 0.85,
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
     boneScales: {}
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/Stag.glb?v=6',
+    url: './assets/models/megaloceros_6view.glb?v=10',
     matKey: 'elkCoat',
-    rootScale: 0.80,
-    preserveMaterials: true,
-    preferredClip: /Idle_2/i,
-    secondaryClip: /Idle_Headlow/i,
-    timeScale: 0.85,
-    boneScales: {
-      Stag_Horns: [1.38, 1.22, 1.28],
-      Neck1: [1.14, 1.22, 1.14],
-      Torso3: [1.10, 1.16, 1.12]
-    }
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
+    boneScales: {}
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/Smilodon.glb?v=6',
+    url: './assets/models/smilodon_6view.glb?v=10',
     matKey: 'smilodonCoat',
-    rootScale: 1.05,
-    preserveMaterials: true,
-    preferredClip: /Sabertooth_Idle/i,
-    secondaryClip: /Sabertooth_Look_Side/i,
-    timeScale: 0.88,
-    boneScales: {
-      'Sabertooth Head_07': [0.84, 0.86, 0.86],
-      'Sabertooth zL Cheek_022': [0.60, 0.65, 0.65],
-      'Sabertooth zR Cheek_023': [0.60, 0.65, 0.65]
-    }
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
+    boneScales: {}
+  },
+  {
+    assetId: 'teratorn_vulture',
+    url: './assets/models/haast_eagle_6view.glb?v=10',
+    matKey: 'trunk',
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
+    boneScales: {}
   },
   {
     assetId: 'giant_sequoia',
@@ -3777,7 +4215,8 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
   });
 }
 
-function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '') {
+function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '', isSixViewWalkaboutGLB = false) {
+  if (isSixViewWalkaboutGLB) return;
   reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId);
 }
 
@@ -3786,7 +4225,7 @@ function preloadAllStudioGLBAssets() {
     gltfLoader.load(
       spec.url,
       (gltf) => {
-        tagLoadedGLBTemplate(gltf.scene, gltf, spec.assetId);
+        tagLoadedGLBTemplate(gltf.scene, gltf, spec.assetId, Boolean(spec.isSixViewWalkaboutGLB));
         glbHeroCache[spec.assetId] = {
           ...spec,
           scene: gltf.scene,
@@ -3817,6 +4256,7 @@ window.addEventListener('drop', (e) => {
     tagLoadedGLBTemplate(gltf.scene);
     const matMap = { woolly_mammoth: 'mammothFur', megaloceros: 'elkCoat', smilodon: 'smilodonCoat', teratorn_vulture: 'cliff' };
     glbHeroCache[targetId] = {
+      isUserDroppedOverride: true,
       scene: gltf.scene,
       animations: gltf.animations || [],
       matKey: matMap[targetId] || 'mammothFur',

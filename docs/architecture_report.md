@@ -15,7 +15,7 @@ This report documents the architectural, methodological, and mathematical founda
 | :--- | :--- | :--- | :--- |
 | **Bidirectional Sync Rate** | **100.0%** | 100.0% | `PASS (SYNCHRONIZED)` |
 | **Formal Design Premises** | **7 Premises** | $\ge 1$ Validated | `PASS` |
-| **Implementing Code Symbols** | **21 Tagged Symbols** | $1:1$ Symbol Linkage | `PASS` |
+| **Implementing Code Symbols** | **23 Tagged Symbols** | $1:1$ Symbol Linkage | `PASS` |
 | **Unimplemented Premises** | **0** | 0 | `PASS` |
 | **Orphaned Code Tags** | **0** | 0 | `PASS` |
 | **Symbolic Math Claims** | **2/2 Claims** | SymPy Verification | `PASS (100% VERIFIED)` |
@@ -177,6 +177,13 @@ articulated 3-joint quadruped limbs, biomechanical gait/IK solvers, and
 pre-rigged .glb SkeletonUtils morphing.
 @premise(P5_PIXPAL_DIORAMA_BUDGET)
 @premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[verify_six_view_reference_and_rig_pipeline](xr_studio_engine.py#L222)` (`xr_studio_engine.py:222`)
+    - *Signature:* `def verify_six_view_reference_and_rig_pipeline(studio_dir)`
+    - *Docstring Intent:* Verifies that all 8 orthogonal 6-view turnaround + 1:1 skeletal rig reference artifacts,
+the compiled 6-view manifest, and the 3D X-Ray skeletal rig & 4-band anime cel shader
+are present and valid.
+@premise(P5_PIXPAL_DIORAMA_BUDGET)
+@premise(P7_STUDIO_CONVERGENCE)
 
 ### 3.6 [P6_PARAMETRIC_CSG_HOUSE] Rapid architectural iteration and minigame prototyping require compiling declarative JSON floorplans into live-modifiable 3D room, roof, patio, and putting-green primitives.
 
@@ -231,7 +238,14 @@ articulated 3-joint quadruped limbs, biomechanical gait/IK solvers, and
 pre-rigged .glb SkeletonUtils morphing.
 @premise(P5_PIXPAL_DIORAMA_BUDGET)
 @premise(P7_STUDIO_CONVERGENCE)
-  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L222)` (`xr_studio_engine.py:222`)
+  - **Function** `[verify_six_view_reference_and_rig_pipeline](xr_studio_engine.py#L222)` (`xr_studio_engine.py:222`)
+    - *Signature:* `def verify_six_view_reference_and_rig_pipeline(studio_dir)`
+    - *Docstring Intent:* Verifies that all 8 orthogonal 6-view turnaround + 1:1 skeletal rig reference artifacts,
+the compiled 6-view manifest, and the 3D X-Ray skeletal rig & 4-band anime cel shader
+are present and valid.
+@premise(P5_PIXPAL_DIORAMA_BUDGET)
+@premise(P7_STUDIO_CONVERGENCE)
+  - **Function** `[run_full_studio_convergence](xr_studio_engine.py#L264)` (`xr_studio_engine.py:264`)
     - *Signature:* `def run_full_studio_convergence(cls, studio_dir)`
     - *Docstring Intent:* Executes end-to-end studio verification across locomotion, wristwatch UI, and scene budget.
 @premise(P7_STUDIO_CONVERGENCE)
@@ -298,6 +312,7 @@ The following matrix maps every formal premise in the architecture argument to i
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `audit_studio_blueprint` | `function` | `xr_studio_engine.py:94` | `SYNCHRONIZED` |
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
 | `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `verify_skeletal_loft_and_glb_morph` | `function` | `xr_studio_engine.py:177` | `SYNCHRONIZED` |
+| `P5_PIXPAL_DIORAMA_BUDGET` | `V_WRIST_UI >> V_PIXPAL` | `verify_six_view_reference_and_rig_pipeline` | `function` | `xr_studio_engine.py:222` | `SYNCHRONIZED` |
 | `P6_PARAMETRIC_CSG_HOUSE` | `(V_PIXPAL & V_WRIST_UI) >> V_CSG_HOUSE` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
 | `P6_PARAMETRIC_CSG_HOUSE` | `(V_PIXPAL & V_WRIST_UI) >> V_CSG_HOUSE` | `audit_studio_blueprint` | `function` | `xr_studio_engine.py:94` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `xr_studio_engine` | `module` | `xr_studio_engine.py:1` | `SYNCHRONIZED` |
@@ -305,7 +320,8 @@ The following matrix maps every formal premise in the architecture argument to i
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_lod_and_shader_matrix` | `function` | `xr_studio_engine.py:111` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `sync_inline_bundle` | `function` | `xr_studio_engine.py:145` | `SYNCHRONIZED` |
 | `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_skeletal_loft_and_glb_morph` | `function` | `xr_studio_engine.py:177` | `SYNCHRONIZED` |
-| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:222` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `verify_six_view_reference_and_rig_pipeline` | `function` | `xr_studio_engine.py:222` | `SYNCHRONIZED` |
+| `P7_STUDIO_CONVERGENCE` | `(V_CSG_HOUSE & V_PARABOLIC) >> V_QUEST_STUDIO` | `run_full_studio_convergence` | `function` | `xr_studio_engine.py:264` | `SYNCHRONIZED` |
 
 ---
 

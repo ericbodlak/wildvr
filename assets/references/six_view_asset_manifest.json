@@ -1,0 +1,4731 @@
+{
+  "version": 2,
+  "pipeline": "six_view_orthogonal_walkabout_anime_to_3d",
+  "orthogonal_views": [
+    "FRONT",
+    "BACK",
+    "LEFT",
+    "RIGHT",
+    "TOP",
+    "BOTTOM"
+  ],
+  "all_registrations_valid": true,
+  "species": {
+    "woolly_mammoth": {
+      "species_id": "woolly_mammoth",
+      "scientific_name": "Mammuthus primigenius",
+      "aesthetic_style": "walkabout_mini_golf_faceted_diorama",
+      "shading_pipeline": "toon_cel_4band_ink_outlines",
+      "turnaround_image_artifact": "assets/references/woolly_mammoth_6view_style.jpg",
+      "skeletal_rig_image_artifact": "assets/references/woolly_mammoth_6view_skeleton.jpg",
+      "orthogonal_views": [
+        "FRONT",
+        "BACK",
+        "LEFT",
+        "RIGHT",
+        "TOP",
+        "BOTTOM"
+      ],
+      "chiseled_facet_sides": 10,
+      "toon_bands": 4,
+      "crease_angle_deg": 20.0,
+      "visual_hull_slices": [
+        {
+          "z": -1.85,
+          "y_bot": 1.32,
+          "y_top": 2.42,
+          "x_half": 0.48,
+          "chisel_bevel": 0.24
+        },
+        {
+          "z": -1.22,
+          "y_bot": 0.96,
+          "y_top": 3.08,
+          "x_half": 0.96,
+          "chisel_bevel": 0.26
+        },
+        {
+          "z": -0.22,
+          "y_bot": 0.82,
+          "y_top": 3.36,
+          "x_half": 1.16,
+          "chisel_bevel": 0.28
+        },
+        {
+          "z": 0.82,
+          "y_bot": 0.78,
+          "y_top": 3.64,
+          "x_half": 1.22,
+          "chisel_bevel": 0.3
+        },
+        {
+          "z": 1.52,
+          "y_bot": 1.54,
+          "y_top": 3.82,
+          "x_half": 0.84,
+          "chisel_bevel": 0.28
+        },
+        {
+          "z": 2.26,
+          "y_bot": 0.56,
+          "y_top": 3.45,
+          "x_half": 0.58,
+          "chisel_bevel": 0.26
+        }
+      ],
+      "correlated_skeleton": [
+        {
+          "bone_id": "root_pelvis",
+          "parent_id": null,
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            2.05,
+            -1.25
+          ],
+          "tail_xyz": [
+            0.0,
+            2.24,
+            -0.25
+          ],
+          "envelope_radii_xy": [
+            0.96,
+            1.12
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                2.05
+              ],
+              "tail": [
+                0.0,
+                2.24
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                2.05
+              ],
+              "tail": [
+                -0.0,
+                2.24
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -1.25,
+                2.05
+              ],
+              "tail": [
+                -0.25,
+                2.24
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                1.25,
+                2.05
+              ],
+              "tail": [
+                0.25,
+                2.24
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                1.25
+              ],
+              "tail": [
+                0.0,
+                0.25
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -1.25
+              ],
+              "tail": [
+                0.0,
+                -0.25
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "spine_thorax_hump",
+          "parent_id": "root_pelvis",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            2.24,
+            -0.25
+          ],
+          "tail_xyz": [
+            0.0,
+            2.56,
+            0.86
+          ],
+          "envelope_radii_xy": [
+            1.18,
+            1.42
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                2.24
+              ],
+              "tail": [
+                0.0,
+                2.56
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                2.24
+              ],
+              "tail": [
+                -0.0,
+                2.56
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.25,
+                2.24
+              ],
+              "tail": [
+                0.86,
+                2.56
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.25,
+                2.24
+              ],
+              "tail": [
+                -0.86,
+                2.56
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.25
+              ],
+              "tail": [
+                0.0,
+                -0.86
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.25
+              ],
+              "tail": [
+                0.0,
+                0.86
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "neck_cervical",
+          "parent_id": "spine_thorax_hump",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            2.56,
+            0.86
+          ],
+          "tail_xyz": [
+            0.0,
+            2.64,
+            1.52
+          ],
+          "envelope_radii_xy": [
+            0.86,
+            1.04
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                2.56
+              ],
+              "tail": [
+                0.0,
+                2.64
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                2.56
+              ],
+              "tail": [
+                -0.0,
+                2.64
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.86,
+                2.56
+              ],
+              "tail": [
+                1.52,
+                2.64
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.86,
+                2.56
+              ],
+              "tail": [
+                -1.52,
+                2.64
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.86
+              ],
+              "tail": [
+                0.0,
+                -1.52
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.86
+              ],
+              "tail": [
+                0.0,
+                1.52
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "skull_cranium_dome",
+          "parent_id": "neck_cervical",
+          "role": "head",
+          "head_xyz": [
+            0.0,
+            2.64,
+            1.52
+          ],
+          "tail_xyz": [
+            0.0,
+            3.12,
+            1.96
+          ],
+          "envelope_radii_xy": [
+            0.74,
+            0.92
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                2.64
+              ],
+              "tail": [
+                0.0,
+                3.12
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                2.64
+              ],
+              "tail": [
+                -0.0,
+                3.12
+              ]
+            },
+            "LEFT": {
+              "head": [
+                1.52,
+                2.64
+              ],
+              "tail": [
+                1.96,
+                3.12
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -1.52,
+                2.64
+              ],
+              "tail": [
+                -1.96,
+                3.12
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -1.52
+              ],
+              "tail": [
+                0.0,
+                -1.96
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                1.52
+              ],
+              "tail": [
+                0.0,
+                1.96
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "trunk_base",
+          "parent_id": "skull_cranium_dome",
+          "role": "trunk",
+          "head_xyz": [
+            0.0,
+            2.48,
+            2.18
+          ],
+          "tail_xyz": [
+            0.0,
+            1.72,
+            2.42
+          ],
+          "envelope_radii_xy": [
+            0.32,
+            0.32
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                2.48
+              ],
+              "tail": [
+                0.0,
+                1.72
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                2.48
+              ],
+              "tail": [
+                -0.0,
+                1.72
+              ]
+            },
+            "LEFT": {
+              "head": [
+                2.18,
+                2.48
+              ],
+              "tail": [
+                2.42,
+                1.72
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -2.18,
+                2.48
+              ],
+              "tail": [
+                -2.42,
+                1.72
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -2.18
+              ],
+              "tail": [
+                0.0,
+                -2.42
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                2.18
+              ],
+              "tail": [
+                0.0,
+                2.42
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "trunk_mid",
+          "parent_id": "trunk_base",
+          "role": "trunk",
+          "head_xyz": [
+            0.0,
+            1.72,
+            2.42
+          ],
+          "tail_xyz": [
+            0.0,
+            1.02,
+            2.38
+          ],
+          "envelope_radii_xy": [
+            0.22,
+            0.22
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                1.72
+              ],
+              "tail": [
+                0.0,
+                1.02
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                1.72
+              ],
+              "tail": [
+                -0.0,
+                1.02
+              ]
+            },
+            "LEFT": {
+              "head": [
+                2.42,
+                1.72
+              ],
+              "tail": [
+                2.38,
+                1.02
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -2.42,
+                1.72
+              ],
+              "tail": [
+                -2.38,
+                1.02
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -2.42
+              ],
+              "tail": [
+                0.0,
+                -2.38
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                2.42
+              ],
+              "tail": [
+                0.0,
+                2.38
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "trunk_tip",
+          "parent_id": "trunk_mid",
+          "role": "trunk",
+          "head_xyz": [
+            0.0,
+            1.02,
+            2.38
+          ],
+          "tail_xyz": [
+            0.0,
+            0.78,
+            2.12
+          ],
+          "envelope_radii_xy": [
+            0.13,
+            0.13
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                1.02
+              ],
+              "tail": [
+                0.0,
+                0.78
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                1.02
+              ],
+              "tail": [
+                -0.0,
+                0.78
+              ]
+            },
+            "LEFT": {
+              "head": [
+                2.38,
+                1.02
+              ],
+              "tail": [
+                2.12,
+                0.78
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -2.38,
+                1.02
+              ],
+              "tail": [
+                -2.12,
+                0.78
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -2.38
+              ],
+              "tail": [
+                0.0,
+                -2.12
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                2.38
+              ],
+              "tail": [
+                0.0,
+                2.12
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "tusk_helical_L",
+          "parent_id": "skull_cranium_dome",
+          "role": "ivory",
+          "head_xyz": [
+            -0.36,
+            2.32,
+            2.12
+          ],
+          "tail_xyz": [
+            -0.62,
+            2.54,
+            3.82
+          ],
+          "envelope_radii_xy": [
+            0.13,
+            0.13
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.36,
+                2.32
+              ],
+              "tail": [
+                -0.62,
+                2.54
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.36,
+                2.32
+              ],
+              "tail": [
+                0.62,
+                2.54
+              ]
+            },
+            "LEFT": {
+              "head": [
+                2.12,
+                2.32
+              ],
+              "tail": [
+                3.82,
+                2.54
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -2.12,
+                2.32
+              ],
+              "tail": [
+                -3.82,
+                2.54
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.36,
+                -2.12
+              ],
+              "tail": [
+                -0.62,
+                -3.82
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.36,
+                2.12
+              ],
+              "tail": [
+                -0.62,
+                3.82
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "tusk_helical_R",
+          "parent_id": "skull_cranium_dome",
+          "role": "ivory",
+          "head_xyz": [
+            0.36,
+            2.32,
+            2.12
+          ],
+          "tail_xyz": [
+            0.62,
+            2.54,
+            3.82
+          ],
+          "envelope_radii_xy": [
+            0.13,
+            0.13
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.36,
+                2.32
+              ],
+              "tail": [
+                0.62,
+                2.54
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.36,
+                2.32
+              ],
+              "tail": [
+                -0.62,
+                2.54
+              ]
+            },
+            "LEFT": {
+              "head": [
+                2.12,
+                2.32
+              ],
+              "tail": [
+                3.82,
+                2.54
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -2.12,
+                2.32
+              ],
+              "tail": [
+                -3.82,
+                2.54
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.36,
+                -2.12
+              ],
+              "tail": [
+                0.62,
+                -3.82
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.36,
+                2.12
+              ],
+              "tail": [
+                0.62,
+                3.82
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_L_scapula_humerus",
+          "parent_id": "spine_thorax_hump",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.68,
+            2.02,
+            0.98
+          ],
+          "tail_xyz": [
+            -0.68,
+            1.0,
+            0.98
+          ],
+          "envelope_radii_xy": [
+            0.42,
+            0.42
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.68,
+                2.02
+              ],
+              "tail": [
+                -0.68,
+                1.0
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.68,
+                2.02
+              ],
+              "tail": [
+                0.68,
+                1.0
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.98,
+                2.02
+              ],
+              "tail": [
+                0.98,
+                1.0
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.98,
+                2.02
+              ],
+              "tail": [
+                -0.98,
+                1.0
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.68,
+                -0.98
+              ],
+              "tail": [
+                -0.68,
+                -0.98
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.68,
+                0.98
+              ],
+              "tail": [
+                -0.68,
+                0.98
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_L_radius_manus",
+          "parent_id": "front_L_scapula_humerus",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.68,
+            1.0,
+            0.98
+          ],
+          "tail_xyz": [
+            -0.68,
+            0.08,
+            1.0
+          ],
+          "envelope_radii_xy": [
+            0.32,
+            0.32
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.68,
+                1.0
+              ],
+              "tail": [
+                -0.68,
+                0.08
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.68,
+                1.0
+              ],
+              "tail": [
+                0.68,
+                0.08
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.98,
+                1.0
+              ],
+              "tail": [
+                1.0,
+                0.08
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.98,
+                1.0
+              ],
+              "tail": [
+                -1.0,
+                0.08
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.68,
+                -0.98
+              ],
+              "tail": [
+                -0.68,
+                -1.0
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.68,
+                0.98
+              ],
+              "tail": [
+                -0.68,
+                1.0
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_R_scapula_humerus",
+          "parent_id": "spine_thorax_hump",
+          "role": "limb_R",
+          "head_xyz": [
+            0.68,
+            2.02,
+            0.98
+          ],
+          "tail_xyz": [
+            0.68,
+            1.0,
+            0.98
+          ],
+          "envelope_radii_xy": [
+            0.42,
+            0.42
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.68,
+                2.02
+              ],
+              "tail": [
+                0.68,
+                1.0
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.68,
+                2.02
+              ],
+              "tail": [
+                -0.68,
+                1.0
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.98,
+                2.02
+              ],
+              "tail": [
+                0.98,
+                1.0
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.98,
+                2.02
+              ],
+              "tail": [
+                -0.98,
+                1.0
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.68,
+                -0.98
+              ],
+              "tail": [
+                0.68,
+                -0.98
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.68,
+                0.98
+              ],
+              "tail": [
+                0.68,
+                0.98
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_R_radius_manus",
+          "parent_id": "front_R_scapula_humerus",
+          "role": "limb_R",
+          "head_xyz": [
+            0.68,
+            1.0,
+            0.98
+          ],
+          "tail_xyz": [
+            0.68,
+            0.08,
+            1.0
+          ],
+          "envelope_radii_xy": [
+            0.32,
+            0.32
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.68,
+                1.0
+              ],
+              "tail": [
+                0.68,
+                0.08
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.68,
+                1.0
+              ],
+              "tail": [
+                -0.68,
+                0.08
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.98,
+                1.0
+              ],
+              "tail": [
+                1.0,
+                0.08
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.98,
+                1.0
+              ],
+              "tail": [
+                -1.0,
+                0.08
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.68,
+                -0.98
+              ],
+              "tail": [
+                0.68,
+                -1.0
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.68,
+                0.98
+              ],
+              "tail": [
+                0.68,
+                1.0
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_L_femur",
+          "parent_id": "root_pelvis",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.6,
+            1.86,
+            -1.22
+          ],
+          "tail_xyz": [
+            -0.6,
+            0.92,
+            -1.22
+          ],
+          "envelope_radii_xy": [
+            0.38,
+            0.38
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.6,
+                1.86
+              ],
+              "tail": [
+                -0.6,
+                0.92
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.6,
+                1.86
+              ],
+              "tail": [
+                0.6,
+                0.92
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -1.22,
+                1.86
+              ],
+              "tail": [
+                -1.22,
+                0.92
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                1.22,
+                1.86
+              ],
+              "tail": [
+                1.22,
+                0.92
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.6,
+                1.22
+              ],
+              "tail": [
+                -0.6,
+                1.22
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.6,
+                -1.22
+              ],
+              "tail": [
+                -0.6,
+                -1.22
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_L_tibia_pes",
+          "parent_id": "hind_L_femur",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.6,
+            0.92,
+            -1.22
+          ],
+          "tail_xyz": [
+            -0.6,
+            0.08,
+            -1.2
+          ],
+          "envelope_radii_xy": [
+            0.29,
+            0.29
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.6,
+                0.92
+              ],
+              "tail": [
+                -0.6,
+                0.08
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.6,
+                0.92
+              ],
+              "tail": [
+                0.6,
+                0.08
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -1.22,
+                0.92
+              ],
+              "tail": [
+                -1.2,
+                0.08
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                1.22,
+                0.92
+              ],
+              "tail": [
+                1.2,
+                0.08
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.6,
+                1.22
+              ],
+              "tail": [
+                -0.6,
+                1.2
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.6,
+                -1.22
+              ],
+              "tail": [
+                -0.6,
+                -1.2
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_R_femur",
+          "parent_id": "root_pelvis",
+          "role": "limb_R",
+          "head_xyz": [
+            0.6,
+            1.86,
+            -1.22
+          ],
+          "tail_xyz": [
+            0.6,
+            0.92,
+            -1.22
+          ],
+          "envelope_radii_xy": [
+            0.38,
+            0.38
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.6,
+                1.86
+              ],
+              "tail": [
+                0.6,
+                0.92
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.6,
+                1.86
+              ],
+              "tail": [
+                -0.6,
+                0.92
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -1.22,
+                1.86
+              ],
+              "tail": [
+                -1.22,
+                0.92
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                1.22,
+                1.86
+              ],
+              "tail": [
+                1.22,
+                0.92
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.6,
+                1.22
+              ],
+              "tail": [
+                0.6,
+                1.22
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.6,
+                -1.22
+              ],
+              "tail": [
+                0.6,
+                -1.22
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_R_tibia_pes",
+          "parent_id": "hind_R_femur",
+          "role": "limb_R",
+          "head_xyz": [
+            0.6,
+            0.92,
+            -1.22
+          ],
+          "tail_xyz": [
+            0.6,
+            0.08,
+            -1.2
+          ],
+          "envelope_radii_xy": [
+            0.29,
+            0.29
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.6,
+                0.92
+              ],
+              "tail": [
+                0.6,
+                0.08
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.6,
+                0.92
+              ],
+              "tail": [
+                -0.6,
+                0.08
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -1.22,
+                0.92
+              ],
+              "tail": [
+                -1.2,
+                0.08
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                1.22,
+                0.92
+              ],
+              "tail": [
+                1.2,
+                0.08
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.6,
+                1.22
+              ],
+              "tail": [
+                0.6,
+                1.2
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.6,
+                -1.22
+              ],
+              "tail": [
+                0.6,
+                -1.2
+              ]
+            }
+          }
+        }
+      ],
+      "registration_parity_valid": true,
+      "hull_containment_ratio": 1.0
+    },
+    "smilodon": {
+      "species_id": "smilodon",
+      "scientific_name": "Smilodon fatalis",
+      "aesthetic_style": "walkabout_mini_golf_faceted_diorama",
+      "shading_pipeline": "toon_cel_4band_ink_outlines",
+      "turnaround_image_artifact": "assets/references/smilodon_6view_style.jpg",
+      "skeletal_rig_image_artifact": "assets/references/smilodon_6view_skeleton.jpg",
+      "orthogonal_views": [
+        "FRONT",
+        "BACK",
+        "LEFT",
+        "RIGHT",
+        "TOP",
+        "BOTTOM"
+      ],
+      "chiseled_facet_sides": 10,
+      "toon_bands": 4,
+      "crease_angle_deg": 20.0,
+      "visual_hull_slices": [
+        {
+          "z": -0.78,
+          "y_bot": 0.68,
+          "y_top": 1.04,
+          "x_half": 0.18,
+          "chisel_bevel": 0.22
+        },
+        {
+          "z": -0.48,
+          "y_bot": 0.56,
+          "y_top": 1.12,
+          "x_half": 0.34,
+          "chisel_bevel": 0.25
+        },
+        {
+          "z": -0.05,
+          "y_bot": 0.52,
+          "y_top": 1.08,
+          "x_half": 0.31,
+          "chisel_bevel": 0.24
+        },
+        {
+          "z": 0.44,
+          "y_bot": 0.48,
+          "y_top": 1.22,
+          "x_half": 0.42,
+          "chisel_bevel": 0.28
+        },
+        {
+          "z": 0.76,
+          "y_bot": 0.66,
+          "y_top": 1.26,
+          "x_half": 0.32,
+          "chisel_bevel": 0.26
+        },
+        {
+          "z": 1.14,
+          "y_bot": 0.78,
+          "y_top": 1.24,
+          "x_half": 0.22,
+          "chisel_bevel": 0.3
+        }
+      ],
+      "correlated_skeleton": [
+        {
+          "bone_id": "root_pelvis",
+          "parent_id": null,
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            0.9,
+            -0.52
+          ],
+          "tail_xyz": [
+            0.0,
+            0.88,
+            -0.1
+          ],
+          "envelope_radii_xy": [
+            0.3,
+            0.32
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.9
+              ],
+              "tail": [
+                0.0,
+                0.88
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.9
+              ],
+              "tail": [
+                -0.0,
+                0.88
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.52,
+                0.9
+              ],
+              "tail": [
+                -0.1,
+                0.88
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.52,
+                0.9
+              ],
+              "tail": [
+                0.1,
+                0.88
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.52
+              ],
+              "tail": [
+                0.0,
+                0.1
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.52
+              ],
+              "tail": [
+                0.0,
+                -0.1
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "spine_thorax",
+          "parent_id": "root_pelvis",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            0.88,
+            -0.1
+          ],
+          "tail_xyz": [
+            0.0,
+            0.98,
+            0.46
+          ],
+          "envelope_radii_xy": [
+            0.38,
+            0.42
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.88
+              ],
+              "tail": [
+                0.0,
+                0.98
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.88
+              ],
+              "tail": [
+                -0.0,
+                0.98
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.1,
+                0.88
+              ],
+              "tail": [
+                0.46,
+                0.98
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.1,
+                0.88
+              ],
+              "tail": [
+                -0.46,
+                0.98
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.1
+              ],
+              "tail": [
+                0.0,
+                -0.46
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.1
+              ],
+              "tail": [
+                0.0,
+                0.46
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "neck_cervical",
+          "parent_id": "spine_thorax",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            0.98,
+            0.46
+          ],
+          "tail_xyz": [
+            0.0,
+            1.06,
+            0.74
+          ],
+          "envelope_radii_xy": [
+            0.28,
+            0.3
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.98
+              ],
+              "tail": [
+                0.0,
+                1.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.98
+              ],
+              "tail": [
+                -0.0,
+                1.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.46,
+                0.98
+              ],
+              "tail": [
+                0.74,
+                1.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.46,
+                0.98
+              ],
+              "tail": [
+                -0.74,
+                1.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.46
+              ],
+              "tail": [
+                0.0,
+                -0.74
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.46
+              ],
+              "tail": [
+                0.0,
+                0.74
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "skull_head",
+          "parent_id": "neck_cervical",
+          "role": "head",
+          "head_xyz": [
+            0.0,
+            1.06,
+            0.74
+          ],
+          "tail_xyz": [
+            0.0,
+            1.02,
+            1.18
+          ],
+          "envelope_radii_xy": [
+            0.22,
+            0.22
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                1.06
+              ],
+              "tail": [
+                0.0,
+                1.02
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                1.06
+              ],
+              "tail": [
+                -0.0,
+                1.02
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.74,
+                1.06
+              ],
+              "tail": [
+                1.18,
+                1.02
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.74,
+                1.06
+              ],
+              "tail": [
+                -1.18,
+                1.02
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.74
+              ],
+              "tail": [
+                0.0,
+                -1.18
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.74
+              ],
+              "tail": [
+                0.0,
+                1.18
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "mandible_jaw",
+          "parent_id": "skull_head",
+          "role": "head",
+          "head_xyz": [
+            0.0,
+            0.96,
+            0.82
+          ],
+          "tail_xyz": [
+            0.0,
+            0.9,
+            1.12
+          ],
+          "envelope_radii_xy": [
+            0.14,
+            0.08
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.96
+              ],
+              "tail": [
+                0.0,
+                0.9
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.96
+              ],
+              "tail": [
+                -0.0,
+                0.9
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.82,
+                0.96
+              ],
+              "tail": [
+                1.12,
+                0.9
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.82,
+                0.96
+              ],
+              "tail": [
+                -1.12,
+                0.9
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.82
+              ],
+              "tail": [
+                0.0,
+                -1.12
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.82
+              ],
+              "tail": [
+                0.0,
+                1.12
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "saber_L",
+          "parent_id": "skull_head",
+          "role": "ivory",
+          "head_xyz": [
+            -0.11,
+            0.98,
+            1.08
+          ],
+          "tail_xyz": [
+            -0.1,
+            0.66,
+            1.06
+          ],
+          "envelope_radii_xy": [
+            0.035,
+            0.02
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.11,
+                0.98
+              ],
+              "tail": [
+                -0.1,
+                0.66
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.11,
+                0.98
+              ],
+              "tail": [
+                0.1,
+                0.66
+              ]
+            },
+            "LEFT": {
+              "head": [
+                1.08,
+                0.98
+              ],
+              "tail": [
+                1.06,
+                0.66
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -1.08,
+                0.98
+              ],
+              "tail": [
+                -1.06,
+                0.66
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.11,
+                -1.08
+              ],
+              "tail": [
+                -0.1,
+                -1.06
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.11,
+                1.08
+              ],
+              "tail": [
+                -0.1,
+                1.06
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "saber_R",
+          "parent_id": "skull_head",
+          "role": "ivory",
+          "head_xyz": [
+            0.11,
+            0.98,
+            1.08
+          ],
+          "tail_xyz": [
+            0.1,
+            0.66,
+            1.06
+          ],
+          "envelope_radii_xy": [
+            0.035,
+            0.02
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.11,
+                0.98
+              ],
+              "tail": [
+                0.1,
+                0.66
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.11,
+                0.98
+              ],
+              "tail": [
+                -0.1,
+                0.66
+              ]
+            },
+            "LEFT": {
+              "head": [
+                1.08,
+                0.98
+              ],
+              "tail": [
+                1.06,
+                0.66
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -1.08,
+                0.98
+              ],
+              "tail": [
+                -1.06,
+                0.66
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.11,
+                -1.08
+              ],
+              "tail": [
+                0.1,
+                -1.06
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.11,
+                1.08
+              ],
+              "tail": [
+                0.1,
+                1.06
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "tail_bobbed",
+          "parent_id": "root_pelvis",
+          "role": "tail",
+          "head_xyz": [
+            0.0,
+            0.9,
+            -0.52
+          ],
+          "tail_xyz": [
+            0.0,
+            0.72,
+            -0.82
+          ],
+          "envelope_radii_xy": [
+            0.06,
+            0.06
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.9
+              ],
+              "tail": [
+                0.0,
+                0.72
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.9
+              ],
+              "tail": [
+                -0.0,
+                0.72
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.52,
+                0.9
+              ],
+              "tail": [
+                -0.82,
+                0.72
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.52,
+                0.9
+              ],
+              "tail": [
+                0.82,
+                0.72
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.52
+              ],
+              "tail": [
+                0.0,
+                0.82
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.52
+              ],
+              "tail": [
+                0.0,
+                -0.82
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_L_upper",
+          "parent_id": "spine_thorax",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.25,
+            0.82,
+            0.46
+          ],
+          "tail_xyz": [
+            -0.25,
+            0.42,
+            0.44
+          ],
+          "envelope_radii_xy": [
+            0.15,
+            0.15
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.25,
+                0.82
+              ],
+              "tail": [
+                -0.25,
+                0.42
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.25,
+                0.82
+              ],
+              "tail": [
+                0.25,
+                0.42
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.46,
+                0.82
+              ],
+              "tail": [
+                0.44,
+                0.42
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.46,
+                0.82
+              ],
+              "tail": [
+                -0.44,
+                0.42
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.25,
+                -0.46
+              ],
+              "tail": [
+                -0.25,
+                -0.44
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.25,
+                0.46
+              ],
+              "tail": [
+                -0.25,
+                0.44
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_L_lower",
+          "parent_id": "front_L_upper",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.25,
+            0.42,
+            0.44
+          ],
+          "tail_xyz": [
+            -0.25,
+            0.06,
+            0.48
+          ],
+          "envelope_radii_xy": [
+            0.11,
+            0.11
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.25,
+                0.42
+              ],
+              "tail": [
+                -0.25,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.25,
+                0.42
+              ],
+              "tail": [
+                0.25,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.44,
+                0.42
+              ],
+              "tail": [
+                0.48,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.44,
+                0.42
+              ],
+              "tail": [
+                -0.48,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.25,
+                -0.44
+              ],
+              "tail": [
+                -0.25,
+                -0.48
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.25,
+                0.44
+              ],
+              "tail": [
+                -0.25,
+                0.48
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_R_upper",
+          "parent_id": "spine_thorax",
+          "role": "limb_R",
+          "head_xyz": [
+            0.25,
+            0.82,
+            0.46
+          ],
+          "tail_xyz": [
+            0.25,
+            0.42,
+            0.44
+          ],
+          "envelope_radii_xy": [
+            0.15,
+            0.15
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.25,
+                0.82
+              ],
+              "tail": [
+                0.25,
+                0.42
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.25,
+                0.82
+              ],
+              "tail": [
+                -0.25,
+                0.42
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.46,
+                0.82
+              ],
+              "tail": [
+                0.44,
+                0.42
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.46,
+                0.82
+              ],
+              "tail": [
+                -0.44,
+                0.42
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.25,
+                -0.46
+              ],
+              "tail": [
+                0.25,
+                -0.44
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.25,
+                0.46
+              ],
+              "tail": [
+                0.25,
+                0.44
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_R_lower",
+          "parent_id": "front_R_upper",
+          "role": "limb_R",
+          "head_xyz": [
+            0.25,
+            0.42,
+            0.44
+          ],
+          "tail_xyz": [
+            0.25,
+            0.06,
+            0.48
+          ],
+          "envelope_radii_xy": [
+            0.11,
+            0.11
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.25,
+                0.42
+              ],
+              "tail": [
+                0.25,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.25,
+                0.42
+              ],
+              "tail": [
+                -0.25,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.44,
+                0.42
+              ],
+              "tail": [
+                0.48,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.44,
+                0.42
+              ],
+              "tail": [
+                -0.48,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.25,
+                -0.44
+              ],
+              "tail": [
+                0.25,
+                -0.48
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.25,
+                0.44
+              ],
+              "tail": [
+                0.25,
+                0.48
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_L_upper",
+          "parent_id": "root_pelvis",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.22,
+            0.82,
+            -0.52
+          ],
+          "tail_xyz": [
+            -0.22,
+            0.42,
+            -0.56
+          ],
+          "envelope_radii_xy": [
+            0.14,
+            0.14
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.22,
+                0.82
+              ],
+              "tail": [
+                -0.22,
+                0.42
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.22,
+                0.82
+              ],
+              "tail": [
+                0.22,
+                0.42
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.52,
+                0.82
+              ],
+              "tail": [
+                -0.56,
+                0.42
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.52,
+                0.82
+              ],
+              "tail": [
+                0.56,
+                0.42
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.22,
+                0.52
+              ],
+              "tail": [
+                -0.22,
+                0.56
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.22,
+                -0.52
+              ],
+              "tail": [
+                -0.22,
+                -0.56
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_L_lower",
+          "parent_id": "hind_L_upper",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.22,
+            0.42,
+            -0.56
+          ],
+          "tail_xyz": [
+            -0.22,
+            0.06,
+            -0.5
+          ],
+          "envelope_radii_xy": [
+            0.1,
+            0.1
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.22,
+                0.42
+              ],
+              "tail": [
+                -0.22,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.22,
+                0.42
+              ],
+              "tail": [
+                0.22,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.56,
+                0.42
+              ],
+              "tail": [
+                -0.5,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.56,
+                0.42
+              ],
+              "tail": [
+                0.5,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.22,
+                0.56
+              ],
+              "tail": [
+                -0.22,
+                0.5
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.22,
+                -0.56
+              ],
+              "tail": [
+                -0.22,
+                -0.5
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_R_upper",
+          "parent_id": "root_pelvis",
+          "role": "limb_R",
+          "head_xyz": [
+            0.22,
+            0.82,
+            -0.52
+          ],
+          "tail_xyz": [
+            0.22,
+            0.42,
+            -0.56
+          ],
+          "envelope_radii_xy": [
+            0.14,
+            0.14
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.22,
+                0.82
+              ],
+              "tail": [
+                0.22,
+                0.42
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.22,
+                0.82
+              ],
+              "tail": [
+                -0.22,
+                0.42
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.52,
+                0.82
+              ],
+              "tail": [
+                -0.56,
+                0.42
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.52,
+                0.82
+              ],
+              "tail": [
+                0.56,
+                0.42
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.22,
+                0.52
+              ],
+              "tail": [
+                0.22,
+                0.56
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.22,
+                -0.52
+              ],
+              "tail": [
+                0.22,
+                -0.56
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_R_lower",
+          "parent_id": "hind_R_upper",
+          "role": "limb_R",
+          "head_xyz": [
+            0.22,
+            0.42,
+            -0.56
+          ],
+          "tail_xyz": [
+            0.22,
+            0.06,
+            -0.5
+          ],
+          "envelope_radii_xy": [
+            0.1,
+            0.1
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.22,
+                0.42
+              ],
+              "tail": [
+                0.22,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.22,
+                0.42
+              ],
+              "tail": [
+                -0.22,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.56,
+                0.42
+              ],
+              "tail": [
+                -0.5,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.56,
+                0.42
+              ],
+              "tail": [
+                0.5,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.22,
+                0.56
+              ],
+              "tail": [
+                0.22,
+                0.5
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.22,
+                -0.56
+              ],
+              "tail": [
+                0.22,
+                -0.5
+              ]
+            }
+          }
+        }
+      ],
+      "registration_parity_valid": true,
+      "hull_containment_ratio": 1.0
+    },
+    "megaloceros": {
+      "species_id": "megaloceros",
+      "scientific_name": "Megaloceros giganteus",
+      "aesthetic_style": "walkabout_mini_golf_faceted_diorama",
+      "shading_pipeline": "toon_cel_4band_ink_outlines",
+      "turnaround_image_artifact": "assets/references/megaloceros_6view_style.jpg",
+      "skeletal_rig_image_artifact": "assets/references/megaloceros_6view_skeleton.jpg",
+      "orthogonal_views": [
+        "FRONT",
+        "BACK",
+        "LEFT",
+        "RIGHT",
+        "TOP",
+        "BOTTOM"
+      ],
+      "chiseled_facet_sides": 10,
+      "toon_bands": 4,
+      "crease_angle_deg": 20.0,
+      "visual_hull_slices": [
+        {
+          "z": -1.08,
+          "y_bot": 1.38,
+          "y_top": 1.96,
+          "x_half": 0.26,
+          "chisel_bevel": 0.2
+        },
+        {
+          "z": -0.74,
+          "y_bot": 1.18,
+          "y_top": 2.08,
+          "x_half": 0.48,
+          "chisel_bevel": 0.22
+        },
+        {
+          "z": -0.1,
+          "y_bot": 1.16,
+          "y_top": 2.02,
+          "x_half": 0.44,
+          "chisel_bevel": 0.22
+        },
+        {
+          "z": 0.56,
+          "y_bot": 1.1,
+          "y_top": 2.34,
+          "x_half": 0.54,
+          "chisel_bevel": 0.25
+        },
+        {
+          "z": 0.92,
+          "y_bot": 1.48,
+          "y_top": 2.42,
+          "x_half": 0.36,
+          "chisel_bevel": 0.24
+        },
+        {
+          "z": 1.42,
+          "y_bot": 2.35,
+          "y_top": 2.95,
+          "x_half": 0.24,
+          "chisel_bevel": 0.26
+        }
+      ],
+      "correlated_skeleton": [
+        {
+          "bone_id": "root_pelvis",
+          "parent_id": null,
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            1.76,
+            -0.78
+          ],
+          "tail_xyz": [
+            0.0,
+            1.72,
+            -0.12
+          ],
+          "envelope_radii_xy": [
+            0.46,
+            0.54
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                1.76
+              ],
+              "tail": [
+                0.0,
+                1.72
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                1.76
+              ],
+              "tail": [
+                -0.0,
+                1.72
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.78,
+                1.76
+              ],
+              "tail": [
+                -0.12,
+                1.72
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.78,
+                1.76
+              ],
+              "tail": [
+                0.12,
+                1.72
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.78
+              ],
+              "tail": [
+                0.0,
+                0.12
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.78
+              ],
+              "tail": [
+                0.0,
+                -0.12
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "spine_withers",
+          "parent_id": "root_pelvis",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            1.72,
+            -0.12
+          ],
+          "tail_xyz": [
+            0.0,
+            1.92,
+            0.62
+          ],
+          "envelope_radii_xy": [
+            0.52,
+            0.66
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                1.72
+              ],
+              "tail": [
+                0.0,
+                1.92
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                1.72
+              ],
+              "tail": [
+                -0.0,
+                1.92
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.12,
+                1.72
+              ],
+              "tail": [
+                0.62,
+                1.92
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.12,
+                1.72
+              ],
+              "tail": [
+                -0.62,
+                1.92
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.12
+              ],
+              "tail": [
+                0.0,
+                -0.62
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.12
+              ],
+              "tail": [
+                0.0,
+                0.62
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "neck_cervical",
+          "parent_id": "spine_withers",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            1.92,
+            0.62
+          ],
+          "tail_xyz": [
+            0.0,
+            2.68,
+            1.06
+          ],
+          "envelope_radii_xy": [
+            0.28,
+            0.34
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                1.92
+              ],
+              "tail": [
+                0.0,
+                2.68
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                1.92
+              ],
+              "tail": [
+                -0.0,
+                2.68
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.62,
+                1.92
+              ],
+              "tail": [
+                1.06,
+                2.68
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.62,
+                1.92
+              ],
+              "tail": [
+                -1.06,
+                2.68
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.62
+              ],
+              "tail": [
+                0.0,
+                -1.06
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.62
+              ],
+              "tail": [
+                0.0,
+                1.06
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "skull_head",
+          "parent_id": "neck_cervical",
+          "role": "head",
+          "head_xyz": [
+            0.0,
+            2.68,
+            1.06
+          ],
+          "tail_xyz": [
+            0.0,
+            2.6,
+            1.66
+          ],
+          "envelope_radii_xy": [
+            0.22,
+            0.23
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                2.68
+              ],
+              "tail": [
+                0.0,
+                2.6
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                2.68
+              ],
+              "tail": [
+                -0.0,
+                2.6
+              ]
+            },
+            "LEFT": {
+              "head": [
+                1.06,
+                2.68
+              ],
+              "tail": [
+                1.66,
+                2.6
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -1.06,
+                2.68
+              ],
+              "tail": [
+                -1.66,
+                2.6
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -1.06
+              ],
+              "tail": [
+                0.0,
+                -1.66
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                1.06
+              ],
+              "tail": [
+                0.0,
+                1.66
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "antler_palm_L",
+          "parent_id": "skull_head",
+          "role": "ivory",
+          "head_xyz": [
+            -0.12,
+            2.8,
+            1.04
+          ],
+          "tail_xyz": [
+            -1.68,
+            3.52,
+            0.72
+          ],
+          "envelope_radii_xy": [
+            0.32,
+            0.05
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.12,
+                2.8
+              ],
+              "tail": [
+                -1.68,
+                3.52
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.12,
+                2.8
+              ],
+              "tail": [
+                1.68,
+                3.52
+              ]
+            },
+            "LEFT": {
+              "head": [
+                1.04,
+                2.8
+              ],
+              "tail": [
+                0.72,
+                3.52
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -1.04,
+                2.8
+              ],
+              "tail": [
+                -0.72,
+                3.52
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.12,
+                -1.04
+              ],
+              "tail": [
+                -1.68,
+                -0.72
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.12,
+                1.04
+              ],
+              "tail": [
+                -1.68,
+                0.72
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "antler_palm_R",
+          "parent_id": "skull_head",
+          "role": "ivory",
+          "head_xyz": [
+            0.12,
+            2.8,
+            1.04
+          ],
+          "tail_xyz": [
+            1.68,
+            3.52,
+            0.72
+          ],
+          "envelope_radii_xy": [
+            0.32,
+            0.05
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.12,
+                2.8
+              ],
+              "tail": [
+                1.68,
+                3.52
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.12,
+                2.8
+              ],
+              "tail": [
+                -1.68,
+                3.52
+              ]
+            },
+            "LEFT": {
+              "head": [
+                1.04,
+                2.8
+              ],
+              "tail": [
+                0.72,
+                3.52
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -1.04,
+                2.8
+              ],
+              "tail": [
+                -0.72,
+                3.52
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.12,
+                -1.04
+              ],
+              "tail": [
+                1.68,
+                -0.72
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.12,
+                1.04
+              ],
+              "tail": [
+                1.68,
+                0.72
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_L_upper",
+          "parent_id": "spine_withers",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.31,
+            1.56,
+            0.64
+          ],
+          "tail_xyz": [
+            -0.31,
+            0.78,
+            0.64
+          ],
+          "envelope_radii_xy": [
+            0.16,
+            0.16
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.31,
+                1.56
+              ],
+              "tail": [
+                -0.31,
+                0.78
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.31,
+                1.56
+              ],
+              "tail": [
+                0.31,
+                0.78
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.64,
+                1.56
+              ],
+              "tail": [
+                0.64,
+                0.78
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.64,
+                1.56
+              ],
+              "tail": [
+                -0.64,
+                0.78
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.31,
+                -0.64
+              ],
+              "tail": [
+                -0.31,
+                -0.64
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.31,
+                0.64
+              ],
+              "tail": [
+                -0.31,
+                0.64
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_L_lower",
+          "parent_id": "front_L_upper",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.31,
+            0.78,
+            0.64
+          ],
+          "tail_xyz": [
+            -0.31,
+            0.06,
+            0.66
+          ],
+          "envelope_radii_xy": [
+            0.09,
+            0.09
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.31,
+                0.78
+              ],
+              "tail": [
+                -0.31,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.31,
+                0.78
+              ],
+              "tail": [
+                0.31,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.64,
+                0.78
+              ],
+              "tail": [
+                0.66,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.64,
+                0.78
+              ],
+              "tail": [
+                -0.66,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.31,
+                -0.64
+              ],
+              "tail": [
+                -0.31,
+                -0.66
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.31,
+                0.64
+              ],
+              "tail": [
+                -0.31,
+                0.66
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_R_upper",
+          "parent_id": "spine_withers",
+          "role": "limb_R",
+          "head_xyz": [
+            0.31,
+            1.56,
+            0.64
+          ],
+          "tail_xyz": [
+            0.31,
+            0.78,
+            0.64
+          ],
+          "envelope_radii_xy": [
+            0.16,
+            0.16
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.31,
+                1.56
+              ],
+              "tail": [
+                0.31,
+                0.78
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.31,
+                1.56
+              ],
+              "tail": [
+                -0.31,
+                0.78
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.64,
+                1.56
+              ],
+              "tail": [
+                0.64,
+                0.78
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.64,
+                1.56
+              ],
+              "tail": [
+                -0.64,
+                0.78
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.31,
+                -0.64
+              ],
+              "tail": [
+                0.31,
+                -0.64
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.31,
+                0.64
+              ],
+              "tail": [
+                0.31,
+                0.64
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "front_R_lower",
+          "parent_id": "front_R_upper",
+          "role": "limb_R",
+          "head_xyz": [
+            0.31,
+            0.78,
+            0.64
+          ],
+          "tail_xyz": [
+            0.31,
+            0.06,
+            0.66
+          ],
+          "envelope_radii_xy": [
+            0.09,
+            0.09
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.31,
+                0.78
+              ],
+              "tail": [
+                0.31,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.31,
+                0.78
+              ],
+              "tail": [
+                -0.31,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.64,
+                0.78
+              ],
+              "tail": [
+                0.66,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.64,
+                0.78
+              ],
+              "tail": [
+                -0.66,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.31,
+                -0.64
+              ],
+              "tail": [
+                0.31,
+                -0.66
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.31,
+                0.64
+              ],
+              "tail": [
+                0.31,
+                0.66
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_L_upper",
+          "parent_id": "root_pelvis",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.29,
+            1.58,
+            -0.78
+          ],
+          "tail_xyz": [
+            -0.29,
+            0.78,
+            -0.8
+          ],
+          "envelope_radii_xy": [
+            0.18,
+            0.18
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.29,
+                1.58
+              ],
+              "tail": [
+                -0.29,
+                0.78
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.29,
+                1.58
+              ],
+              "tail": [
+                0.29,
+                0.78
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.78,
+                1.58
+              ],
+              "tail": [
+                -0.8,
+                0.78
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.78,
+                1.58
+              ],
+              "tail": [
+                0.8,
+                0.78
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.29,
+                0.78
+              ],
+              "tail": [
+                -0.29,
+                0.8
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.29,
+                -0.78
+              ],
+              "tail": [
+                -0.29,
+                -0.8
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_L_lower",
+          "parent_id": "hind_L_upper",
+          "role": "limb_L",
+          "head_xyz": [
+            -0.29,
+            0.78,
+            -0.8
+          ],
+          "tail_xyz": [
+            -0.29,
+            0.06,
+            -0.76
+          ],
+          "envelope_radii_xy": [
+            0.09,
+            0.09
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.29,
+                0.78
+              ],
+              "tail": [
+                -0.29,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.29,
+                0.78
+              ],
+              "tail": [
+                0.29,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.8,
+                0.78
+              ],
+              "tail": [
+                -0.76,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.8,
+                0.78
+              ],
+              "tail": [
+                0.76,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.29,
+                0.8
+              ],
+              "tail": [
+                -0.29,
+                0.76
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.29,
+                -0.8
+              ],
+              "tail": [
+                -0.29,
+                -0.76
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_R_upper",
+          "parent_id": "root_pelvis",
+          "role": "limb_R",
+          "head_xyz": [
+            0.29,
+            1.58,
+            -0.78
+          ],
+          "tail_xyz": [
+            0.29,
+            0.78,
+            -0.8
+          ],
+          "envelope_radii_xy": [
+            0.18,
+            0.18
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.29,
+                1.58
+              ],
+              "tail": [
+                0.29,
+                0.78
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.29,
+                1.58
+              ],
+              "tail": [
+                -0.29,
+                0.78
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.78,
+                1.58
+              ],
+              "tail": [
+                -0.8,
+                0.78
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.78,
+                1.58
+              ],
+              "tail": [
+                0.8,
+                0.78
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.29,
+                0.78
+              ],
+              "tail": [
+                0.29,
+                0.8
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.29,
+                -0.78
+              ],
+              "tail": [
+                0.29,
+                -0.8
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "hind_R_lower",
+          "parent_id": "hind_R_upper",
+          "role": "limb_R",
+          "head_xyz": [
+            0.29,
+            0.78,
+            -0.8
+          ],
+          "tail_xyz": [
+            0.29,
+            0.06,
+            -0.76
+          ],
+          "envelope_radii_xy": [
+            0.09,
+            0.09
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.29,
+                0.78
+              ],
+              "tail": [
+                0.29,
+                0.06
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.29,
+                0.78
+              ],
+              "tail": [
+                -0.29,
+                0.06
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.8,
+                0.78
+              ],
+              "tail": [
+                -0.76,
+                0.06
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.8,
+                0.78
+              ],
+              "tail": [
+                0.76,
+                0.06
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.29,
+                0.8
+              ],
+              "tail": [
+                0.29,
+                0.76
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.29,
+                -0.8
+              ],
+              "tail": [
+                0.29,
+                -0.76
+              ]
+            }
+          }
+        }
+      ],
+      "registration_parity_valid": true,
+      "hull_containment_ratio": 1.0
+    },
+    "haast_eagle": {
+      "species_id": "haast_eagle",
+      "scientific_name": "Hieraaetus moorei",
+      "aesthetic_style": "walkabout_mini_golf_faceted_diorama",
+      "shading_pipeline": "toon_cel_4band_ink_outlines",
+      "turnaround_image_artifact": "assets/references/haast_eagle_6view_style.jpg",
+      "skeletal_rig_image_artifact": "assets/references/haast_eagle_6view_skeleton.jpg",
+      "orthogonal_views": [
+        "FRONT",
+        "BACK",
+        "LEFT",
+        "RIGHT",
+        "TOP",
+        "BOTTOM"
+      ],
+      "chiseled_facet_sides": 10,
+      "toon_bands": 4,
+      "crease_angle_deg": 20.0,
+      "visual_hull_slices": [
+        {
+          "z": -0.58,
+          "y_bot": -0.04,
+          "y_top": 0.08,
+          "x_half": 0.46,
+          "chisel_bevel": 0.18
+        },
+        {
+          "z": -0.1,
+          "y_bot": -0.22,
+          "y_top": 0.28,
+          "x_half": 0.34,
+          "chisel_bevel": 0.22
+        },
+        {
+          "z": 0.28,
+          "y_bot": -0.18,
+          "y_top": 0.28,
+          "x_half": 0.31,
+          "chisel_bevel": 0.22
+        },
+        {
+          "z": 0.64,
+          "y_bot": -0.06,
+          "y_top": 0.26,
+          "x_half": 0.19,
+          "chisel_bevel": 0.25
+        },
+        {
+          "z": 0.96,
+          "y_bot": -0.06,
+          "y_top": 0.12,
+          "x_half": 0.06,
+          "chisel_bevel": 0.3
+        }
+      ],
+      "correlated_skeleton": [
+        {
+          "bone_id": "root_keel",
+          "parent_id": null,
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            0.02,
+            -0.12
+          ],
+          "tail_xyz": [
+            0.0,
+            0.05,
+            0.28
+          ],
+          "envelope_radii_xy": [
+            0.32,
+            0.24
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.02
+              ],
+              "tail": [
+                0.0,
+                0.05
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.02
+              ],
+              "tail": [
+                -0.0,
+                0.05
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.12,
+                0.02
+              ],
+              "tail": [
+                0.28,
+                0.05
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.12,
+                0.02
+              ],
+              "tail": [
+                -0.28,
+                0.05
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.12
+              ],
+              "tail": [
+                0.0,
+                -0.28
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.12
+              ],
+              "tail": [
+                0.0,
+                0.28
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "neck_aquiline",
+          "parent_id": "root_keel",
+          "role": "spine",
+          "head_xyz": [
+            0.0,
+            0.05,
+            0.28
+          ],
+          "tail_xyz": [
+            0.0,
+            0.08,
+            0.62
+          ],
+          "envelope_radii_xy": [
+            0.2,
+            0.18
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.05
+              ],
+              "tail": [
+                0.0,
+                0.08
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.05
+              ],
+              "tail": [
+                -0.0,
+                0.08
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.28,
+                0.05
+              ],
+              "tail": [
+                0.62,
+                0.08
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.28,
+                0.05
+              ],
+              "tail": [
+                -0.62,
+                0.08
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.28
+              ],
+              "tail": [
+                0.0,
+                -0.62
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.28
+              ],
+              "tail": [
+                0.0,
+                0.62
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "skull_beak",
+          "parent_id": "neck_aquiline",
+          "role": "head",
+          "head_xyz": [
+            0.0,
+            0.08,
+            0.62
+          ],
+          "tail_xyz": [
+            0.0,
+            -0.04,
+            0.96
+          ],
+          "envelope_radii_xy": [
+            0.12,
+            0.1
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.08
+              ],
+              "tail": [
+                0.0,
+                -0.04
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.08
+              ],
+              "tail": [
+                -0.0,
+                -0.04
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.62,
+                0.08
+              ],
+              "tail": [
+                0.96,
+                -0.04
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.62,
+                0.08
+              ],
+              "tail": [
+                -0.96,
+                -0.04
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                -0.62
+              ],
+              "tail": [
+                0.0,
+                -0.96
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                0.62
+              ],
+              "tail": [
+                0.0,
+                0.96
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "wing_L_inner",
+          "parent_id": "root_keel",
+          "role": "wing_L",
+          "head_xyz": [
+            -0.24,
+            0.06,
+            0.08
+          ],
+          "tail_xyz": [
+            -1.06,
+            0.09,
+            0.22
+          ],
+          "envelope_radii_xy": [
+            0.34,
+            0.05
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -0.24,
+                0.06
+              ],
+              "tail": [
+                -1.06,
+                0.09
+              ]
+            },
+            "BACK": {
+              "head": [
+                0.24,
+                0.06
+              ],
+              "tail": [
+                1.06,
+                0.09
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.08,
+                0.06
+              ],
+              "tail": [
+                0.22,
+                0.09
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.08,
+                0.06
+              ],
+              "tail": [
+                -0.22,
+                0.09
+              ]
+            },
+            "TOP": {
+              "head": [
+                -0.24,
+                -0.08
+              ],
+              "tail": [
+                -1.06,
+                -0.22
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -0.24,
+                0.08
+              ],
+              "tail": [
+                -1.06,
+                0.22
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "wing_L_outer",
+          "parent_id": "wing_L_inner",
+          "role": "wing_L",
+          "head_xyz": [
+            -1.06,
+            0.09,
+            0.22
+          ],
+          "tail_xyz": [
+            -1.68,
+            0.13,
+            0.16
+          ],
+          "envelope_radii_xy": [
+            0.26,
+            0.03
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                -1.06,
+                0.09
+              ],
+              "tail": [
+                -1.68,
+                0.13
+              ]
+            },
+            "BACK": {
+              "head": [
+                1.06,
+                0.09
+              ],
+              "tail": [
+                1.68,
+                0.13
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.22,
+                0.09
+              ],
+              "tail": [
+                0.16,
+                0.13
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.22,
+                0.09
+              ],
+              "tail": [
+                -0.16,
+                0.13
+              ]
+            },
+            "TOP": {
+              "head": [
+                -1.06,
+                -0.22
+              ],
+              "tail": [
+                -1.68,
+                -0.16
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                -1.06,
+                0.22
+              ],
+              "tail": [
+                -1.68,
+                0.16
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "wing_R_inner",
+          "parent_id": "root_keel",
+          "role": "wing_R",
+          "head_xyz": [
+            0.24,
+            0.06,
+            0.08
+          ],
+          "tail_xyz": [
+            1.06,
+            0.09,
+            0.22
+          ],
+          "envelope_radii_xy": [
+            0.34,
+            0.05
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.24,
+                0.06
+              ],
+              "tail": [
+                1.06,
+                0.09
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.24,
+                0.06
+              ],
+              "tail": [
+                -1.06,
+                0.09
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.08,
+                0.06
+              ],
+              "tail": [
+                0.22,
+                0.09
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.08,
+                0.06
+              ],
+              "tail": [
+                -0.22,
+                0.09
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.24,
+                -0.08
+              ],
+              "tail": [
+                1.06,
+                -0.22
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.24,
+                0.08
+              ],
+              "tail": [
+                1.06,
+                0.22
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "wing_R_outer",
+          "parent_id": "wing_R_inner",
+          "role": "wing_R",
+          "head_xyz": [
+            1.06,
+            0.09,
+            0.22
+          ],
+          "tail_xyz": [
+            1.68,
+            0.13,
+            0.16
+          ],
+          "envelope_radii_xy": [
+            0.26,
+            0.03
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                1.06,
+                0.09
+              ],
+              "tail": [
+                1.68,
+                0.13
+              ]
+            },
+            "BACK": {
+              "head": [
+                -1.06,
+                0.09
+              ],
+              "tail": [
+                -1.68,
+                0.13
+              ]
+            },
+            "LEFT": {
+              "head": [
+                0.22,
+                0.09
+              ],
+              "tail": [
+                0.16,
+                0.13
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                -0.22,
+                0.09
+              ],
+              "tail": [
+                -0.16,
+                0.13
+              ]
+            },
+            "TOP": {
+              "head": [
+                1.06,
+                -0.22
+              ],
+              "tail": [
+                1.68,
+                -0.16
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                1.06,
+                0.22
+              ],
+              "tail": [
+                1.68,
+                0.16
+              ]
+            }
+          }
+        },
+        {
+          "bone_id": "tail_fan",
+          "parent_id": "root_keel",
+          "role": "tail",
+          "head_xyz": [
+            0.0,
+            0.02,
+            -0.44
+          ],
+          "tail_xyz": [
+            0.0,
+            -0.02,
+            -1.02
+          ],
+          "envelope_radii_xy": [
+            0.44,
+            0.03
+          ],
+          "projected_6views": {
+            "FRONT": {
+              "head": [
+                0.0,
+                0.02
+              ],
+              "tail": [
+                0.0,
+                -0.02
+              ]
+            },
+            "BACK": {
+              "head": [
+                -0.0,
+                0.02
+              ],
+              "tail": [
+                -0.0,
+                -0.02
+              ]
+            },
+            "LEFT": {
+              "head": [
+                -0.44,
+                0.02
+              ],
+              "tail": [
+                -1.02,
+                -0.02
+              ]
+            },
+            "RIGHT": {
+              "head": [
+                0.44,
+                0.02
+              ],
+              "tail": [
+                1.02,
+                -0.02
+              ]
+            },
+            "TOP": {
+              "head": [
+                0.0,
+                0.44
+              ],
+              "tail": [
+                0.0,
+                1.02
+              ]
+            },
+            "BOTTOM": {
+              "head": [
+                0.0,
+                -0.44
+              ],
+              "tail": [
+                0.0,
+                -1.02
+              ]
+            }
+          }
+        }
+      ],
+      "registration_parity_valid": true,
+      "hull_containment_ratio": 1.0
+    }
+  }
+}

@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SITE_DIR="$SCRIPT_DIR/_site"
 
-mkdir -p "$SITE_DIR/vr"
+mkdir -p "$SITE_DIR/vr" "$SITE_DIR/assets/references" "$SITE_DIR/vr/assets/references" "$SITE_DIR/assets/models" "$SITE_DIR/vr/assets/models"
 for f in index.html app.js scene_blueprint.json .nojekyll; do
   if [ -f "$SCRIPT_DIR/$f" ]; then
     cp "$SCRIPT_DIR/$f" "$SITE_DIR/"
@@ -16,6 +16,19 @@ for f in index.html app.js scene_blueprint.json .nojekyll; do
     fi
   fi
 done
+if [ -d "$SCRIPT_DIR/assets/references" ]; then
+  for r in "$SCRIPT_DIR/assets/references/"*; do
+    case "$r" in
+      *_raw_6view.jpg) continue ;;
+    esac
+    cp "$r" "$SITE_DIR/assets/references/"
+    cp "$r" "$SITE_DIR/vr/assets/references/"
+  done
+fi
+if [ -d "$SCRIPT_DIR/assets/models" ]; then
+  cp "$SCRIPT_DIR/assets/models/"*_6view.glb "$SITE_DIR/assets/models/" 2>/dev/null || true
+  cp "$SCRIPT_DIR/assets/models/"*_6view.glb "$SITE_DIR/vr/assets/models/" 2>/dev/null || true
+fi
 
 if [ ! -d "$SITE_DIR/.git" ]; then
   git -C "$SITE_DIR" init -b main

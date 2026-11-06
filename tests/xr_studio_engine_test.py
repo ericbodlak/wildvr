@@ -56,6 +56,11 @@ class TestWalkaboutStudioController(unittest.TestCase):
         self.assertEqual(skeletal["features_found"], skeletal["required_count"])
         self.assertTrue(skeletal["outward_ccw_winding"])
 
+        six_view = WalkaboutStudioController.verify_six_view_reference_and_rig_pipeline(studio_dir)
+        self.assertEqual(six_view["status"], "VALID")
+        self.assertEqual(six_view["reference_files_found"], six_view["required_files"])
+        self.assertEqual(six_view["js_rig_tokens_found"], six_view["required_tokens"])
+
 
 
 if __name__ == "__main__":

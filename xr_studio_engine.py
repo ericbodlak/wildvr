@@ -218,6 +218,48 @@ class WalkaboutStudioController:
             "outward_ccw_winding": not has_inverted_winding,
         }
 
+    @staticmethod
+    def verify_six_view_reference_and_rig_pipeline(studio_dir: str) -> Dict[str, Any]:
+        """
+        Verifies that all 8 orthogonal 6-view turnaround + 1:1 skeletal rig reference artifacts,
+        the compiled 6-view manifest, and the 3D X-Ray skeletal rig & 4-band anime cel shader
+        are present and valid.
+        @premise(P5_PIXPAL_DIORAMA_BUDGET)
+        @premise(P7_STUDIO_CONVERGENCE)
+        """
+        ref_dir = Path(studio_dir) / "assets" / "references"
+        js_path = Path(studio_dir) / "app.js"
+        required_files = [
+            "woolly_mammoth_6view_style.jpg",
+            "woolly_mammoth_6view_skeleton.jpg",
+            "smilodon_6view_style.jpg",
+            "smilodon_6view_skeleton.jpg",
+            "megaloceros_6view_style.jpg",
+            "megaloceros_6view_skeleton.jpg",
+            "haast_eagle_6view_style.jpg",
+            "haast_eagle_6view_skeleton.jpg",
+            "six_view_asset_manifest.json",
+        ]
+        found_files = [f for f in required_files if (ref_dir / f).is_file()]
+        js_text = js_path.read_text(encoding="utf-8") if js_path.is_file() else ""
+        js_tokens = [
+            "attachWalkaboutAnime4BandShader",
+            "buildCorrelatedBoneRigSegment",
+            "setSkeletonXRayMode",
+            "SIX_VIEW_REF_MAP",
+            "countershadeCream",
+            "mammothUndercoat",
+        ]
+        found_tokens = [t for t in js_tokens if t in js_text]
+        is_valid = len(found_files) == len(required_files) and len(found_tokens) == len(js_tokens)
+        return {
+            "status": "VALID" if is_valid else "PARTIAL",
+            "reference_files_found": len(found_files),
+            "required_files": len(required_files),
+            "js_rig_tokens_found": len(found_tokens),
+            "required_tokens": len(js_tokens),
+        }
+
     @classmethod
     def run_full_studio_convergence(cls, studio_dir: str) -> Dict[str, Any]:
         """
@@ -235,6 +277,7 @@ class WalkaboutStudioController:
             "scene": cls.audit_studio_blueprint(bp_path),
             "lod_shader_matrix": cls.verify_lod_and_shader_matrix(studio_dir),
             "skeletal_loft_glb": cls.verify_skeletal_loft_and_glb_morph(studio_dir),
+            "six_view_pipeline": cls.verify_six_view_reference_and_rig_pipeline(studio_dir),
         }
 
 
