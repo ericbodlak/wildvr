@@ -1584,6 +1584,10 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
     tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
     return group;
   }
+  if (!glbLoadFailed.woolly_mammoth) {
+    tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
+    return group;
+  }
 
   const spineRoot = new THREE.Group();
   group.add(spineRoot);
@@ -1809,6 +1813,10 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
       strideAmp: 0.25,
       seed: 1.9
     });
+    tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
+    return group;
+  }
+  if (!glbLoadFailed.megaloceros) {
     tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
     return group;
   }
@@ -2044,6 +2052,10 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
     tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
     return group;
   }
+  if (!glbLoadFailed.smilodon) {
+    tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
+    return group;
+  }
 
   const spineRoot = new THREE.Group();
   group.add(spineRoot);
@@ -2242,6 +2254,10 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
       speed: 2.35,
       seed: (activeAnimatedCreatures.length * 2.09) % 6.28
     });
+    tagAsset(group, 'teratorn_vulture', `Haast's Eagle (${cfg.short})`);
+    return group;
+  }
+  if (!glbLoadFailed.teratorn_vulture) {
     tagAsset(group, 'teratorn_vulture', `Haast's Eagle (${cfg.short})`);
     return group;
   }
@@ -4234,6 +4250,7 @@ function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '', isSixViewWal
   reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId);
 }
 
+const glbLoadFailed = {};
 function preloadAllStudioGLBAssets() {
   let refreshTimer = null;
   const scheduleSceneRefresh = () => {
@@ -4257,7 +4274,11 @@ function preloadAllStudioGLBAssets() {
         resolve(true);
       },
       undefined,
-      () => resolve(false)
+      () => {
+        glbLoadFailed[spec.assetId] = true;
+        scheduleSceneRefresh();
+        resolve(false);
+      }
     );
   }));
   Promise.allSettled(tasks).then(() => {
