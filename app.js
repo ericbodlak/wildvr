@@ -1413,10 +1413,15 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
       const matName = (node.userData && node.userData.origMatName) || (node.material && node.material.name) || '';
       const nodeName = (node.userData && node.userData.origNodeName) || node.name || '';
       if (entry.isSixViewWalkaboutGLB && node.geometry) {
-        const hasVCol = Boolean(node.geometry.attributes && node.geometry.attributes.color);
+        const origMap = (node.userData && node.userData.origMap) || (node.material && node.material.map) || null;
+        if (origMap) {
+          origMap.colorSpace = THREE.SRGBColorSpace;
+        }
+        const hasVCol = Boolean(!origMap && node.geometry.attributes && node.geometry.attributes.color);
         const vMat = new THREE.MeshStandardMaterial({
+          map: origMap || null,
           vertexColors: hasVCol,
-          color: hasVCol ? 0xffffff : mPrimary.color,
+          color: (origMap || hasVCol) ? 0xffffff : mPrimary.color,
           flatShading: true,
           roughness: 0.78,
           metalness: 0.02,
@@ -1431,9 +1436,9 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
             vec3 faceN = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
             vec3 keyDir = normalize(vec3(0.42, 0.78, 0.46));
             float ndotl = dot(faceN, keyDir);
-            float hemi = clamp(0.84 + 0.22 * ndotl + 0.08 * faceN.y, 0.76, 1.08);
+            float hemi = clamp(0.86 + 0.18 * ndotl + 0.06 * faceN.y, 0.80, 1.05);
             vec3 studioFacetCol = diffuseColor.rgb * hemi;
-            outgoingLight = mix(studioFacetCol, outgoingLight, 0.28);
+            outgoingLight = mix(studioFacetCol, outgoingLight, 0.18);
             #include <opaque_fragment>
             `
           );
@@ -3736,7 +3741,7 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/woolly_mammoth_6view.glb?v=18',
+    url: './assets/models/woolly_mammoth_6view.glb?v=19',
     matKey: 'mammothFur',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3744,7 +3749,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/megaloceros_6view.glb?v=18',
+    url: './assets/models/megaloceros_6view.glb?v=19',
     matKey: 'elkCoat',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3752,7 +3757,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/smilodon_6view.glb?v=18',
+    url: './assets/models/smilodon_6view.glb?v=19',
     matKey: 'smilodonCoat',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3760,7 +3765,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'teratorn_vulture',
-    url: './assets/models/haast_eagle_6view.glb?v=18',
+    url: './assets/models/haast_eagle_6view.glb?v=19',
     matKey: 'trunk',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -4246,7 +4251,14 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
 }
 
 function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '', isSixViewWalkaboutGLB = false) {
-  if (isSixViewWalkaboutGLB) return;
+  if (isSixViewWalkaboutGLB) {
+    gltfScene.traverse((node) => {
+      if ((node.isMesh || node.isSkinnedMesh) && node.material && node.material.map) {
+        node.userData.origMap = node.material.map;
+      }
+    });
+    return;
+  }
   reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId);
 }
 
