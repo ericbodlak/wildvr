@@ -167,9 +167,36 @@ class WalkaboutStudioController:
         updated_html = html[:s_idx] + js + html[e_idx:]
         html_path.write_text(updated_html, encoding="utf-8", newline="\n")
         readback = html_path.read_text(encoding="utf-8")
+
+        site_dir = root / "_site"
+        site_synced = True
+        if site_dir.is_dir():
+            import hashlib
+            import shutil
+
+            for rel in ("index.html", "app.js"):
+                src_f = root / rel
+                dst_f = site_dir / rel
+                shutil.copy2(src_f, dst_f)
+                if hashlib.sha256(src_f.read_bytes()).hexdigest() != hashlib.sha256(dst_f.read_bytes()).hexdigest():
+                    site_synced = False
+            for sub in ("assets/models", "assets/references"):
+                src_sub = root / sub
+                dst_sub = site_dir / sub
+                if src_sub.is_dir():
+                    dst_sub.mkdir(parents=True, exist_ok=True)
+                    for item in src_sub.iterdir():
+                        if item.is_file():
+                            dst_item = dst_sub / item.name
+                            shutil.copy2(item, dst_item)
+                            if hashlib.sha256(item.read_bytes()).hexdigest() != hashlib.sha256(dst_item.read_bytes()).hexdigest():
+                                site_synced = False
+
+        ok = (js in readback) and site_synced
         return {
-            "status": "VALID" if js in readback else "PARITY_ERROR",
-            "synced": js in readback,
+            "status": "VALID" if ok else "PARITY_ERROR",
+            "synced": ok,
+            "site_mirror_synced": site_synced,
             "bytes": len(readback),
         }
 
