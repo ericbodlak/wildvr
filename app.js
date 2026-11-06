@@ -1442,7 +1442,7 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
             vec3 faceN = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
             vec3 keyDir = normalize(vec3(0.42, 0.78, 0.46));
             float ndotl = dot(faceN, keyDir);
-            float hemi = clamp(0.86 + 0.18 * ndotl + 0.06 * faceN.y, 0.80, 1.05);
+            float hemi = clamp(0.84 + 0.22 * ndotl + 0.06 * faceN.y + 0.18 * max(0.0, -faceN.y), 0.80, 1.07);
             vec3 studioFacetCol = diffuseColor.rgb * hemi;
             outgoingLight = mix(studioFacetCol, outgoingLight, 0.18);
             #include <opaque_fragment>
@@ -3747,7 +3747,7 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/woolly_mammoth_6view.glb?v=20',
+    url: './assets/models/woolly_mammoth_6view.glb?v=21',
     matKey: 'mammothFur',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3755,7 +3755,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/megaloceros_6view.glb?v=20',
+    url: './assets/models/megaloceros_6view.glb?v=21',
     matKey: 'elkCoat',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3763,7 +3763,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/smilodon_6view.glb?v=20',
+    url: './assets/models/smilodon_6view.glb?v=21',
     matKey: 'smilodonCoat',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3771,7 +3771,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'teratorn_vulture',
-    url: './assets/models/haast_eagle_6view.glb?v=20',
+    url: './assets/models/haast_eagle_6view.glb?v=21',
     matKey: 'trunk',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
