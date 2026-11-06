@@ -310,22 +310,22 @@
           <option value="smilodon">Saber-Toothed Cat (Smilodon fatalis)</option>
           <option value="teratorn_vulture">Haast&#39;s Eagle (Hieraaetus moorei)</option>
         </select>
-        <a id="six-view-glb-link" href="assets/models/woolly_mammoth_6view.glb" download style="background:#0284c7; color:#fff; text-decoration:none; padding:6px 10px; border-radius:6px; font-size:0.75rem; font-weight:700;">&#11015; .GLB</a>
+        <a id="six-view-glb-link" href="assets/models/woolly_mammoth_6view.glb?v=16" download style="background:#0284c7; color:#fff; text-decoration:none; padding:6px 10px; border-radius:6px; font-size:0.75rem; font-weight:700;">&#11015; .GLB</a>
         <button id="btn-close-six-view-ref" class="active">&#10005; Close [R]</button>
       </div>
     </div>
     <div class="ref-sheet-grid" style="grid-template-columns: 1fr 1fr;">
       <div class="ref-sheet-card">
         <div style="font-size:0.76rem; font-weight:700; color:#bae6fd; margin-bottom:4px;">Stage 1: 6-View Walkabout Faceted Reference Sheet (Delaunay Planar Facets + Anime Cel-Shading)</div>
-        <img id="six-view-img-style" src="assets/references/woolly_mammoth_6view_style.jpg" alt="6-View Orthogonal Style Sheet" />
+        <img id="six-view-img-style" src="assets/references/woolly_mammoth_6view_style.jpg?v=16" alt="6-View Orthogonal Style Sheet" />
       </div>
       <div class="ref-sheet-card">
         <div style="font-size:0.76rem; font-weight:700; color:#ffe8a3; margin-bottom:4px;">Stage 2: 6-View Joint &amp; Connecting-Line Skeletal Rig (Direct Gemini 3D Coordinates)</div>
-        <img id="six-view-img-rig" src="assets/references/woolly_mammoth_6view_skeleton.jpg" alt="6-View Correlated Skeletal Rig Sheet" />
+        <img id="six-view-img-rig" src="assets/references/woolly_mammoth_6view_skeleton.jpg?v=16" alt="6-View Correlated Skeletal Rig Sheet" />
       </div>
       <div class="ref-sheet-card" style="grid-column: 1 / -1;">
         <div style="font-size:0.76rem; font-weight:700; color:#6ee7b7; margin-bottom:4px;">Stage 3: Closed-Loop 6-View Comparison — Reference Sheet (Left) vs. Reconstructed 3D .glb Asset Render (Right)</div>
-        <img id="six-view-img-compare" src="assets/references/woolly_mammoth_6view_comparison.jpg" alt="6-View Closed-Loop Comparison Sheet" />
+        <img id="six-view-img-compare" src="assets/references/woolly_mammoth_6view_comparison.jpg?v=16" alt="6-View Closed-Loop Comparison Sheet" />
       </div>
     </div>
   </div>
@@ -1319,6 +1319,14 @@ function setSkeletonXRayMode(active) {
     m.depthWrite = !isSkeletonXRayActive;
     m.needsUpdate = true;
   });
+  animalSkinMeshes.forEach((mesh) => {
+    if (mesh && mesh.material && !Array.isArray(mesh.material)) {
+      mesh.material.transparent = isSkeletonXRayActive;
+      mesh.material.opacity = isSkeletonXRayActive ? 0.34 : 1.0;
+      mesh.material.depthWrite = !isSkeletonXRayActive;
+      mesh.material.needsUpdate = true;
+    }
+  });
   const xrayBtn = document.getElementById('btn-toggle-xray-rig');
   if (xrayBtn) {
     xrayBtn.classList.toggle('active', isSkeletonXRayActive);
@@ -1734,40 +1742,77 @@ function instantiatePreRiggedGLBIfCached(assetId, lodIdx, customMats = null, gra
       headBone = node;
     }
     if ((node.isMesh || node.isSkinnedMesh) && !node.userData.isHelperOverlay) {
+      node.frustumCulled = false;
       const matName = (node.userData && node.userData.origMatName) || (node.material && node.material.name) || '';
       const nodeName = (node.userData && node.userData.origNodeName) || node.name || '';
-      if (entry.preserveMaterials && node.geometry) {
-        node.geometry = getOrBuildVariablePolyGeometry(node.geometry, lodIdx);
-      }
-      if (entry.preserveMaterials && node.geometry && node.geometry.groups && node.geometry.groups.length >= 2) {
-        const lerpAmt = assetId === 'smilodon' ? 0.52 : 0.28;
-        node.material = [
-          makeSimpleShadedRoleMaterial('dark', entry.matKey, lerpAmt, activeStyle, customMats),
-          makeSimpleShadedRoleMaterial('primary', entry.matKey, lerpAmt, activeStyle, customMats),
-          makeSimpleShadedRoleMaterial('secondary', entry.matKey, lerpAmt, activeStyle, customMats),
-          makeSimpleShadedRoleMaterial('ivory', entry.matKey, lerpAmt, activeStyle, customMats)
-        ];
-      } else if (entry.preserveMaterials && node.material) {
-        let role = 'primary';
-        if (/stag_horns/i.test(nodeName) || /horn|antler|material\.009/i.test(matName)) role = 'ivory';
-        else if (/material\.011|material\.010|eye|hoof|hooves/i.test(matName)) role = 'dark';
-        else if (/material\.007/i.test(matName)) role = 'secondary';
-        else if (/material\.008/i.test(matName)) role = 'cape';
-        node.material = makeSimpleShadedRoleMaterial(role, entry.matKey, 0.38, activeStyle, customMats);
-      } else if (/eye_black|eyes_black|material\.011/i.test(matName)) {
-        node.material = materials.eyeGloss;
-      } else if (/eye_white/i.test(matName)) {
-        node.material = mTusk;
-      } else if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
-        node.material = mTusk;
-      } else if (/hooves|nose|muzzle|material\.010|material\.001/i.test(matName)) {
-        node.material = mRock;
-      } else if (/wood/i.test(matName)) {
-        node.material = mTrunk;
-      } else if (/green/i.test(matName)) {
-        node.material = mFol1;
+      if (entry.isSixViewWalkaboutGLB && node.geometry) {
+        const hasVCol = Boolean(node.geometry.attributes && node.geometry.attributes.color);
+        const vMat = new THREE.MeshStandardMaterial({
+          vertexColors: hasVCol,
+          color: hasVCol ? 0xffffff : mPrimary.color,
+          flatShading: true,
+          roughness: 0.78,
+          metalness: 0.02,
+          transparent: isSkeletonXRayActive,
+          opacity: isSkeletonXRayActive ? 0.34 : 1.0,
+          depthWrite: !isSkeletonXRayActive
+        });
+        vMat.onBeforeCompile = (shader) => {
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <opaque_fragment>',
+            `
+            vec3 faceN = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
+            vec3 keyDir = normalize(vec3(0.42, 0.78, 0.46));
+            float ndotl = dot(faceN, keyDir);
+            float hemi = clamp(0.84 + 0.22 * ndotl + 0.08 * faceN.y, 0.76, 1.08);
+            vec3 studioFacetCol = diffuseColor.rgb * hemi;
+            outgoingLight = mix(studioFacetCol, outgoingLight, 0.28);
+            #include <opaque_fragment>
+            `
+          );
+        };
+        node.material = vMat;
+        animalSkinMeshes.push(node);
+        const s = STYLES[currentStyleIdx];
+        const wf = new THREE.Mesh(node.geometry, wireframeMat);
+        wf.visible = Boolean(s && s.wireframe);
+        wf.userData.isHelperOverlay = true;
+        node.add(wf);
+        wireframeMeshes.push(wf);
       } else {
-        node.material = mPrimary;
+        if (entry.preserveMaterials && node.geometry) {
+          node.geometry = getOrBuildVariablePolyGeometry(node.geometry, lodIdx);
+        }
+        if (entry.preserveMaterials && node.geometry && node.geometry.groups && node.geometry.groups.length >= 2) {
+          const lerpAmt = assetId === 'smilodon' ? 0.52 : 0.28;
+          node.material = [
+            makeSimpleShadedRoleMaterial('dark', entry.matKey, lerpAmt, activeStyle, customMats),
+            makeSimpleShadedRoleMaterial('primary', entry.matKey, lerpAmt, activeStyle, customMats),
+            makeSimpleShadedRoleMaterial('secondary', entry.matKey, lerpAmt, activeStyle, customMats),
+            makeSimpleShadedRoleMaterial('ivory', entry.matKey, lerpAmt, activeStyle, customMats)
+          ];
+        } else if (entry.preserveMaterials && node.material) {
+          let role = 'primary';
+          if (/stag_horns/i.test(nodeName) || /horn|antler|material\.009/i.test(matName)) role = 'ivory';
+          else if (/material\.011|material\.010|eye|hoof|hooves/i.test(matName)) role = 'dark';
+          else if (/material\.007/i.test(matName)) role = 'secondary';
+          else if (/material\.008/i.test(matName)) role = 'cape';
+          node.material = makeSimpleShadedRoleMaterial(role, entry.matKey, 0.38, activeStyle, customMats);
+        } else if (/eye_black|eyes_black|material\.011/i.test(matName)) {
+          node.material = materials.eyeGloss;
+        } else if (/eye_white/i.test(matName)) {
+          node.material = mTusk;
+        } else if (/stag_horns/i.test(nodeName) || /horn|antler/i.test(matName)) {
+          node.material = mTusk;
+        } else if (/hooves|nose|muzzle|material\.010|material\.001/i.test(matName)) {
+          node.material = mRock;
+        } else if (/wood/i.test(matName)) {
+          node.material = mTrunk;
+        } else if (/green/i.test(matName)) {
+          node.material = mFol1;
+        } else {
+          node.material = mPrimary;
+        }
       }
       node.castShadow = true;
       node.receiveShadow = true;
@@ -1835,8 +1880,40 @@ function buildMammothAtLOD(lodIdx = 2, customMats = null) {
   const disp = 0.024 * cfg.displace;
 
   const glbClone = instantiatePreRiggedGLBIfCached('woolly_mammoth', lodIdx, customMats);
-  if (glbClone && glbHeroCache.woolly_mammoth && glbHeroCache.woolly_mammoth.isUserDroppedOverride) {
+  if (glbClone && glbHeroCache.woolly_mammoth && (glbHeroCache.woolly_mammoth.isSixViewWalkaboutGLB || glbHeroCache.woolly_mammoth.isUserDroppedOverride)) {
     group.add(glbClone);
+    const axialRig = new THREE.Group();
+    axialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, 1.82, -1.25], [0, 2.15, -0.25]],
+      [[0, 2.15, -0.25], [0, 2.58, 0.78]],
+      [[0, 2.58, 0.78], [0, 2.48, 1.28]],
+      [[0, 2.48, 1.28], [0, 2.86, 1.65]],
+      [[0, 2.86, 1.65], [0, 2.32, 1.98]],
+      [[0, 2.32, 1.98], [0, 1.42, 2.18]],
+      [[0, 1.42, 2.18], [0, 0.68, 1.98]],
+      [[0, 1.82, -1.25], [0, 1.12, -1.82]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.08, 'gold', axialRig));
+    [
+      [[-0.44, 1.56, 0.86], [-0.44, 0.82, 0.84], 'coral'],
+      [[-0.44, 0.82, 0.84], [-0.44, 0.08, 0.88], 'coral'],
+      [[0.44, 1.56, 0.86], [0.44, 0.82, 0.84], 'cyan'],
+      [[0.44, 0.82, 0.84], [0.44, 0.08, 0.88], 'cyan'],
+      [[-0.40, 1.46, -1.12], [-0.40, 0.76, -1.14], 'coral'],
+      [[-0.40, 0.76, -1.14], [-0.40, 0.08, -1.10], 'coral'],
+      [[0.40, 1.46, -1.12], [0.40, 0.76, -1.14], 'cyan'],
+      [[0.40, 0.76, -1.14], [0.40, 0.08, -1.10], 'cyan']
+    ].forEach(([p0, p1, col]) => buildCorrelatedBoneRigSegment(p0, p1, 0.068, col, axialRig));
+    group.add(axialRig);
+    skeletonRigGroups.push(axialRig);
+    activeAnimatedCreatures.push({
+      kind: 'graviportal_amble',
+      group,
+      spineRoot: glbClone,
+      speed: 1.85,
+      strideAmp: 0.22,
+      seed: 0.4
+    });
     tagAsset(group, 'woolly_mammoth', `Woolly Mammoth (${cfg.short})`);
     return group;
   }
@@ -2042,8 +2119,29 @@ function buildMegalocerosAtLOD(lodIdx = 2, customMats = null) {
   const disp = 0.020 * cfg.displace;
 
   const glbClone = instantiatePreRiggedGLBIfCached('megaloceros', lodIdx, customMats);
-  if (glbClone && glbHeroCache.megaloceros && glbHeroCache.megaloceros.isUserDroppedOverride) {
+  if (glbClone && glbHeroCache.megaloceros && (glbHeroCache.megaloceros.isSixViewWalkaboutGLB || glbHeroCache.megaloceros.isUserDroppedOverride)) {
     group.add(glbClone);
+    const axialRig = new THREE.Group();
+    axialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, 1.72, -0.78], [0, 1.70, -0.10]],
+      [[0, 1.70, -0.10], [0, 1.96, 0.56]],
+      [[0, 1.96, 0.56], [0, 2.32, 0.88]],
+      [[0, 2.32, 0.88], [0, 2.70, 1.12]],
+      [[0, 2.70, 1.12], [0, 2.58, 1.60]],
+      [[0, 2.70, 1.12], [-1.68, 3.22, 0.56]],
+      [[0, 2.70, 1.12], [1.68, 3.22, 0.56]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.06, 'gold', axialRig));
+    group.add(axialRig);
+    skeletonRigGroups.push(axialRig);
+    activeAnimatedCreatures.push({
+      kind: 'cervid_trot',
+      group,
+      spineRoot: glbClone,
+      speed: 2.35,
+      strideAmp: 0.25,
+      seed: 1.9
+    });
     tagAsset(group, 'megaloceros', `Giant Irish Elk (${cfg.short})`);
     return group;
   }
@@ -2255,8 +2353,27 @@ function buildSmilodonAtLOD(lodIdx = 2, customMats = null) {
   const disp = 0.016 * cfg.displace;
 
   const glbClone = instantiatePreRiggedGLBIfCached('smilodon', lodIdx, customMats);
-  if (glbClone && glbHeroCache.smilodon && glbHeroCache.smilodon.isUserDroppedOverride) {
+  if (glbClone && glbHeroCache.smilodon && (glbHeroCache.smilodon.isSixViewWalkaboutGLB || glbHeroCache.smilodon.isUserDroppedOverride)) {
     group.add(glbClone);
+    const axialRig = new THREE.Group();
+    axialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, 0.96, -0.68], [0, 0.96, -0.10]],
+      [[0, 0.96, -0.10], [0, 1.06, 0.48]],
+      [[0, 1.06, 0.48], [0, 1.26, 0.98]],
+      [[0, 1.26, 0.98], [0, 1.16, 1.34]],
+      [[0, 0.96, -0.68], [0, 0.78, -1.18]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.048, 'gold', axialRig));
+    group.add(axialRig);
+    skeletonRigGroups.push(axialRig);
+    activeAnimatedCreatures.push({
+      kind: 'predator_prowl',
+      group,
+      spineRoot: glbClone,
+      speed: 2.15,
+      strideAmp: 0.26,
+      seed: 3.1
+    });
     tagAsset(group, 'smilodon', `Saber-Toothed Cat (${cfg.short})`);
     return group;
   }
@@ -2436,6 +2553,31 @@ function buildTeratornAtLOD(lodIdx = 2, customMats = null) {
   const segR = cfg.id === 0 ? 7 : Math.max(9, Math.round(11 * cfg.segMul));
   const segL = cfg.id === 0 ? 8 : Math.max(10, Math.round(14 * cfg.segMul));
   const disp = 0.008 * cfg.displace;
+
+  const glbClone = instantiatePreRiggedGLBIfCached('teratorn_vulture', lodIdx, customMats);
+  if (glbClone && glbHeroCache.teratorn_vulture && (glbHeroCache.teratorn_vulture.isSixViewWalkaboutGLB || glbHeroCache.teratorn_vulture.isUserDroppedOverride)) {
+    group.add(glbClone);
+    const eagleAxialRig = new THREE.Group();
+    eagleAxialRig.visible = isSkeletonXRayActive;
+    [
+      [[0, -0.18, -0.22], [0, 0.18, 0.08]],
+      [[0, 0.18, 0.08], [0, 0.60, 0.44]],
+      [[0, 0.60, 0.44], [0, 0.46, 0.74]],
+      [[0, 0.18, 0.08], [-1.68, 0.38, -0.12]],
+      [[0, 0.18, 0.08], [1.68, 0.38, -0.12]]
+    ].forEach(([p0, p1]) => buildCorrelatedBoneRigSegment(p0, p1, 0.042, 'gold', eagleAxialRig));
+    group.add(eagleAxialRig);
+    skeletonRigGroups.push(eagleAxialRig);
+    activeAnimatedCreatures.push({
+      kind: 'avian_soar',
+      group,
+      wingRigs: [],
+      speed: 2.35,
+      seed: (activeAnimatedCreatures.length * 2.09) % 6.28
+    });
+    tagAsset(group, 'teratorn_vulture', `Haast's Eagle (${cfg.short})`);
+    return group;
+  }
 
   // 1. Haast's Eagle (Hieraaetus moorei) Broad Muscular Torso & Thick Feathered Neck/Head
   // Eagles have a compact, muscular neck that blends smoothly into a wide, flat-crowned head (never a skinny vulture neck!)
@@ -3530,32 +3672,32 @@ function executeTeleport() {
 
 const SIX_VIEW_REF_MAP = {
   woolly_mammoth: {
-    title: 'Woolly Mammoth (Mammuthus primigenius) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.814)',
-    styleImg: 'assets/references/woolly_mammoth_6view_style.jpg',
-    rigImg: 'assets/references/woolly_mammoth_6view_skeleton.jpg',
-    compareImg: 'assets/references/woolly_mammoth_6view_comparison.jpg',
-    glbUrl: 'assets/models/woolly_mammoth_6view.glb'
+    title: 'Woolly Mammoth (Mammuthus primigenius) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.922)',
+    styleImg: 'assets/references/woolly_mammoth_6view_style.jpg?v=16',
+    rigImg: 'assets/references/woolly_mammoth_6view_skeleton.jpg?v=16',
+    compareImg: 'assets/references/woolly_mammoth_6view_comparison.jpg?v=16',
+    glbUrl: 'assets/models/woolly_mammoth_6view.glb?v=16'
   },
   megaloceros: {
-    title: 'Giant Irish Elk (Megaloceros giganteus) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Aspect Parity: 0.826)',
-    styleImg: 'assets/references/megaloceros_6view_style.jpg',
-    rigImg: 'assets/references/megaloceros_6view_skeleton.jpg',
-    compareImg: 'assets/references/megaloceros_6view_comparison.jpg',
-    glbUrl: 'assets/models/megaloceros_6view.glb'
+    title: 'Giant Irish Elk (Megaloceros giganteus) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.900)',
+    styleImg: 'assets/references/megaloceros_6view_style.jpg?v=16',
+    rigImg: 'assets/references/megaloceros_6view_skeleton.jpg?v=16',
+    compareImg: 'assets/references/megaloceros_6view_comparison.jpg?v=16',
+    glbUrl: 'assets/models/megaloceros_6view.glb?v=16'
   },
   smilodon: {
-    title: 'Saber-Toothed Cat (Smilodon fatalis) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.848)',
-    styleImg: 'assets/references/smilodon_6view_style.jpg',
-    rigImg: 'assets/references/smilodon_6view_skeleton.jpg',
-    compareImg: 'assets/references/smilodon_6view_comparison.jpg',
-    glbUrl: 'assets/models/smilodon_6view.glb'
+    title: 'Saber-Toothed Cat (Smilodon fatalis) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.947)',
+    styleImg: 'assets/references/smilodon_6view_style.jpg?v=16',
+    rigImg: 'assets/references/smilodon_6view_skeleton.jpg?v=16',
+    compareImg: 'assets/references/smilodon_6view_comparison.jpg?v=16',
+    glbUrl: 'assets/models/smilodon_6view.glb?v=16'
   },
   teratorn_vulture: {
-    title: "Haast's Eagle (Hieraaetus moorei) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Aspect Parity: 0.938)",
-    styleImg: 'assets/references/haast_eagle_6view_style.jpg',
-    rigImg: 'assets/references/haast_eagle_6view_skeleton.jpg',
-    compareImg: 'assets/references/haast_eagle_6view_comparison.jpg',
-    glbUrl: 'assets/models/haast_eagle_6view.glb'
+    title: "Haast's Eagle (Hieraaetus moorei) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.929)",
+    styleImg: 'assets/references/haast_eagle_6view_style.jpg?v=16',
+    rigImg: 'assets/references/haast_eagle_6view_skeleton.jpg?v=16',
+    compareImg: 'assets/references/haast_eagle_6view_comparison.jpg?v=16',
+    glbUrl: 'assets/models/haast_eagle_6view.glb?v=16'
   }
 };
 
@@ -3907,48 +4049,39 @@ function updateHandPose(dt) {
   }
 }
 
-// Preload Artist-Sculpted Pre-Rigged .GLB Models & Drag-and-Drop Override Support
+// Preload 6-View Closed-Loop Walkabout .GLB Models & Drag-and-Drop Override Support
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/WoollyMammoth.glb?v=7',
+    url: './assets/models/woolly_mammoth_6view.glb?v=16',
     matKey: 'mammothFur',
-    rootScale: 1.48,
-    preserveMaterials: true,
-    preferredClip: /Mammoth_Idle/i,
-    secondaryClip: /Mammoth_Look_Side/i,
-    timeScale: 0.85,
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
     boneScales: {}
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/Stag.glb?v=6',
+    url: './assets/models/megaloceros_6view.glb?v=16',
     matKey: 'elkCoat',
-    rootScale: 0.80,
-    preserveMaterials: true,
-    preferredClip: /Idle_2/i,
-    secondaryClip: /Idle_Headlow/i,
-    timeScale: 0.85,
-    boneScales: {
-      Stag_Horns: [1.38, 1.22, 1.28],
-      Neck1: [1.14, 1.22, 1.14],
-      Torso3: [1.10, 1.16, 1.12]
-    }
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
+    boneScales: {}
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/Smilodon.glb?v=6',
+    url: './assets/models/smilodon_6view.glb?v=16',
     matKey: 'smilodonCoat',
-    rootScale: 1.05,
-    preserveMaterials: true,
-    preferredClip: /Sabertooth_Idle/i,
-    secondaryClip: /Sabertooth_Look_Side/i,
-    timeScale: 0.88,
-    boneScales: {
-      'Sabertooth Head_07': [0.84, 0.86, 0.86],
-      'Sabertooth zL Cheek_022': [0.60, 0.65, 0.65],
-      'Sabertooth zR Cheek_023': [0.60, 0.65, 0.65]
-    }
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
+    boneScales: {}
+  },
+  {
+    assetId: 'teratorn_vulture',
+    url: './assets/models/haast_eagle_6view.glb?v=16',
+    matKey: 'trunk',
+    isSixViewWalkaboutGLB: true,
+    rootScale: 1.0,
+    boneScales: {}
   },
   {
     assetId: 'giant_sequoia',
@@ -4429,21 +4562,31 @@ function reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId) {
   });
 }
 
-function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '') {
+function tagLoadedGLBTemplate(gltfScene, gltf = null, assetId = '', isSixViewWalkaboutGLB = false) {
+  if (isSixViewWalkaboutGLB) return;
   reproportionAndGroupGLBGeometry(gltfScene, gltf, assetId);
 }
 
 function preloadAllStudioGLBAssets() {
+  let refreshTimer = null;
+  const scheduleSceneRefresh = () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      setActiveLODOrMode(comparisonMode !== 'none' ? comparisonMode : String(currentLodIdx));
+      if (isolatedAssetId !== 'all') isolateAsset(isolatedAssetId, true);
+    }, 50);
+  };
   const tasks = STUDIO_GLB_MANIFEST.map((spec) => new Promise((resolve) => {
     gltfLoader.load(
       spec.url,
       (gltf) => {
-        tagLoadedGLBTemplate(gltf.scene, gltf, spec.assetId);
+        tagLoadedGLBTemplate(gltf.scene, gltf, spec.assetId, Boolean(spec.isSixViewWalkaboutGLB));
         glbHeroCache[spec.assetId] = {
           ...spec,
           scene: gltf.scene,
           animations: gltf.animations || []
         };
+        scheduleSceneRefresh();
         resolve(true);
       },
       undefined,
@@ -4452,8 +4595,7 @@ function preloadAllStudioGLBAssets() {
   }));
   Promise.allSettled(tasks).then(() => {
     if (Object.keys(glbHeroCache).length > 0) {
-      setActiveLODOrMode(comparisonMode !== 'none' ? comparisonMode : String(currentLodIdx));
-      if (isolatedAssetId !== 'all') isolateAsset(isolatedAssetId, true);
+      scheduleSceneRefresh();
     }
   });
 }
