@@ -3339,32 +3339,32 @@ function executeTeleport() {
 
 const SIX_VIEW_REF_MAP = {
   woolly_mammoth: {
-    title: 'Woolly Mammoth (Mammuthus primigenius) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.922)',
-    styleImg: 'assets/references/woolly_mammoth_6view_style.jpg?v=16',
-    rigImg: 'assets/references/woolly_mammoth_6view_skeleton.jpg?v=16',
-    compareImg: 'assets/references/woolly_mammoth_6view_comparison.jpg?v=16',
-    glbUrl: 'assets/models/woolly_mammoth_6view.glb?v=16'
+    title: 'Woolly Mammoth (Mammuthus primigenius) — Multi-View Neural 3D + Walkabout 6-View .glb Comparison (Parity: 0.889)',
+    styleImg: 'assets/references/woolly_mammoth_6view_style.jpg?v=17',
+    rigImg: 'assets/references/woolly_mammoth_6view_skeleton.jpg?v=17',
+    compareImg: 'assets/references/woolly_mammoth_6view_comparison.jpg?v=17',
+    glbUrl: 'assets/models/woolly_mammoth_6view.glb?v=17'
   },
   megaloceros: {
-    title: 'Giant Irish Elk (Megaloceros giganteus) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.900)',
-    styleImg: 'assets/references/megaloceros_6view_style.jpg?v=16',
-    rigImg: 'assets/references/megaloceros_6view_skeleton.jpg?v=16',
-    compareImg: 'assets/references/megaloceros_6view_comparison.jpg?v=16',
-    glbUrl: 'assets/models/megaloceros_6view.glb?v=16'
+    title: 'Giant Irish Elk (Megaloceros giganteus) — Multi-View Neural 3D + Walkabout 6-View .glb Comparison (Parity: 0.813)',
+    styleImg: 'assets/references/megaloceros_6view_style.jpg?v=17',
+    rigImg: 'assets/references/megaloceros_6view_skeleton.jpg?v=17',
+    compareImg: 'assets/references/megaloceros_6view_comparison.jpg?v=17',
+    glbUrl: 'assets/models/megaloceros_6view.glb?v=17'
   },
   smilodon: {
-    title: 'Saber-Toothed Cat (Smilodon fatalis) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.947)',
-    styleImg: 'assets/references/smilodon_6view_style.jpg?v=16',
-    rigImg: 'assets/references/smilodon_6view_skeleton.jpg?v=16',
-    compareImg: 'assets/references/smilodon_6view_comparison.jpg?v=16',
-    glbUrl: 'assets/models/smilodon_6view.glb?v=16'
+    title: 'Saber-Toothed Cat (Smilodon fatalis) — Multi-View Neural 3D + Walkabout 6-View .glb Comparison (Parity: 0.936)',
+    styleImg: 'assets/references/smilodon_6view_style.jpg?v=17',
+    rigImg: 'assets/references/smilodon_6view_skeleton.jpg?v=17',
+    compareImg: 'assets/references/smilodon_6view_comparison.jpg?v=17',
+    glbUrl: 'assets/models/smilodon_6view.glb?v=17'
   },
   teratorn_vulture: {
-    title: "Haast's Eagle (Hieraaetus moorei) — Walkabout 6-View Reference, Joint-Line Rig & 3D .glb Comparison (Parity: 0.929)",
-    styleImg: 'assets/references/haast_eagle_6view_style.jpg?v=16',
-    rigImg: 'assets/references/haast_eagle_6view_skeleton.jpg?v=16',
-    compareImg: 'assets/references/haast_eagle_6view_comparison.jpg?v=16',
-    glbUrl: 'assets/models/haast_eagle_6view.glb?v=16'
+    title: "Haast's Eagle (Hieraaetus moorei) — Multi-View Neural 3D + Walkabout 6-View .glb Comparison (Parity: 0.822)",
+    styleImg: 'assets/references/haast_eagle_6view_style.jpg?v=17',
+    rigImg: 'assets/references/haast_eagle_6view_skeleton.jpg?v=17',
+    compareImg: 'assets/references/haast_eagle_6view_comparison.jpg?v=17',
+    glbUrl: 'assets/models/haast_eagle_6view.glb?v=17'
   }
 };
 
@@ -3720,7 +3720,7 @@ function updateHandPose(dt) {
 const STUDIO_GLB_MANIFEST = [
   {
     assetId: 'woolly_mammoth',
-    url: './assets/models/woolly_mammoth_6view.glb?v=16',
+    url: './assets/models/woolly_mammoth_6view.glb?v=17',
     matKey: 'mammothFur',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3728,7 +3728,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'megaloceros',
-    url: './assets/models/megaloceros_6view.glb?v=16',
+    url: './assets/models/megaloceros_6view.glb?v=17',
     matKey: 'elkCoat',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3736,7 +3736,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'smilodon',
-    url: './assets/models/smilodon_6view.glb?v=16',
+    url: './assets/models/smilodon_6view.glb?v=17',
     matKey: 'smilodonCoat',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,
@@ -3744,7 +3744,7 @@ const STUDIO_GLB_MANIFEST = [
   },
   {
     assetId: 'teratorn_vulture',
-    url: './assets/models/haast_eagle_6view.glb?v=16',
+    url: './assets/models/haast_eagle_6view.glb?v=17',
     matKey: 'trunk',
     isSixViewWalkaboutGLB: true,
     rootScale: 1.0,

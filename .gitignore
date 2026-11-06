@@ -21,3 +21,4 @@ build/
 .xr_cert.pem
 .xr_key.pem
 _site/
+assets/models/neural_raw/*.glb
